@@ -24,3 +24,11 @@ class Config:
 
     # CORS settings
     ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
+
+    # Database settings
+    SQLALCHEMY_DATABASE_URI = os.getenv(
+        "DATABASE_URL",
+        "sqlite:///kneesense.db"
+    )
+
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
