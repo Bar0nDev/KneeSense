@@ -1,0 +1,26 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class Config:
+    """Base configuration"""
+
+    # Flask settings
+    SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
+    DEBUG = os.getenv("DEBUG", "False") == "True"
+
+    # API settings
+    API_PREFIX = "/api"
+
+    # Model configuration
+    MODEL_PATH = os.getenv("MODEL_PATH", "models/knee_model.pt")
+
+    # Data storage
+    DATA_DIR = os.getenv("DATA_DIR", "data/")
+
+    # Sensor settings
+    SENSOR_FRAME_RATE = int(os.getenv("SENSOR_FRAME_RATE", 30))
+
+    # CORS settings
+    ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")

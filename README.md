@@ -1,55 +1,87 @@
 # KneeSense
 
-KneeSense is a visuotactile sensing system for estimating knee joint angles and analyzing quadriceps muscle deformation during movement. The project combines a machine learning backend with a modern web dashboard to enable real-time biomechanical monitoring and analysis.
+KneeSense is a visuotactile sensing system for estimating knee joint angles and analyzing quadriceps muscle deformation during movement. The platform combines a machine learning backend with a modern web dashboard to enable real-time biomechanical monitoring and analysis.
 
-## Architecture
+The project consists of a **Next.js frontend** for visualization and a **Flask backend** for machine learning inference and data processing.
 
-The repository contains two main components:
+---
+
+# Repository Structure
 
 ```
 kneesense/
-├── frontend/    # Next.js frontend application
-├── backend/     # Flask API and ML inference services
+│
+├── frontend/                 # Next.js application
+│   ├── app/
+│   ├── public/
+│   ├── package.json
+│   └── next.config.js
+│
+├── backend/                  # Flask backend API
+│   ├── .venv/
+│   ├── run.py                # Flask entrypoint
+│   ├── requirements.txt
+│   ├── .env
+│   │
+│   └── app/
+│       ├── __init__.py       # Flask app factory
+│       ├── config.py         # application configuration
+│       │
+│       ├── routes/           # API endpoints
+│       │   └── angle_routes.py
+│       │
+│       ├── services/         # business logic
+│       │   └── angle_service.py
+│       │
+│       ├── models/           # ML inference code
+│       │   └── inference.py
+│       │
+│       ├── utils/            # helper utilities
+│       │   └── preprocessing.py
+│       │
+│       └── schemas/          # request/response schemas
+│
 └── README.md
 ```
 
-### Frontend
+---
 
-* Framework: **Next.js**
-* Purpose: User interface, dashboards, and data visualization
-* Responsibilities:
+# Architecture
 
-  * Display knee angle estimates
-  * Visualize regional muscle deformation
-  * Present AI-generated biomechanical insights
-  * Interface for clinicians/researchers
-
-### Backend
-
-* Framework: **Flask**
-* Purpose: Data processing, machine learning inference, and API services
-* Responsibilities:
-
-  * Process visuotactile sensor data
-  * Run the knee angle estimation model
-  * Serve API endpoints for the frontend
-  * Generate biomechanical analysis
-
-### System Flow
+The system separates **user interface**, **API logic**, and **machine learning inference**.
 
 ```
-Sensor Input
-     ↓
-Flask Backend (API + ML Inference)
-     ↓
-Processed Data / Predictions
-     ↓
-Next.js Frontend (Visualization Dashboard)
+Visuotactile Sensor
+        ↓
+Flask Backend
+(API + ML Inference)
+        ↓
+Processed Data
+        ↓
+Next.js Frontend
+(Dashboard + Visualization)
 ```
 
-## Development Setup
+### Backend Responsibilities
 
-### 1. Clone the Repository
+* Sensor data ingestion
+* Knee angle estimation
+* ML inference
+* Biomechanical analysis
+* API endpoints for frontend consumption
+
+### Frontend Responsibilities
+
+* Visualization dashboards
+* Data plots and charts
+* Muscle deformation display
+* User interaction and control
+
+---
+
+# Development Setup
+
+## 1. Clone Repository
 
 ```
 git clone https://github.com/your-org/kneesense.git
@@ -58,42 +90,42 @@ cd kneesense
 
 ---
 
-## Backend Setup (Flask)
+# Backend Setup (Flask)
 
-Create and activate a Python virtual environment inside the backend directory.
+Navigate to the backend directory and create a virtual environment.
 
 ```
 cd backend
 python -m venv .venv
 ```
 
-Activate the environment:
+Activate the environment.
 
-**Mac/Linux**
+Mac/Linux:
 
 ```
 source .venv/bin/activate
 ```
 
-**Windows**
+Windows:
 
 ```
 .venv\Scripts\activate
 ```
 
-Install dependencies:
+Install dependencies.
 
 ```
 pip install -r requirements.txt
 ```
 
-Run the Flask development server:
+Run the Flask development server.
 
 ```
-python app.py
+python run.py
 ```
 
-Backend will run at:
+Backend runs at:
 
 ```
 http://localhost:5000
@@ -101,7 +133,7 @@ http://localhost:5000
 
 ---
 
-## Frontend Setup (Next.js)
+# Frontend Setup (Next.js)
 
 Install dependencies and start the development server.
 
@@ -111,7 +143,7 @@ npm install
 npm run dev
 ```
 
-Frontend will run at:
+Frontend runs at:
 
 ```
 http://localhost:3000
@@ -119,11 +151,15 @@ http://localhost:3000
 
 ---
 
-## API Communication
+# API Structure
 
-The Next.js frontend communicates with the Flask backend via HTTP requests.
+All backend endpoints are exposed under:
 
-Example request:
+```
+/api/
+```
+
+Example endpoint:
 
 ```
 GET /api/angle
@@ -137,72 +173,138 @@ Example response:
 }
 ```
 
-During development, the frontend expects the backend to run locally on:
-
-```
-http://localhost:5000
-```
-
 ---
 
-## Environment Variables
+# Configuration
 
-Environment variables should not be committed to the repository.
+Backend configuration is managed through:
 
-Create `.env` files as needed.
+```
+backend/app/config.py
+```
 
-Example backend configuration:
+Environment variables are loaded from:
 
 ```
 backend/.env
+```
+
+Example `.env`:
+
+```
+DEBUG=True
+SECRET_KEY=dev-secret
+
 MODEL_PATH=models/knee_model.pt
+DATA_DIR=data/
 ```
 
-Example frontend configuration:
+Environment variables should **never be committed to the repository**.
+
+---
+
+# Backend Design
+
+The backend follows a **layered architecture**.
+
+### Routes
+
+Defines API endpoints and handles HTTP requests.
 
 ```
-frontend/.env.local
-NEXT_PUBLIC_API_URL=http://localhost:5000
+routes/
+```
+
+### Services
+
+Contains business logic and orchestrates operations.
+
+```
+services/
+```
+
+### Models
+
+Machine learning inference code.
+
+```
+models/
+```
+
+### Utilities
+
+Shared helper functions and preprocessing logic.
+
+```
+utils/
+```
+
+### Schemas
+
+Defines structured request and response formats.
+
+```
+schemas/
+```
+
+Example request flow:
+
+```
+Frontend Request
+       ↓
+routes/angle_routes.py
+       ↓
+services/angle_service.py
+       ↓
+models/inference.py
+       ↓
+Return prediction
 ```
 
 ---
 
-## Dependency Management
+# Dependency Management
 
-### Backend
+## Backend
 
-Dependencies are managed with `pip` and tracked in:
+Dependencies are tracked in:
 
 ```
 backend/requirements.txt
 ```
 
-Update dependencies with:
+Update dependencies:
 
 ```
 pip freeze > requirements.txt
 ```
 
-### Frontend
+## Frontend
 
-Dependencies are managed with `npm` and tracked in:
+Dependencies are tracked in:
 
 ```
 frontend/package.json
 ```
 
+Install dependencies:
+
+```
+npm install
+```
+
 ---
 
-## Recommended Development Workflow
+# Development Workflow
 
-Run backend and frontend in separate terminals:
+Run frontend and backend in separate terminals.
 
 Terminal 1:
 
 ```
 cd backend
 source .venv/bin/activate
-python app.py
+python run.py
 ```
 
 Terminal 2:
@@ -214,9 +316,9 @@ npm run dev
 
 ---
 
-## Contributing
+# Contributing
 
-1. Create a feature branch.
-2. Implement changes.
-3. Ensure backend and frontend both run locally.
-4. Submit a pull request.
+1. Create a feature branch
+2. Implement changes
+3. Verify frontend and backend both run locally
+4. Submit a pull request
