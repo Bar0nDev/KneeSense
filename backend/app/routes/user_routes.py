@@ -14,6 +14,38 @@ user_bp = Blueprint("users", __name__)
 @user_bp.route("/users/register", methods=["POST"])
 def register_user():
 
+    # Swagger documentation for the /users/register endpoint (V1.0)
+    """
+    Register a new User
+    ---
+    tags:
+      - Authentication
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            name:
+              type: string
+              example: Test
+            username:
+              type: string
+              example: Test123
+            password:
+              type: string
+              example: encryption123
+            role:
+              type: string
+              enum: [practitioner, patient, admin]
+              default: practitioner
+    responses:
+      200:
+        description: User created successfully
+      400:
+        description: Username already exists or missing credentials
+    """
+
     data = request.json
 
     name = data.get("name")
@@ -55,6 +87,29 @@ def register_user():
 
 @user_bp.route("/users/login", methods=["POST"])
 def login():
+
+    # Swagger documentation for the /users/login endpoint (V1.0)
+    """
+    User Login
+    ---
+    tags:
+      - Authentication
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            username:
+              type: string
+            password:
+              type: string
+    responses:
+      200:
+        description: Login successful
+      401:
+        description: Invalid credentials
+    """
 
     data = request.json
 

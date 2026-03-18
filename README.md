@@ -235,6 +235,12 @@ Backend runs at:
 http://localhost:5000
 ```
 
+Backend API Documentation (SwaggerUI) runs at:
+
+```
+http://localhost:5000apidocs/#/
+```
+
 ---
 
 # Frontend Setup
