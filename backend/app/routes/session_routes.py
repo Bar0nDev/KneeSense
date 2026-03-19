@@ -20,6 +20,36 @@ def allowed_file(filename: str) -> bool:
 
 @session_bp.route("/sessions", methods=["POST"])
 def create_session():
+
+    # Swagger documentation for the /sessions endpoint (V1.0)
+    # TBU based on DB setup
+    """
+    Create a new Session with Video Upload
+    ---
+    tags:
+      - Sessions
+    parameters:
+      - name: video
+        in: formData
+        type: file
+        required: true
+        description: The knee motion video file.
+      - name: patient_id
+        in: formData
+        type: integer
+        required: true
+      - name: practitioner_id
+        in: formData
+        type: integer
+        required: true
+      - name: notes
+        in: formData
+        type: string
+        required: false
+    responses:
+      200:
+        description: Session created successfully
+    """
     patient_id = request.form.get("patient_id")
     practitioner_id = request.form.get("practitioner_id")
     notes = request.form.get("notes")
@@ -61,6 +91,35 @@ def create_session():
 
 @session_bp.route("/patients/<int:patient_id>/sessions", methods=["GET"])
 def get_patient_sessions(patient_id):
+
+    # Swagger documentation for the /patients/{patient_id}/sessions endpoint (V1.0)
+    """
+    Get all sessions for a specific patient
+    ---
+    tags:
+      - Sessions
+    parameters:
+      - name: patient_id
+        in: path
+        type: integer
+        required: true
+        description: The unique ID of the patient.
+    responses:
+      200:
+        description: A list of session objects
+        schema:
+          type: array
+          items:
+            properties:
+              id:
+                type: integer
+              video_path:
+                type: string
+              created_at:
+                type: string
+              notes:
+                type: string
+    """
     sessions = Session.query.filter_by(patient_id=patient_id).all()
     return jsonify([
         {
@@ -79,6 +138,24 @@ def get_patient_sessions(patient_id):
 
 @session_bp.route("/sessions/<int:session_id>/analyze", methods=["POST"])
 def analyze_session(session_id):
+
+    # Swagger documentation for the /sessions/{session_id}/analyze endpoint (V1.0)
+    """
+    Trigger AI Inference on Session Video
+    ---
+    tags:
+      - AI Analysis
+    parameters:
+      - name: session_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Analysis complete
+      409:
+        description: Session already analyzed
+    """
     session = Session.query.get(session_id)
 
     if not session:
@@ -111,6 +188,23 @@ def analyze_session(session_id):
 
 @session_bp.route("/sessions/<int:session_id>/predictions", methods=["GET"])
 def get_predictions(session_id):
+
+    # Swagger documentation for the /sessions/{session_id}/predictions endpoint (V1.0)
+    """
+    Retrieve AI predictions for a specific session
+    ---
+    tags:
+      - Sessions
+    parameters:
+      - name: session_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: List of frame indices and predicted angles
+    """
+     
     predictions = FramePrediction.query.filter_by(session_id=session_id)\
         .order_by(FramePrediction.frame_index).all()
     return jsonify([
@@ -128,6 +222,32 @@ def get_predictions(session_id):
 
 @session_bp.route("/sessions/<int:session_id>/insight", methods=["POST"])
 def add_llm_insight(session_id):
+    
+    # Swagger documentation for the /sessions/{session_id}/insight endpoint (V1.0)
+    """
+    Save AI-generated textual insights (LLM)
+    ---
+    tags:
+      - AI Analysis
+    parameters:
+      - name: session_id
+        in: path
+        type: integer
+        required: true
+      - in: body
+        name: body
+        schema:
+          properties:
+            insight_text:
+              type: string
+            model:
+              type: string
+              example: gpt-4
+    responses:
+      200:
+        description: Insight saved successfully
+    """
+    
     data = request.json
     insight = LLMInsight(
         session_id=session_id,

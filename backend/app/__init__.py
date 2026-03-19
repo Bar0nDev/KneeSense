@@ -1,4 +1,5 @@
 from flask import Flask
+from flasgger import Swagger
 from flask_cors import CORS
 from app.config import Config
 from app.database.db import db
@@ -12,6 +13,27 @@ def create_app():
     app.config.from_object(Config)
     CORS(app)
     db.init_app(app)
+
+    # added Swagger for API documentation
+    swagger_template = {
+        "swagger": "2.0",
+        "info": {
+            "title": "KneeSense Backend",
+            "description": "API Documentation for KneeSense: AI-Driven Visuotactile System for Wearable Knee Motion Assessment.",
+            "contact": {
+                "developedBy": "KneeSense Team",
+                "lastUpdatedBy": "Sofia",
+            },
+            "version": "1.0.0"
+        },
+        "basePath": "/api", 
+        "schemes": [
+            "http",
+            "https"
+        ]
+    }
+
+    Swagger(app, template=swagger_template)
 
     app.register_blueprint(session_bp, url_prefix="/api")
     app.register_blueprint(user_bp, url_prefix="/api")
