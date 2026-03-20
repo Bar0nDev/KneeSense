@@ -35,28 +35,41 @@ def test_connection():
               type: object
             server_time:
               type: string
+      500:
+        description: Internal Server Error!
+        schema:
+            properties:
+            status:
+                type: string
+            error:
+                type: string
     """
-    # GET Request
-    if request.method == 'GET':
+    try: 
+        # GET Request
+        if request.method == 'GET':
+            return jsonify({
+                "status": "success",
+                "message": "Hello KneeSense. Connection successful: CORS Allowed!",
+                "method": "GET",
+                "server_time": datetime.now().isoformat()
+            }), 200
+
+        # POST Request
+        data = request.get_json(silent=True) or {}
         return jsonify({
             "status": "success",
-            "message": "Hello Consumer. If you see this msg means CORS Allowed!",
-            "method": "GET",
+            "message": "BE is listening. Handshake successful!",
+            "received": data,
+            "method": "POST",
             "server_time": datetime.now().isoformat()
         }), 200
-
-    # POST Request
-    data = request.get_json(silent=True) or {}
     
-    # Debug print to verify incoming data from FE
-    print(f"\n--- NEW FRONTEND REQUEST ---")
-    print(f"Content: {data}")
-    print(f"----------------------------\n")
+    except Exception as e:
 
-    return jsonify({
-        "status": "success",
-        "message": "BE is listening. Handshake successful!",
-        "received": data,
-        "method": "POST",
-        "server_time": datetime.now().isoformat()
-    }), 200
+        print(f"Error: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": "The backend encountered an issue.",
+            "error_details": str(e),
+            "server_time": datetime.now().isoformat()
+        }), 500
