@@ -146,7 +146,11 @@ export default function RecordingPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
+<<<<<<< HEAD
       
+=======
+      {/* Top Bar */}
+>>>>>>> origin/feat/frontend-ui
       <div className="flex items-center justify-between px-6 py-4 bg-[#12606A]">
         <button
           onClick={handleBack}
