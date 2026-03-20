@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, app
 from flasgger import Swagger
 from flask_cors import CORS
 from app.config import Config
@@ -7,6 +7,7 @@ from app.database.db import db
 from app.routes.session_routes import session_bp
 from app.routes.user_routes import user_bp
 from app.routes.angle_routes import angle_bp
+from app.routes.test_route import test_bp # test FE-BE connection and CORS
 
 def create_app():
     app = Flask(__name__)
@@ -38,5 +39,6 @@ def create_app():
     app.register_blueprint(session_bp, url_prefix="/api")
     app.register_blueprint(user_bp, url_prefix="/api")
     app.register_blueprint(angle_bp, url_prefix="/api")
+    app.register_blueprint(test_bp, url_prefix="/api")
 
     return app
