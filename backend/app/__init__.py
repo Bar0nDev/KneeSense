@@ -17,23 +17,125 @@ def create_app():
     CORS(app)
     db.init_app(app)
 
-    # added Swagger for API documentation
     swagger_template = {
         "swagger": "2.0",
         "info": {
             "title": "KneeSense Backend",
-            "description": "API Documentation for KneeSense: AI-Driven Visuotactile System for Wearable Knee Motion Assessment.",
-            "contact": {
-                "developedBy": "KneeSense Team",
-                "lastUpdatedBy": "Jeremy",
-            },
+            "description": "API Documentation for KneeSense",
             "version": "1.0.0"
         },
-        "basePath": "/api", 
-        "schemes": [
-            "http",
-            "https"
-        ]
+        "basePath": "/api",
+        "schemes": ["http", "https"],
+
+        "definitions": {
+            "User": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "username": {"type": "string"},
+                    "email": {"type": "string"},
+                    "role": {"type": "string"},
+                    "is_active": {"type": "boolean"},
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            
+            "Error": {
+                "type": "object",
+                "properties": {
+                    "error": {"type": "string"}
+                }
+            },
+
+            # Practitioner
+            "Practitioner": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "user_id": {"type": "integer"},
+                    "clinic_name": {"type": "string"},
+                    "specialization": {"type": "string"},
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+
+            # Patient
+            "Patient": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "user_id": {"type": "integer"},
+                    "practitioner_id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "birthday": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "sex": {"type": "string"},
+                    "height_cm": {"type": "number"},
+                    "weight_kg": {"type": "number"},
+                    "notes": {"type": "string"},
+                    "is_active": {"type": "boolean"},
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+
+            # Angle prediction response
+            "AnglePrediction": {
+                "type": "object",
+                "properties": {
+                    "angle": {
+                        "type": "number",
+                        "example": 145.5
+                    }
+                }
+            },
+
+            # Session object
+            "Session": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "patient_id": {"type": "integer"},
+                    "practitioner_id": {"type": "integer"},
+                    "video_path": {"type": "string"},
+                    "notes": {"type": "string"},
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+
+            # Prediction
+            "Prediction": {
+                "type": "object",
+                "properties": {
+                    "frame_index": {"type": "integer"},
+                    "predicted_angle": {"type": "number"}
+                }
+            },
+
+            # LLM Insight
+            "Insight": {
+                "type": "object",
+                "properties": {
+                    "session_id": {"type": "integer"},
+                    "insight_text": {"type": "string"},
+                    "model": {"type": "string"}
+                }
+            }
+        }
     }
 
     Swagger(app, template=swagger_template)

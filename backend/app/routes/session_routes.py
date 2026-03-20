@@ -20,35 +20,49 @@ def allowed_file(filename: str) -> bool:
 
 @session_bp.route("/sessions", methods=["POST"])
 def create_session():
-
-    # Swagger documentation for the /sessions endpoint (V1.0)
-    # TBU based on DB setup
     """
     Create a new Session with Video Upload
     ---
     tags:
       - Sessions
+    consumes:
+      - multipart/form-data
     parameters:
       - name: video
         in: formData
         type: file
         required: true
-        description: The knee motion video file.
+        description: Knee motion video file
+
       - name: patient_id
         in: formData
         type: integer
         required: true
+
       - name: practitioner_id
         in: formData
         type: integer
         required: true
+
       - name: notes
         in: formData
         type: string
-        required: false
+
     responses:
       200:
         description: Session created successfully
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+            session_id:
+              type: integer
+
+      400:
+        description: Invalid input
+        schema:
+          $ref: '#/definitions/Error'
     """
     patient_id = request.form.get("patient_id")
     practitioner_id = request.form.get("practitioner_id")
@@ -91,10 +105,8 @@ def create_session():
 
 @session_bp.route("/patients/<int:patient_id>/sessions", methods=["GET"])
 def get_patient_sessions(patient_id):
-
-    # Swagger documentation for the /patients/{patient_id}/sessions endpoint (V1.0)
     """
-    Get all sessions for a specific patient
+    Get all sessions for a patient
     ---
     tags:
       - Sessions
@@ -103,22 +115,14 @@ def get_patient_sessions(patient_id):
         in: path
         type: integer
         required: true
-        description: The unique ID of the patient.
+
     responses:
       200:
-        description: A list of session objects
+        description: List of sessions
         schema:
           type: array
           items:
-            properties:
-              id:
-                type: integer
-              video_path:
-                type: string
-              created_at:
-                type: string
-              notes:
-                type: string
+            $ref: '#/definitions/Session'
     """
     sessions = Session.query.filter_by(patient_id=patient_id).all()
     return jsonify([
@@ -138,10 +142,8 @@ def get_patient_sessions(patient_id):
 
 @session_bp.route("/sessions/<int:session_id>/analyze", methods=["POST"])
 def analyze_session(session_id):
-
-    # Swagger documentation for the /sessions/{session_id}/analyze endpoint (V1.0)
     """
-    Trigger AI Inference on Session Video
+    Trigger AI inference on session video
     ---
     tags:
       - AI Analysis
@@ -150,11 +152,41 @@ def analyze_session(session_id):
         in: path
         type: integer
         required: true
+
     responses:
       200:
         description: Analysis complete
+        schema:
+          type: object
+          properties:
+            session_id:
+              type: integer
+            total_frames_analyzed:
+              type: integer
+            predictions:
+              type: array
+              items:
+                $ref: '#/definitions/Prediction'
+
+      400:
+        description: Bad request
+        schema:
+          $ref: '#/definitions/Error'
+
+      404:
+        description: Session not found
+        schema:
+          $ref: '#/definitions/Error'
+
       409:
-        description: Session already analyzed
+        description: Already analyzed
+        schema:
+          $ref: '#/definitions/Error'
+
+      500:
+        description: Inference failure
+        schema:
+          $ref: '#/definitions/Error'
     """
     session = db.session.get(Session, session_id)
 
@@ -188,10 +220,8 @@ def analyze_session(session_id):
 
 @session_bp.route("/sessions/<int:session_id>/predictions", methods=["GET"])
 def get_predictions(session_id):
-
-    # Swagger documentation for the /sessions/{session_id}/predictions endpoint (V1.0)
     """
-    Retrieve AI predictions for a specific session
+    Get predictions for a session
     ---
     tags:
       - Sessions
@@ -200,11 +230,15 @@ def get_predictions(session_id):
         in: path
         type: integer
         required: true
+
     responses:
       200:
-        description: List of frame indices and predicted angles
+        description: List of predictions
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/Prediction'
     """
-     
     predictions = FramePrediction.query.filter_by(session_id=session_id)\
         .order_by(FramePrediction.frame_index).all()
     return jsonify([
@@ -222,10 +256,8 @@ def get_predictions(session_id):
 
 @session_bp.route("/sessions/<int:session_id>/insight", methods=["POST"])
 def add_llm_insight(session_id):
-    
-    # Swagger documentation for the /sessions/{session_id}/insight endpoint (V1.0)
     """
-    Save AI-generated textual insights (LLM)
+    Store LLM-generated insight
     ---
     tags:
       - AI Analysis
@@ -234,18 +266,34 @@ def add_llm_insight(session_id):
         in: path
         type: integer
         required: true
+
       - in: body
         name: body
+        required: true
         schema:
+          type: object
+          required:
+            - insight_text
           properties:
             insight_text:
               type: string
             model:
               type: string
               example: gpt-4
+
     responses:
       200:
-        description: Insight saved successfully
+        description: Insight saved
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+
+      400:
+        description: Invalid input
+        schema:
+          $ref: '#/definitions/Error'
     """
     
     data = request.json

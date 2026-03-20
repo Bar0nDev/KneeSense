@@ -18,8 +18,12 @@ def get_all_practitioners():
     tags:
       - Practitioners
     responses:
-      200:
-        description: List of all practitioners
+        200:
+            description: List of practitioners
+            schema:
+                type: array
+                items:
+                    $ref: '#/definitions/Practitioner'
     """
     practitioners = Practitioner.query.all()
     return jsonify([_serialize_practitioner(p) for p in practitioners])
@@ -42,10 +46,15 @@ def get_practitioner(practitioner_id):
         type: integer
         required: true
     responses:
-      200:
-        description: Practitioner object
-      404:
-        description: Practitioner not found
+        200:
+            description: Practitioner object
+            schema:
+                $ref: '#/definitions/Practitioner'
+
+        404:
+            description: Not found
+            schema:
+                $ref: '#/definitions/Error'
     """
     practitioner = db.session.get(Practitioner, practitioner_id)
     if not practitioner:
@@ -77,10 +86,19 @@ def create_practitioner():
             specialization:
               type: string
     responses:
-      201:
-        description: Practitioner created
-      400:
-        description: Missing user_id or profile already exists
+        201:
+            description: Practitioner created
+            schema:
+                type: object
+                properties:
+                    message:
+                        type: string
+                    practitioner_id:
+                        type: integer
+
+        400:
+            schema:
+                $ref: '#/definitions/Error'
     """
     data = request.json
 
@@ -127,10 +145,19 @@ def update_practitioner(practitioner_id):
             specialization:
               type: string
     responses:
-      200:
-        description: Practitioner updated
-      404:
-        description: Practitioner not found
+        200:
+            description: Practitioner updated
+            schema:
+                type: object
+                properties:
+                    message:
+                        type: string
+                    practitioner:
+                        $ref: '#/definitions/Practitioner'
+
+        404:
+            schema:
+                $ref: '#/definitions/Error'
     """
     practitioner = db.session.get(Practitioner, practitioner_id)
     if not practitioner:
@@ -194,10 +221,16 @@ def get_practitioner_patients(practitioner_id):
         type: integer
         required: true
     responses:
-      200:
-        description: List of patients
-      404:
-        description: Practitioner not found
+        200:
+            description: List of patients
+            schema:
+                type: array
+                items:
+                    $ref: '#/definitions/Patient'
+
+        404:
+            schema:
+                $ref: '#/definitions/Error'
     """
     practitioner = db.session.get(Practitioner, practitioner_id)
     if not practitioner:

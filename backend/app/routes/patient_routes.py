@@ -24,8 +24,12 @@ def get_all_patients():
         type: boolean
         default: false
     responses:
-      200:
-        description: List of patients
+        200:
+            description: List of patients
+            schema:
+                type: array
+                items:
+                    $ref: '#/definitions/Patient'
     """
     include_inactive = request.args.get("include_inactive", "false").lower() == "true"
     query = Patient.query if include_inactive else Patient.query.filter_by(is_active=True)
@@ -49,10 +53,13 @@ def get_patient(patient_id):
         type: integer
         required: true
     responses:
-      200:
-        description: Patient object
-      404:
-        description: Patient not found
+        200:
+            schema:
+                $ref: '#/definitions/Patient'
+
+        404:
+            schema:
+                $ref: '#/definitions/Error'
     """
     patient = db.session.get(Patient, patient_id)
     if not patient:
@@ -78,10 +85,13 @@ def get_patient_by_user(user_id):
         type: integer
         required: true
     responses:
-      200:
-        description: Patient object
-      404:
-        description: Patient profile not found for this user
+        200:
+            schema:
+                $ref: '#/definitions/Patient'
+
+        404:
+            schema:
+                $ref: '#/definitions/Error'
     """
     patient = Patient.query.filter_by(user_id=user_id).first()
     if not patient:
@@ -126,10 +136,19 @@ def create_patient():
             notes:
               type: string
     responses:
-      201:
-        description: Patient created
-      400:
-        description: Missing required fields
+        201:
+            description: Patient created
+            schema:
+                type: object
+                properties:
+                    message:
+                        type: string
+                    patient_id:
+                        type: integer
+
+        400:
+            schema:
+                $ref: '#/definitions/Error'
     """
     data = request.json
 
@@ -198,10 +217,19 @@ def update_patient(patient_id):
             is_active:
               type: boolean
     responses:
-      200:
-        description: Patient updated
-      404:
-        description: Patient not found
+        200:
+            description: Patient updated
+            schema:
+                type: object
+                properties:
+                    message:
+                        type: string
+                    patient:
+                        $ref: '#/definitions/Patient'
+
+        404:
+            schema:
+                $ref: '#/definitions/Error'
     """
     patient = db.session.get(Patient, patient_id)
     if not patient:
@@ -258,10 +286,23 @@ def assign_practitioner(patient_id):
             practitioner_id:
               type: integer
     responses:
-      200:
-        description: Practitioner assigned
-      404:
-        description: Patient not found
+        200:
+            description: Practitioner assigned
+            schema:
+                type: object
+                properties:
+                    message:
+                        type: string
+                    patient:
+                        $ref: '#/definitions/Patient'
+
+        400:
+            schema:
+                $ref: '#/definitions/Error'
+
+        404:
+            schema:
+                $ref: '#/definitions/Error'
     """
     patient = db.session.get(Patient, patient_id)
     if not patient:
@@ -294,10 +335,17 @@ def delete_patient(patient_id):
         type: integer
         required: true
     responses:
-      200:
-        description: Patient deactivated
-      404:
-        description: Patient not found
+        200:
+            description: Success
+            schema:
+                type: object
+                properties:
+                    message:
+                        type: string
+
+        404:
+            schema:
+                $ref: '#/definitions/Error'
     """
     patient = db.session.get(Patient, patient_id)
     if not patient:
@@ -325,10 +373,17 @@ def purge_patient(patient_id):
         type: integer
         required: true
     responses:
-      200:
-        description: Patient permanently deleted
-      404:
-        description: Patient not found
+        200:
+            description: Success
+            schema:
+                type: object
+                properties:
+                    message:
+                        type: string
+
+        404:
+            schema:
+                $ref: '#/definitions/Error'
     """
     patient = db.session.get(Patient, patient_id)
     if not patient:

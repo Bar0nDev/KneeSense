@@ -6,11 +6,9 @@ from app.database.models import User, Practitioner, Patient
 
 user_bp = Blueprint("users", __name__)
 
-
 # =========================
 # REGISTER
 # =========================
-
 @user_bp.route("/users/register", methods=["POST"])
 def register_user():
     """
@@ -23,28 +21,40 @@ def register_user():
         name: body
         required: true
         schema:
+          type: object
+          required:
+            - name
+            - username
+            - password
           properties:
             name:
               type: string
               example: Jane Doe
             username:
               type: string
-              example: janedoe
             email:
               type: string
-              example: jane@example.com
             password:
               type: string
-              example: securepassword
             role:
               type: string
               enum: [practitioner, patient, manager, admin]
-              default: practitioner
+
     responses:
       201:
         description: User created successfully
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+            user_id:
+              type: integer
+
       400:
-        description: Missing credentials or duplicate username/email
+        description: Validation error
+        schema:
+          $ref: '#/definitions/Error'
     """
     data = request.json
 
@@ -73,12 +83,10 @@ def register_user():
     db.session.add(user)
     db.session.commit()
 
-    # Auto-create the corresponding profile
     if role == "practitioner":
         db.session.add(Practitioner(user_id=user.id))
         db.session.commit()
     elif role == "patient":
-        # practitioner_id is null until a practitioner assigns them
         db.session.add(Patient(user_id=user.id, name=name))
         db.session.commit()
 
@@ -88,7 +96,6 @@ def register_user():
 # =========================
 # LOGIN
 # =========================
-
 @user_bp.route("/users/login", methods=["POST"])
 def login():
     """
@@ -101,16 +108,38 @@ def login():
         name: body
         required: true
         schema:
+          type: object
+          required:
+            - username
+            - password
           properties:
             username:
               type: string
             password:
               type: string
+
     responses:
       200:
         description: Login successful
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+            user_id:
+              type: integer
+            username:
+              type: string
+            role:
+              type: string
+            profile_id:
+              type: integer
+              nullable: true
+
       401:
         description: Invalid credentials
+        schema:
+          $ref: '#/definitions/Error'
     """
     data = request.json
     username = data.get("username")
@@ -120,14 +149,12 @@ def login():
     if not user or not check_password_hash(user.password_hash, password):
         return jsonify({"error": "Invalid credentials"}), 401
 
-    # Attach profile ID so frontend knows which resource to load
     profile_id = None
     if user.role == "practitioner" and user.practitioner_profile:
         profile_id = user.practitioner_profile.id
     elif user.role == "patient" and user.patient_profile:
         profile_id = user.patient_profile.id
 
-    # TODO: replace with JWT token (flask-jwt-extended)
     return jsonify({
         "message": "Login successful",
         "user_id": user.id,
@@ -140,7 +167,6 @@ def login():
 # =========================
 # GET ALL USERS
 # =========================
-
 @user_bp.route("/users", methods=["GET"])
 def get_all_users():
     """
@@ -150,7 +176,11 @@ def get_all_users():
       - Users
     responses:
       200:
-        description: List of all users
+        description: List of users
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/User'
     """
     users = User.query.all()
     return jsonify([_serialize_user(u) for u in users])
@@ -159,7 +189,6 @@ def get_all_users():
 # =========================
 # GET USER BY ID
 # =========================
-
 @user_bp.route("/users/<int:user_id>", methods=["GET"])
 def get_user(user_id):
     """
@@ -172,11 +201,17 @@ def get_user(user_id):
         in: path
         type: integer
         required: true
+
     responses:
       200:
         description: User object
+        schema:
+          $ref: '#/definitions/User'
+
       404:
         description: User not found
+        schema:
+          $ref: '#/definitions/Error'
     """
     user = db.session.get(User, user_id)
     if not user:
@@ -187,11 +222,10 @@ def get_user(user_id):
 # =========================
 # UPDATE USER
 # =========================
-
 @user_bp.route("/users/<int:user_id>", methods=["PUT"])
 def update_user(user_id):
     """
-    Update a user by ID
+    Update a user
     ---
     tags:
       - Users
@@ -200,9 +234,11 @@ def update_user(user_id):
         in: path
         type: integer
         required: true
+
       - in: body
         name: body
         schema:
+          type: object
           properties:
             name:
               type: string
@@ -212,11 +248,22 @@ def update_user(user_id):
               type: string
             is_active:
               type: boolean
+
     responses:
       200:
         description: User updated
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+            user:
+              $ref: '#/definitions/User'
+
       404:
         description: User not found
+        schema:
+          $ref: '#/definitions/Error'
     """
     user = db.session.get(User, user_id)
     if not user:
@@ -242,11 +289,10 @@ def update_user(user_id):
 # =========================
 # DELETE USER
 # =========================
-
 @user_bp.route("/users/<int:user_id>", methods=["DELETE"])
 def delete_user(user_id):
     """
-    Delete a user by ID
+    Delete a user
     ---
     tags:
       - Users
@@ -255,11 +301,20 @@ def delete_user(user_id):
         in: path
         type: integer
         required: true
+
     responses:
       200:
         description: User deleted
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+
       404:
         description: User not found
+        schema:
+          $ref: '#/definitions/Error'
     """
     user = db.session.get(User, user_id)
     if not user:
@@ -273,7 +328,6 @@ def delete_user(user_id):
 # =========================
 # HELPER
 # =========================
-
 def _serialize_user(u: User) -> dict:
     return {
         "id": u.id,
