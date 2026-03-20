@@ -1,11 +1,9 @@
 from flask import Blueprint, request, jsonify
-from flask_cors import cross_origin
 from datetime import datetime
 
 test_bp = Blueprint('test', __name__)
 
 @test_bp.route('/HiKneeSense', methods=['GET', 'POST'])
-@cross_origin() # Enable CORS for this route
 def test_connection():
     """
     KneeSense Connection Check
