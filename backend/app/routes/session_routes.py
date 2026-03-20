@@ -125,7 +125,7 @@ def get_patient_sessions(patient_id):
         {
             "id": s.id,
             "video_path": s.video_path,
-            "created_at": s.created_at,
+            "created_at": s.created_at.isoformat(),
             "notes": s.notes,
         }
         for s in sessions
@@ -156,7 +156,7 @@ def analyze_session(session_id):
       409:
         description: Session already analyzed
     """
-    session = Session.query.get(session_id)
+    session = db.session.get(Session, session_id)
 
     if not session:
         return jsonify({"error": "Session not found"}), 404

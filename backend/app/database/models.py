@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from .db import db
 
 
@@ -21,18 +21,28 @@ class User(db.Model):
 
     role = db.Column(
         db.String(20),
-        nullable=False
-    )  # practitioner, manager, admin
+        nullable=False,
+        default="practitioner"
+    )  # practitioner, patient, manager, admin
+
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
 
     created_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow
+        default=datetime.now(UTC)
     )
 
     practitioner_profile = db.relationship(
         "Practitioner",
         backref="user",
         uselist=False
+    )
+
+    patient_profile = db.relationship(
+        "Patient",
+        backref="user",
+        uselist=False,
+        foreign_keys="Patient.user_id"
     )
 
 
@@ -57,7 +67,7 @@ class Practitioner(db.Model):
 
     created_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow
+        default=datetime.now(UTC)
     )
 
     patients = db.relationship(
@@ -76,15 +86,24 @@ class Patient(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
+    # Set when patient self-registered; null when practitioner created them manually
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=True,
+        unique=True
+    )
+
+    # Null until a practitioner assigns/claims them
     practitioner_id = db.Column(
         db.Integer,
         db.ForeignKey("practitioners.id"),
-        nullable=False
+        nullable=True
     )
 
     name = db.Column(db.String(120), nullable=False)
 
-    age = db.Column(db.Integer)
+    birthday = db.Column(db.Date)
 
     sex = db.Column(db.String(10))
 
@@ -94,9 +113,11 @@ class Patient(db.Model):
 
     notes = db.Column(db.Text)
 
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+
     created_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow
+        default=datetime.now(UTC)
     )
 
     sessions = db.relationship(
@@ -121,10 +142,11 @@ class Session(db.Model):
         nullable=False
     )
 
+    # Nullable — patient may not have a practitioner yet when uploading
     practitioner_id = db.Column(
         db.Integer,
         db.ForeignKey("practitioners.id"),
-        nullable=False
+        nullable=True
     )
 
     video_path = db.Column(db.String(255))
@@ -135,7 +157,7 @@ class Session(db.Model):
 
     created_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow
+        default=datetime.now(UTC)
     )
 
     frame_predictions = db.relationship(
@@ -178,7 +200,7 @@ class FramePrediction(db.Model):
 
     created_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow
+        default=datetime.now(UTC)
     )
 
 
@@ -203,5 +225,5 @@ class LLMInsight(db.Model):
 
     created_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow
+        default=datetime.now(UTC)
     )

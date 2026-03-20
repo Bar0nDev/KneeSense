@@ -7,6 +7,8 @@ from app.database.db import db
 from app.routes.session_routes import session_bp
 from app.routes.user_routes import user_bp
 from app.routes.angle_routes import angle_bp
+from app.routes.practitioner_routes import practitioner_bp
+from app.routes.patient_routes import patient_bp
 
 def create_app():
     app = Flask(__name__)
@@ -22,7 +24,7 @@ def create_app():
             "description": "API Documentation for KneeSense: AI-Driven Visuotactile System for Wearable Knee Motion Assessment.",
             "contact": {
                 "developedBy": "KneeSense Team",
-                "lastUpdatedBy": "Sofia",
+                "lastUpdatedBy": "Jeremy",
             },
             "version": "1.0.0"
         },
@@ -38,5 +40,12 @@ def create_app():
     app.register_blueprint(session_bp, url_prefix="/api")
     app.register_blueprint(user_bp, url_prefix="/api")
     app.register_blueprint(angle_bp, url_prefix="/api")
+    app.register_blueprint(practitioner_bp, url_prefix="/api")
+    app.register_blueprint(patient_bp, url_prefix="/api")
+
+    @app.cli.command("init-db")
+    def init_db():
+        db.create_all()
+        print("Database initialized.")
 
     return app
