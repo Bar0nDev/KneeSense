@@ -8,19 +8,10 @@ from app.database.db import db
 from app.database.models import FramePrediction
 from app.ml.knee_model import KneeAngleModel
 from app.utils.preprocessing import preprocess_input
-from app.config import Config
+from app.ml.knee_model import get_model
 
 SEQUENCE_LENGTH = 9
 HALF = SEQUENCE_LENGTH // 2
-
-_model = None
-
-def get_model():
-    global _model
-    if _model is None:
-        _model = KneeAngleModel(Config.MODEL_PATH)
-    return _model
-
 
 def extract_frames(video_path: str, frames_dir: str) -> list[str]:
     """

@@ -1,14 +1,7 @@
 from app.ml.knee_model import KneeAngleModel
 from app.utils.preprocessing import preprocess_input
 from app.config import Config
-
-_model = None
-
-def get_model():
-    global _model
-    if _model is None:
-        _model = KneeAngleModel(Config.MODEL_PATH)
-    return _model
+from app.ml.knee_model import get_model
 
 def predict_knee_angle(frame_paths: list[str]) -> dict:
     """

@@ -1,10 +1,18 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
+from app.config import Config
 
 SEQUENCE_LENGTH = 9
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+_model_instance = None
+
+def get_model():
+    global _model_instance
+    if _model_instance is None:
+        _model_instance = KneeAngleModel(Config.MODEL_PATH)
+    return _model_instance
 
 class CNNRegressor(nn.Module):
     def __init__(self):
@@ -47,3 +55,4 @@ class KneeAngleModel:
             output = self.model(input_tensor)
         # output is in [0,1] normalized — convert back to degrees
         return float(output.item() * 180.0)
+    
