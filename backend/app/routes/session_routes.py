@@ -5,6 +5,7 @@ from werkzeug.utils import secure_filename
 from app.database.db import db
 from app.database.models import Session, FramePrediction, LLMInsight
 from app.services.video_service import run_inference_and_store
+from app.services.insight_service import generate_and_store_insight
 
 session_bp = Blueprint("sessions", __name__)
 
@@ -251,13 +252,117 @@ def get_predictions(session_id):
 
 
 # =========================
-# STORE LLM INSIGHT
+# GENERATE LLM INSIGHT (auto, calls Claude)
+# =========================
+
+@session_bp.route("/sessions/<int:session_id>/generate-insight", methods=["POST"])
+def generate_insight(session_id):
+    """
+    Auto-generate a clinical insight using Claude AI
+    ---
+    tags:
+      - AI Analysis
+    parameters:
+      - name: session_id
+        in: path
+        type: integer
+        required: true
+
+    responses:
+      200:
+        description: Insight generated and saved
+        schema:
+          $ref: '#/definitions/Insight'
+
+      400:
+        description: No predictions found — run /analyze first
+        schema:
+          $ref: '#/definitions/Error'
+
+      404:
+        description: Session not found
+        schema:
+          $ref: '#/definitions/Error'
+
+      409:
+        description: Insight already exists for this session
+        schema:
+          $ref: '#/definitions/Error'
+
+      500:
+        description: LLM generation failed
+        schema:
+          $ref: '#/definitions/Error'
+    """
+    session = db.session.get(Session, session_id)
+    if not session:
+        return jsonify({"error": "Session not found"}), 404
+
+    # Don't regenerate if one already exists
+    existing = LLMInsight.query.filter_by(session_id=session_id).first()
+    if existing:
+        return jsonify({"error": "Insight already exists for this session"}), 409
+
+    try:
+        fps = session.fps or 30
+        result = generate_and_store_insight(session_id, fps=fps)
+        return jsonify(result)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": f"Insight generation failed: {str(e)}"}), 500
+
+
+# =========================
+# GET INSIGHT FOR SESSION
+# =========================
+
+@session_bp.route("/sessions/<int:session_id>/insight", methods=["GET"])
+def get_insight(session_id):
+    """
+    Get the stored LLM insight for a session
+    ---
+    tags:
+      - AI Analysis
+    parameters:
+      - name: session_id
+        in: path
+        type: integer
+        required: true
+
+    responses:
+      200:
+        description: Insight found
+        schema:
+          $ref: '#/definitions/Insight'
+
+      404:
+        description: No insight found — generate one first
+        schema:
+          $ref: '#/definitions/Error'
+    """
+    insight = LLMInsight.query.filter_by(session_id=session_id)\
+        .order_by(LLMInsight.id.desc()).first()
+
+    if not insight:
+        return jsonify({"error": "No insight found. Call POST /generate-insight first."}), 404
+
+    return jsonify({
+        "session_id": session_id,
+        "insight_text": insight.insight_text,
+        "model": insight.model_used,
+        "created_at": insight.created_at.isoformat(),
+    })
+
+
+# =========================
+# STORE LLM INSIGHT (manual, kept for compatibility)
 # =========================
 
 @session_bp.route("/sessions/<int:session_id>/insight", methods=["POST"])
 def add_llm_insight(session_id):
     """
-    Store LLM-generated insight
+    Manually store an LLM-generated insight
     ---
     tags:
       - AI Analysis
@@ -295,12 +400,14 @@ def add_llm_insight(session_id):
         schema:
           $ref: '#/definitions/Error'
     """
-    
     data = request.json
+    if not data or "insight_text" not in data:
+        return jsonify({"error": "Missing insight_text"}), 400
+
     insight = LLMInsight(
         session_id=session_id,
         insight_text=data["insight_text"],
-        model_used=data.get("model", "gpt")
+        model_used=data.get("model", "manual")
     )
     db.session.add(insight)
     db.session.commit()

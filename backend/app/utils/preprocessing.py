@@ -4,7 +4,7 @@ import torchvision.transforms as transforms
 
 SEQUENCE_LENGTH = 9
 
-transform = transforms.Compose([
+_transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(
@@ -29,7 +29,7 @@ def preprocess_input(frame_paths):
 
     for path in frame_paths:
         img = Image.open(path).convert("RGB")
-        img = transform(img)
+        img = _transform(img)
         imgs.append(img)
 
     stacked = torch.cat(imgs, dim=0)  # (27,224,224)

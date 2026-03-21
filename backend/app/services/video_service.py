@@ -1,12 +1,10 @@
 import os
 import cv2
-import torch
 import tempfile
 import shutil
 
 from app.database.db import db
 from app.database.models import FramePrediction
-from app.ml.knee_model import KneeAngleModel
 from app.utils.preprocessing import preprocess_input
 from app.ml.knee_model import get_model
 
