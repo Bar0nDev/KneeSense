@@ -24,7 +24,7 @@ from app.database.models import FramePrediction
 from app.ml.knee_model import get_model
 
 # ──────────────────────────────────────────────────────────────────────────────
-# CONSTANTS  — copied verbatim from ultimateDataGathering.py
+# CONSTANTS
 # ──────────────────────────────────────────────────────────────────────────────
 
 SEQUENCE_LENGTH = 9
