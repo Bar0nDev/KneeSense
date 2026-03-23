@@ -1,11 +1,12 @@
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from app.database.firebase.firestore_repo import create_fsdb_user
+from app.database.firebase.firestore_repo import create_fsdb_user, get_fs_db
 from app.database.db import db
 from app.database.models import User, Practitioner, Patient
 
 user_bp = Blueprint("users", __name__)
+fs_db = get_fs_db()
 
 # =========================
 # REGISTER
@@ -190,8 +191,21 @@ def get_all_users():
           items:
             $ref: '#/definitions/User'
     """
-    users = User.query.all()
-    return jsonify([_serialize_user(u) for u in users])
+    try:
+        docs = fs_db.collection("user").stream()
+        users_list = []
+        for doc in docs:
+            user_data = doc.to_dict()
+            user_data['id'] = doc.id 
+            users_list.append(user_data)
+            
+        return jsonify(users_list), 200
+
+    except Exception as e:
+        print(f"Error fetching from Cloud: {e}")
+        # Fallback: if Cloud fails, check the local SQLite shelf
+        users = User.query.all()
+        return jsonify([_serialize_user(u) for u in users])
 
 
 # =========================
