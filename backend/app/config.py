@@ -34,7 +34,7 @@ class Config:
     # Firebase settings
     FIREBASE_KEY_PATH = os.getenv(
         "FIREBASE_KEY_PATH",
-        "firebase/firebase-key.json"
+        "app/database/firebase/firebase-key.json"
     )
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False

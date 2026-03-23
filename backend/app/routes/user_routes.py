@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from app.database.firebase.firestore_repo import create_fsdb_user
 from app.database.db import db
 from app.database.models import User, Practitioner, Patient
 
@@ -80,6 +81,7 @@ def register_user():
         password_hash=generate_password_hash(password),
         role=role,
     )
+    # SQLite (Local DB)
     db.session.add(user)
     db.session.commit()
 
@@ -89,6 +91,12 @@ def register_user():
     elif role == "patient":
         db.session.add(Patient(user_id=user.id, name=name))
         db.session.commit()
+
+    # Firestore (Cloud DB)
+    try:
+        create_fsdb_user(user)
+    except Exception as e:
+        print(f"Cloud Sync Failed: {e}")
 
     return jsonify({"message": "User created", "user_id": user.id}), 201
 

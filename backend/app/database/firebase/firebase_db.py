@@ -1,6 +1,6 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
-from config import Config
+from app.config import Config
 
 _fs_db = None
 
