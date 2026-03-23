@@ -12,13 +12,14 @@ interface ZoneMapProps {
 
 export default function ZoneMap({
   videoSrc,
-  medialPct = "41.7%",
-  centralPct = "33.4%",
-  lateralPct = "24.9%",
+  medialPct = "0%",
+  centralPct = "0%",
+  lateralPct = "0%",
 }: ZoneMapProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
 
+  // Derived zone data
   const zones = [
     { label: "MEDIAL\nZONE", value: medialPct },
     { label: "CENTRAL\nZONE", value: centralPct },
@@ -41,46 +42,51 @@ export default function ZoneMap({
 
   return (
     <div
-      className="relative w-full rounded-2xl bg-gray-900 cursor-pointer"
+      className="relative w-full rounded-3xl bg-gray-900 cursor-pointer overflow-hidden group shadow-lg"
       onClick={togglePlay}
     >
-      {/* Video — drives the container height naturally */}
+      {/* Video Layer */}
       {videoSrc ? (
         <video
           ref={videoRef}
           src={videoSrc}
-          className="w-full h-auto rounded-2xl block"
+          className="w-full h-auto block transform transition-transform duration-700 group-hover:scale-[1.02]"
           loop
           playsInline
           muted
         />
       ) : (
-        <div className="w-full aspect-video rounded-2xl bg-gradient-to-br from-purple-500 via-teal-400 to-green-400" />
+        <div className="w-full aspect-video bg-gradient-to-br from-[#12606A] to-[#30C3B1] opacity-80" />
       )}
 
-      {/* Zone Overlay — sits on top of video */}
-      <div className="absolute inset-0 flex">
+      {/* Zone Overlay */}
+      <div className="absolute inset-0 flex bg-black/10 transition-opacity group-hover:bg-black/20">
         {zones.map((zone, i) => (
           <div
-            key={i}
-            className="flex-1 flex flex-col items-center justify-end pb-5 relative"
+            key={zone.label}
+            className="flex-1 flex flex-col items-center justify-end pb-6 relative"
           >
+            {/* Dashed Separator */}
             {i < zones.length - 1 && (
-              <div className="absolute right-0 top-0 h-full border-r-2 border-dashed border-white/60" />
+              <div className="absolute right-0 top-1/4 h-1/2 border-r border-dashed border-white/40" />
             )}
-            <p className="text-white text-lg font-extrabold drop-shadow">{zone.value}</p>
-            <p className="text-white text-[10px] font-semibold tracking-widest text-center whitespace-pre-line drop-shadow">
+            
+            {/* Data Labels */}
+            <p className="text-white text-xl font-black drop-shadow-md leading-none">
+              {zone.value}
+            </p>
+            <p className="text-white text-[9px] font-bold tracking-[0.2em] text-center whitespace-pre-line drop-shadow-sm mt-1 opacity-90 uppercase">
               {zone.label}
             </p>
           </div>
         ))}
       </div>
 
-      {/* Play/Pause Button */}
+      {/* Play Overlay Button */}
       {!playing && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center">
-            <BsPlayFill size={24} className="text-white ml-1" />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[2px] transition-all">
+          <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-2xl transform transition-transform group-hover:scale-110">
+            <BsPlayFill size={32} className="text-white ml-1" />
           </div>
         </div>
       )}

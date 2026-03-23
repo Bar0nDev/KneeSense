@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
-import Button from "@/components/ui/Button";
+import PrimaryButton from "@/components/ui/PrimaryButton";
+import Card from "@/components/ui/Card";
 import { PiChatCircleDotsBold } from "react-icons/pi";
 
 interface PractitionerCardProps {
@@ -9,13 +12,18 @@ interface PractitionerCardProps {
   image?: string | null;
 }
 
-export default function PractitionerCard({ name, role, initials, image = null }: PractitionerCardProps) {
+export default function PractitionerCard({ 
+  name, 
+  role, 
+  initials, 
+  image = null,
+}: PractitionerCardProps) {
   return (
-    <div className="flex flex-col items-center text-center h-full gap-2">
-
+    <Card className="flex flex-col items-center text-center gap-2">
+      
       {/* Avatar / Image */}
       {image ? (
-        <div className="relative w-20 h-20 rounded-full overflow-hidden shrink-0">
+        <div className="relative w-20 h-20 rounded-full overflow-hidden shrink-0 shadow-sm">
           <Image
             src={image}
             alt={name}
@@ -24,25 +32,30 @@ export default function PractitionerCard({ name, role, initials, image = null }:
           />
         </div>
       ) : (
-        <div className="w-16 h-16 rounded-full bg-[#30C3B1] flex items-center justify-center text-[#FDFDFD] text-2xl font-bold shrink-0">
+        <div className="w-17 h-17 rounded-full bg-[#30C3B1] flex items-center justify-center text-[#FDFDFD] text-2xl font-bold shrink-0 shadow-sm">
           {initials}
         </div>
       )}
 
       {/* Name + Role */}
       <div className="leading-snug">
-        <p className="text-base font-bold text-[#1C2121]">{name}</p>
-        <p className="text-sm text-[#455858]">{role}</p>
+        <h2 className="text-base font-bold text-[#1C2121] tracking-tight">{name}</h2>
+        <p className="text-sm text-[#455858] font-medium opacity-80">{role}</p>
       </div>
 
-      {/* Button pinned to bottom */}
-      <div className="mt-auto w-full">
-        <Button bgColor="bg-[#3543A3]" hoverColor="hover:bg-[#2a3582]" size="md" fullWidth>
-          <PiChatCircleDotsBold size={16} className="mr-1" />
+      {/* PrimaryButton pinned to bottom */}
+      <div className="w-full">
+        <PrimaryButton
+          variant="filled"
+          color="#3543A3"
+          fullWidth
+          className="gap-1"
+        >
+          <PiChatCircleDotsBold size={18} />
           Contact Practitioner
-        </Button>
+        </PrimaryButton>
       </div>
 
-    </div>
+    </Card>
   );
 }

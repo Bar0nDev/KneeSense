@@ -1,9 +1,17 @@
-import Link from "next/link";
+"use client"; // Required for useRouter and onClick handlers
 
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { GiKneeCap } from "react-icons/gi";
-import { FaArrowRightLong } from "react-icons/fa6";
+import CTAButton from "@/components/ui/CTAButton"; // Adjust path as needed
 
 export default function Home() {
+  const router = useRouter();
+
+  const handleGetStarted = () => {
+    router.push("/login");
+  };
+
   return (
     <div
       className="relative flex min-h-screen flex-col overflow-hidden"
@@ -14,23 +22,16 @@ export default function Home() {
         backgroundRepeat: "no-repeat",
       }}
     >
-
       {/* Nav */}
       <nav className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-8 py-6">
         <div className="flex items-center gap-0.5 text-white">
           <GiKneeCap size={26} />
-          <span className="text-[17px] font-semibold tracking-tight text-white" style={{ fontFamily: "Georgia, serif" }}>
-            KneeSense
-          </span>
-        </div>
-        {/* <div className="flex items-center gap-2">
-          <Link
-            href="/contact"
-            className="rounded-full border border-[#30C3B1]/35 px-4 py-2 text-sm text-white backdrop-blur-sm transition-all hover:bg-white/10"
+          <h1 
+            className="text-xl font-semibold tracking-tight text-white" 
           >
-            Contact Us
-          </Link>
-        </div> */}
+            KneeSense
+          </h1>
+        </div>
       </nav>
 
       {/* Full-height hero */}
@@ -39,27 +40,20 @@ export default function Home() {
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/70">
             Intelligent Knee Rehabilitation
           </p>
-          <h1
+          <h2
             className="mb-4 max-w-lg text-[2.6rem] font-bold leading-[1.15] text-white"
-            style={{ fontFamily: "Georgia, serif", letterSpacing: "-0.03em" }}
           >
             Smart recovery, <br />
             <span className="text-[#30C3B1]">every step forward.</span>
-          </h1>
+          </h2>
           <p className="mb-10 max-w-[360px] text-[13px] leading-relaxed text-white/70">
             AI-driven motion sensing connects patients and practitioners for precise, personalized knee rehabilitation.
           </p>
 
-          {/* CTA */}
-          <Link
-            href="/login"
-            className="flex items-center gap-4 rounded-full bg-white py-0.5 pl-6 pr-0.5 text-sm font-semibold text-[#12606A] transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
-          >
+          {/* CTA - Now using your Button Component */}
+          <CTAButton onClick={handleGetStarted}>
             Get Started
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#30C3B1] text-white">
-              <FaArrowRightLong size={13} />
-            </span>
-          </Link>
+          </CTAButton>
 
           <p className="mt-4 text-[11px] text-white/50">
             New to KneeSense?{" "}

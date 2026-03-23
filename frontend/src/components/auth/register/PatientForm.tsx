@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Field, SelectField } from "@/components/ui/FormFields";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
+import HeroButton from "@/components/ui/HeroButton";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1));
@@ -14,7 +15,7 @@ export default function PatientForm() {
 
   return (
     <>
-      <h1 className="mb-1 text-2xl font-bold text-gray-900">Patient sign up</h1>
+      <h2 className="mb-1 text-2xl font-bold text-gray-900">Patient sign up</h2>
       <p className="mb-8 text-sm text-[#455858]">Fill in your details to get started.</p>
 
       <form className="flex flex-col gap-6">
@@ -52,13 +53,9 @@ export default function PatientForm() {
           </div>
         </div>
 
-        <button
-          type="submit"
-          className="w-full rounded-2xl py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
-          style={{ background: "linear-gradient(135deg, #12606A, #30C3B1)" }}
-        >
+        <HeroButton onClick={() => console.log('Clicked!')}>
           Create Account
-        </button>
+        </HeroButton>
       </form>
 
       <p className="mt-6 text-sm text-[#455858]">

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BsCheckCircleFill } from "react-icons/bs";
-import Button from "@/components/ui/Button";
+import { BsCheck2Circle, BsArrowRight } from "react-icons/bs";
+import PrimaryButton from "@/components/ui/PrimaryButton";
+import { LuMoveRight } from "react-icons/lu";
 
 interface SuccessStepProps {
   onRedirect: () => void;
@@ -21,35 +22,39 @@ export default function SuccessStep({ onRedirect }: SuccessStepProps) {
   }, [countdown, onRedirect]);
 
   return (
-    <div className="flex flex-col items-center gap-8 max-w-md text-center">
+    <div className="flex flex-col items-center gap-10 max-w-sm text-center animate-in fade-in zoom-in-95 duration-500">
+      
       {/* Success Icon */}
-      <div className="w-20 h-20 rounded-full bg-[#27AE60]/10 flex items-center justify-center">
-        <BsCheckCircleFill size={36} className="text-[#27AE60]" />
+      <div className="w-24 h-24 rounded-full bg-green-50 flex items-center justify-center border border-green-100 shadow-sm">
+        <BsCheck2Circle size={44} className="text-[#27AE60]" />
       </div>
 
-      <div>
-        <h2 className="text-xl font-bold mb-3">
-          Session processed successfully
+      {/* Message */}
+      <div className="space-y-3">
+        <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+          Session Processed Successfully
         </h2>
-        <p className="text-sm text-[#455858] leading-relaxed px-4">
-          Your recording has been analyzed. Your results are ready on the My Progress page.
+        <p className="text-xs text-[#455858] leading-relaxed px-6 font-medium">
+          Your recording has been analyzed and the data has been securely uploaded. 
+          Your updated metrics are now available on your progress dashboard.
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 w-full px-8">
-        <p className="text-xs text-[#455858]">
-          Redirecting you in <span className="text-[#1C2121] font-bold">{countdown}</span> second{countdown !== 1 ? "s" : ""}…
-        </p>
-        
-        <Button
+      {/* Redirect Logic */}
+      <div className="w-full px-6 space-y-4">
+        <PrimaryButton
           onClick={onRedirect}
           fullWidth
-          className="py-3"
-          bgColor="bg-[#27AE60]"
-          hoverColor="hover:bg-[#219150]"
+          color="#12606A"
+          className="py-3 gap-2"
         >
           Go to My Progress
-        </Button>
+          <LuMoveRight size={18}/>
+        </PrimaryButton>
+
+        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">
+          Redirecting in {countdown}s...
+        </p>
       </div>
     </div>
   );

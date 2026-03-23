@@ -1,5 +1,7 @@
-import { BsExclamationTriangle } from "react-icons/bs";
-import Button from "@/components/ui/Button";
+"use client";
+
+import { BsExclamationCircle } from "react-icons/bs";
+import PrimaryButton from "@/components/ui/PrimaryButton";
 
 interface ErrorStepProps {
   message: string;
@@ -8,31 +10,38 @@ interface ErrorStepProps {
 
 export default function ErrorStep({ message, onRetry }: ErrorStepProps) {
   return (
-    <div className="flex flex-col items-center gap-8 max-w-md text-center">
-      <div className="w-20 h-20 rounded-full bg-[#CE2E2E]/10 flex items-center justify-center">
-        <BsExclamationTriangle size={32} className="text-[#CE2E2E]" />
+    <div className="flex flex-col items-center gap-8 text-center py-12">
+      
+      {/* Simple Icon Circle */}
+      <div className="w-20 h-20 rounded-full bg-orange-50 flex items-center justify-center">
+        <BsExclamationCircle size={36} className="text-orange-500" />
       </div>
 
       <div>
-        <h2 className="text-xl font-bold text-[#455858] mb-3">Something went wrong</h2>
-        <p className="text-sm text-[#455858] leading-relaxed px-4">
-          {message || "An unexpected error occurred while processing your session. Please try again."}
+        <h2 className="text-xl font-bold text-[#1C2121]">Analysis interrupted</h2>
+        <p className="text-sm text-[#455858] mt-2 max-w-[280px] leading-relaxed mx-auto">
+          {message || "Something went wrong while processing your session. Please try again or contact support if the issue persists."}
         </p>
       </div>
 
-      <div className="w-full px-8">
-        <Button
+      <div className="flex flex-col gap-4 w-full px-8">
+        <PrimaryButton
           onClick={onRetry}
           fullWidth
-          variant="outline"
-          textColor="text-[#455858]"
-          borderColor="border-[#455858]"
-          hoverColor="hover:bg-[#E5E5E5]"
-          className="px-8" 
+          color="#12606A"
+          className="py-3"
         >
-          Try again
-        </Button>
+          Try Again
+        </PrimaryButton>
+        
+        {/* <button 
+          onClick={() => window.location.href = "mailto:support@kneesense.com"}
+          className="text-xs text-[#455858] hover:underline transition-all"
+        >
+          Contact Support
+        </button> */}
       </div>
+
     </div>
   );
 }

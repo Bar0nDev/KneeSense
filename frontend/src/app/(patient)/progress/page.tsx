@@ -1,131 +1,100 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+
 import PageHeader from "@/components/ui/PageHeader";
-import Button from "@/components/ui/Button";
+import PrimaryButton from "@/components/ui/PrimaryButton";
+
 import MetricCard from "@/components/patient/progress/MetricCard";
-import Card from "@/components/ui/Card";
 import ZoneMap from "@/components/patient/progress/ZoneMap";
 import SessionStatCard from "@/components/patient/progress/SessionStatCard";
 import AIInsightCard from "@/components/patient/progress/AiInsightCard";
 import MuscleSmoothnessCard from "@/components/patient/progress/MuscleSmoothnessCard";
 import BenchmarkComparisonCard from "@/components/patient/progress/BenchmarkComparisonCard";
 
-const mockInsight = {
-  status: "improving" as const,
-  summary: "Your knee flexion angle has improved by 6° since your last session...",
-};
-
-const mockSessionStats = {
-  kneeAngle: { value: "67°", benchmarkValue: "+-5° above elderly avg." },
-  forceEstimate: { value: "--", benchmarkValue: "-- N within normal range" },
-};
-
-const mockSession = {
-  videoSrc: "/assets/kneesense_mag_corrected_web.mp4",
-  medialPct: "41.7%",
-  centralPct: "33.4%",
-  lateralPct: "24.9%",
-};
-
-const mockProgress = {
-  since: "Feb 28, 2026",
-  nextSession: "Mar 21, 2026",
-};
-
-const mockMetrics = {
-  rehabConsistency: "85%",
-  angleBenchmarkGap: "+6°",
-  zoneBalanceScore: "↓13%",
-};
+import { useProgress } from "@/hooks/useProgress";
 
 export default function ProgressPage() {
   const router = useRouter();
+  const { metrics, sessionData, insights, pageMeta } = useProgress();
 
   return (
     <div className="space-y-4">
-
-      {/* Header */}
+      {/* 1. Header Section */}
       <PageHeader
         title="My Progress"
-        subtitle={`Since ${mockProgress.since} · Next Session: ${mockProgress.nextSession}`}
+        subtitle={`Since ${pageMeta.since} · Next Session: ${pageMeta.nextSession}`}
         action={
-          <Button
-            bgColor="bg-[#27AE60]"
-            hoverColor="hover:bg-[#219150]"
+          <PrimaryButton
+            color="#27AE60"
             onClick={() => router.push("/recording")}
           >
             Begin Session
-          </Button>
+          </PrimaryButton>
         }
       />
 
-      {/* Metric Row */}
+      {/* 2. Top Metric Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <MetricCard value={mockMetrics.rehabConsistency} label="Rehab Consistency" valueColor="border-t-[#12606A]"/>
-        <MetricCard value={mockMetrics.angleBenchmarkGap} label="Angle Benchmark Gap"  valueColor="border-t-[#12606A]" />
-        <MetricCard value={mockMetrics.zoneBalanceScore} label="Zone Balance Score"  valueColor="border-t-[#12606A]" />
+        {metrics.map((metric) => (
+          <MetricCard 
+            key={metric.type} 
+            type={metric.type as any} 
+            value={metric.value} 
+          />
+        ))}
       </div>
 
-      {/* Main Content Row */}
+      {/* 3. Main Dashboard Content */}
       <div className="flex flex-col lg:flex-row gap-4 items-stretch">
-
-        {/* Left Column */}
+        
+        {/* Left Column: Media & Primary Stats */}
         <div className="flex flex-col gap-4 flex-1 min-w-0">
-
-          {/* Session Metrics Label */}
+          
+          {/* Section Heading */}
           <div className="flex items-center gap-3">
-            <p className="text-lg font-bold text-gray-900">Session Metrics</p>
-            <span className="text-sm text-[#455858] bg-[#FDFDFD] border border-1-[#455858] px-3 py-0.5 rounded-full">
-              Feb 28, 2026
+            <h2 className="text-lg font-bold text-gray-900">Session Metrics</h2>
+            <span className="text-sm font-medium text-[#455858] bg-white border border-gray-200 px-3 py-0.5 rounded-full shadow-sm">
+              {sessionData.date}
             </span>
           </div>
 
-          {/* ZoneMap + Stat Cards */}
+          {/* Video Player & Vertical Stats */}
           <div className="flex flex-col lg:flex-row gap-4 items-stretch">
-
             <div className="w-full lg:w-90 lg:shrink-0">
-              <ZoneMap {...mockSession} />
+              <ZoneMap {...sessionData.video} />
             </div>
 
-            <div className="flex flex-row lg:flex-col gap-3 flex-1 lg:h-auto">
-              <Card className="flex-1 flex flex-col justify-center">
+            <div className="flex flex-row lg:flex-col gap-3 flex-1">
+              {sessionData.stats.map((stat) => (
                 <SessionStatCard
-                  label="Knee Angle"
-                  value={mockSessionStats.kneeAngle.value}
-                  benchmarkLabel="vs Benchmark"
-                  benchmarkValue={mockSessionStats.kneeAngle.benchmarkValue}
+                  key={stat.label}
+                  label={stat.label}
+                  value={stat.value}
+                  benchmarkValue={stat.benchmark}
                 />
-              </Card>
-              <Card className="flex-1 flex flex-col justify-center">
-                <SessionStatCard
-                  label="Force Estimate"
-                  value={mockSessionStats.forceEstimate.value}
-                  benchmarkLabel="vs Benchmark"
-                  benchmarkValue={mockSessionStats.forceEstimate.benchmarkValue}
-                />
-              </Card>
+              ))}
             </div>
-
           </div>
 
-          <Card className="w-full">
-            <BenchmarkComparisonCard />
-          </Card>
+          {/* Comparative Analysis Chart */}
+          <BenchmarkComparisonCard data={sessionData.benchmarkData} />
         </div>
 
-        {/* Right Column */}
+        {/* Right Column: AI & Smoothness Analysis */}
         <div className="flex flex-col gap-4 w-full lg:w-96 shrink-0">
-          <Card className="min-h-38">
-            <AIInsightCard status={mockInsight.status} summary={mockInsight.summary} />
-          </Card>
-          <Card className="flex-1">
-            <MuscleSmoothnessCard />
-          </Card>
+          <AIInsightCard 
+            status={insights.status} 
+            summary={insights.summary} 
+          />
+          
+          <MuscleSmoothnessCard 
+            data={sessionData.smoothnessData} 
+            benchmark={0.6} 
+          />
         </div>
 
       </div>
-
     </div>
   );
 }

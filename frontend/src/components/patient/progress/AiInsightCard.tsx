@@ -1,56 +1,62 @@
+"use client";
+
 import { BsStars } from "react-icons/bs";
-import { FaCaretUp } from "react-icons/fa";
-import { FaCaretDown } from "react-icons/fa";
-import { FaCaretRight } from "react-icons/fa";
+import { FaCaretUp, FaCaretDown, FaCaretRight } from "react-icons/fa";
+import Card from "@/components/ui/Card"; // Assuming this is your standard Card path
 
 type InsightStatus = "improving" | "stable" | "declining";
 
 interface AIInsightCardProps {
-  status?: InsightStatus;
-  summary?: string;
+  status: InsightStatus;
+  summary: string;
 }
 
-const STATUS_CONFIG: Record<InsightStatus, { label: string; classes: string; icon: React.ReactNode }> = {
+const STATUS_CONFIG: Record<InsightStatus, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   improving: {
     label: "Improving",
-    classes: "bg-[#779B7F]",
+    color: "text-[#27AE60]",
+    bg: "bg-[#27AE60]/10",
     icon: <FaCaretUp size={12} />,
   },
   stable: {
     label: "No Change",
-    classes: "bg-[#455858]",
+    color: "text-[#455858]",
+    bg: "bg-[#455858]/10",
     icon: <FaCaretRight size={12} />,
   },
   declining: {
     label: "Declining",
-    classes: "bg-[#995353]",
+    color: "text-[#EF4444]",
+    bg: "bg-[#EF4444]/10",
     icon: <FaCaretDown size={12} />,
   },
 };
 
-export default function AIInsightCard({
-  status = "improving",
-  summary = "Your knee flexion angle has improved by 6° since your last session, now reaching 67°. Zone distribution shows dominant medial loading at 41.7% — consider focusing on lateral activation during your next rehabilitation session to improve balance.",
-}: AIInsightCardProps) {
-  const { label, classes, icon } = STATUS_CONFIG[status];
+export default function AIInsightCard({ status, summary }: AIInsightCardProps) {
+  const { label, color, bg, icon } = STATUS_CONFIG[status];
 
   return (
-    <div className="flex flex-col gap-3">
+    <Card className="min-h-[152px]">
+      <div className="flex flex-col gap-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#12606A]/10">
+              <BsStars size={14} className="text-[#12606A]" />
+            </div>
+            <h2 className="text-sm font-bold text-gray-900">AI Insight</h2>
+          </div>
+          <span className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${bg} ${color}`}>
+            {icon}
+            {label}
+          </span>
+        </div>
 
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <p className="text-sm font-bold">AI Insight</p>
-        <span className={`ml-1 flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${classes} text-white`}>
-          {icon}
-          {label}
-        </span>
+        {/* Summary */}
+        <p className="text-sm leading-relaxed text-[#455858]">
+          {summary}
+        </p>
       </div>
-
-      {/* Summary */}
-      <p className="text-sm leading-relaxed">
-        {summary}
-      </p>
-
-    </div>
+    </Card>
   );
 }

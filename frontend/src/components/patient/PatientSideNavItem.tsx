@@ -24,7 +24,7 @@ export default function PatientSideNavItem({
     <Link
       href={href}
       onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-2 rounded-xs text-sm font-medium transition-colors duration-150 ${
+      className={`flex items-center gap-3 px-4 py-2 rounded-sm text-sm font-medium transition-colors duration-150 ${
         isActive
           ? "bg-[#C8E6E6] text-[#12606A] border-l-4 border-[#12606A]"
           : "text-[#4A5565] hover:bg-[#C8E6E6]/40 hover:text-[#455858]"

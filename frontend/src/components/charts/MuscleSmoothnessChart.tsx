@@ -1,9 +1,9 @@
 "use client";
 
 import {
-  ComposedChart,
-  Line,
-  Area,
+  BarChart,
+  Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -23,20 +23,10 @@ interface MuscleSmoothnessChartProps {
 }
 
 export default function MuscleSmoothnessChart({ data, benchmark }: MuscleSmoothnessChartProps) {
-  // above: always between benchmark and value (clamped — zero height when below benchmark)
-  // below: always between value and benchmark (clamped — zero height when above benchmark)
-  // Both are continuous so no segment breaks
-  const chartData = data.map((d) => ({
-    t: d.t,
-    value: d.value,
-    above: Math.max(d.value, benchmark),   // top of teal fill
-    below: Math.min(d.value, benchmark),   // bottom of red fill
-  }));
-
   return (
     <ResponsiveContainer width="100%" height={280}>
-      <ComposedChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="4 4" stroke="#E5E7EB" />
+      <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }} barCategoryGap="30%">
+        <CartesianGrid strokeDasharray="4 4" stroke="#E5E7EB" vertical={false} />
 
         <XAxis
           dataKey="t"
@@ -46,18 +36,16 @@ export default function MuscleSmoothnessChart({ data, benchmark }: MuscleSmoothn
         />
 
         <YAxis
-          domain={[0, 0.9]}
-          ticks={[0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]}
+          domain={[0, 1]}
+          ticks={[0, 0.2, 0.4, 0.6, 0.8, 1.0]}
+          tickFormatter={(v) => v.toFixed(1)}
           tick={{ fontSize: 11, fill: "#9CA3AF" }}
           axisLine={false}
           tickLine={false}
         />
 
         <Tooltip
-          formatter={(value) => {
-            const num = value as number;
-            return [`${num.toFixed(2)}`, "Smoothness"];
-          }}
+          formatter={(value) => [`${(value as number).toFixed(2)}`, "Smoothness"]}
           contentStyle={{
             borderRadius: "8px",
             border: "none",
@@ -66,48 +54,23 @@ export default function MuscleSmoothnessChart({ data, benchmark }: MuscleSmoothn
           }}
         />
 
-        {/* Teal fill: from benchmark up to value (baseValue = benchmark, dataKey = above) */}
-        <Area
-          type="monotone"
-          dataKey="above"
-          stroke="none"
-          fill="#12606A"
-          fillOpacity={0.25}
-          baseValue={benchmark}
-          isAnimationActive={false}
-          legendType="none"
-        />
-
-        {/* Red fill: from value up to benchmark (baseValue = benchmark, dataKey = below) */}
-        <Area
-          type="monotone"
-          dataKey="below"
-          stroke="none"
-          fill="#EF4444"
-          fillOpacity={0.25}
-          baseValue={benchmark}
-          isAnimationActive={false}
-          legendType="none"
-        />
-
-        {/* Benchmark reference line */}
         <ReferenceLine
           y={benchmark}
           stroke="#9CA3AF"
-          strokeDasharray="4 4"
-          strokeWidth={1}
+          strokeDasharray="5 4"
+          strokeWidth={1.5}
         />
 
-        {/* Main line — drawn on top of fills */}
-        <Line
-          type="monotone"
-          dataKey="value"
-          stroke="#12606A"
-          strokeWidth={2}
-          dot={{ r: 4, fill: "#fff", stroke: "#12606A", strokeWidth: 2 }}
-          activeDot={{ r: 6, fill: "#12606A" }}
-        />
-      </ComposedChart>
+        <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+          {data.map((entry, index) => (
+            <Cell
+              key={`cell-${index}`}
+              fill={entry.value >= benchmark ? "#12606A" : "#EF4444"}
+              fillOpacity={entry.value >= benchmark ? 0.85 : 0.75}
+            />
+          ))}
+        </Bar>
+      </BarChart>
     </ResponsiveContainer>
   );
 }

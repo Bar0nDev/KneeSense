@@ -12,7 +12,7 @@ interface RolePickerProps {
 export default function RolePicker({ onSelect }: RolePickerProps) {
   return (
     <>
-      <h1 className="mb-1 text-2xl font-bold">Create your account</h1>
+      <h2 className="mb-1 text-2xl font-bold">Create your account</h2>
       <p className="mb-8 text-sm text-[#455858]">Who are you signing up as?</p>
 
       <div className="flex flex-col gap-3">

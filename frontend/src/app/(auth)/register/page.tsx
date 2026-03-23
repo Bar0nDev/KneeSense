@@ -34,9 +34,9 @@ export default function RegisterPage() {
 
           <div className="flex items-center gap-0.5">
             <GiKneeCap size={22} color="#12606A" />
-            <span className="text-[15px] font-semibold text-[#12606A]" style={{ fontFamily: "Georgia, serif" }}>
+            <h1 className="text-[15px] font-semibold text-[#12606A]">
               KneeSense
-            </span>
+            </h1>
           </div>
         </div>
 

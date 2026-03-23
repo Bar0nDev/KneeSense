@@ -1,35 +1,42 @@
-import BenchmarkComparisonChart, { BenchmarkDataPoint } from "@/components/charts/BenchmarkComparisonChart";
+"use client";
 
-const mockData: BenchmarkDataPoint[] = [
-  { label: "Force",      you: 2,  benchmark: 3  },
-  { label: "Knee Angle", you: 78, benchmark: 72 },
-  { label: "Central",    you: 43, benchmark: 40 },
-  { label: "Medial",     you: 33, benchmark: 32 },
-  { label: "Lateral",    you: 19, benchmark: 24 },
-];
+import Card from "@/components/ui/Card";
+import BenchmarkComparisonChart, { 
+  BenchmarkDataPoint 
+} from "@/components/charts/BenchmarkComparisonChart";
 
-export default function BenchmarkComparisonCard() {
+interface BenchmarkComparisonCardProps {
+  data: BenchmarkDataPoint[];
+}
+
+export default function BenchmarkComparisonCard({ data }: BenchmarkComparisonCardProps) {
   return (
-    <div className="flex flex-col gap-4">
-
-      {/* Header + Legend */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <p className="text-base font-bold">You vs. Elderly Benchmark</p>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm bg-[#12606A]" />
-            <p className="text-xs text-[#455858]">You</p>
+    <Card className="w-full">
+      <div className="flex flex-col gap-6">
+        {/* Header + Legend */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="text-sm font-bold text-gray-900">Performance Comparison</h2>
+            <p className="text-xs text-[#9CA3AF]">You vs. Elderly Benchmark</p>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm bg-[#6BAF92]" />
-            <p className="text-xs text-[#455858]">Benchmark</p>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-[#12606A]" />
+              <p className="text-[10px] font-medium text-[#455858] uppercase tracking-wider">You</p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-[#6BAF92]" />
+              <p className="text-[10px] font-medium text-[#455858] uppercase tracking-wider">Benchmark</p>
+            </div>
           </div>
         </div>
+
+        {/* Chart Component */}
+        <div className="w-full">
+          <BenchmarkComparisonChart data={data} />
+        </div>
       </div>
-
-      {/* Chart */}
-      <BenchmarkComparisonChart data={mockData} />
-
-    </div>
+    </Card>
   );
 }

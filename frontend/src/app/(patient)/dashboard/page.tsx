@@ -1,75 +1,48 @@
+"use client";
+
+import { useDashboardData } from "@/hooks/useDashboardData";
 import WelcomeCard from "@/components/patient/dashboard/WelcomeCard";
 import PractitionerCard from "@/components/patient/dashboard/PractitionerCard";
 import CalendarCard from "@/components/patient/dashboard/CalendarCard";
 import KneeAngleCard from "@/components/patient/dashboard/KneeAngleCard";
 import PatientTaskCard from "@/components/patient/dashboard/PatientTaskCard";
-import Card from "@/components/ui/Card";
-
-// Mock data — replace with real API/auth data later
-const mockPatient = {
-  name: "Kevin",
-  lastSession: "Feb 28, 2026",
-};
-
-const mockPractitioner = {
-  name: "Dr. Jane Doe, MD",
-  role: "Physician",
-  initials: "JD",
-  image: null,
-};
-
-const mockSession = {
-  title: "Mar 21, 2026",
-  subtitle: "TODAY",
-};
-
-const mockRehab = {
-  title: "4-step Anti-frailty",
-  subtitle: "Complete your daily exercises",
-};
 
 export default function DashboardPage() {
+  const { patient, practitioner, tasks, isLoading } = useDashboardData();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-pulse text-[#12606A] font-medium uppercase tracking-widest text-xs">
+          Loading Dashboard...
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col lg:flex-row gap-6 items-stretch pb-10">
+      
+      {/* Main Insights */}
+      <div className="flex flex-col gap-6 flex-1 min-w-0">
+        <WelcomeCard
+          name={patient.name}
+          lastSession={patient.lastSession}
+        />
+        
+        <KneeAngleCard />
 
-      {/* Top Row — Welcome + Practitioner */}
-      <div className="flex flex-col lg:flex-row gap-4 items-stretch">
-        <div className="flex-1 min-w-0">
-          <WelcomeCard
-            name={mockPatient.name}
-            lastSession={mockPatient.lastSession}
-            className="h-full"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <PatientTaskCard type="session" {...tasks.session} />
+          <PatientTaskCard type="rehab" {...tasks.rehab} />
         </div>
-        <Card className="w-full lg:w-64 shrink-0">
-          <PractitionerCard {...mockPractitioner} />
-        </Card>
       </div>
 
-      {/* Bottom Row — Charts + Calendar */}
-      <div className="flex flex-col lg:flex-row gap-4 items-stretch">
-
-        {/* Left Column — Knee Angle + Task Cards */}
-        <div className="flex flex-col gap-4 flex-1 min-w-0">
-          <Card className="w-full">
-            <KneeAngleCard />
-          </Card>
-          <div className="flex flex-row gap-4">
-            <Card className="flex-1">
-              <PatientTaskCard type="session" {...mockSession} />
-            </Card>
-            <Card className="flex-1">
-              <PatientTaskCard type="rehab" {...mockRehab} />
-            </Card>
-          </div>
-        </div>
-
-        {/* Right Column — Calendar */}
-        <Card className="w-full lg:w-72 shrink-0">
-          <CalendarCard />
-        </Card>
-
-      </div>
+      {/* Clinical Context */}
+      <aside className="flex flex-col gap-6 w-full lg:w-70 shrink-0">
+        <PractitionerCard {...practitioner} />
+        <CalendarCard />
+      </aside>
 
     </div>
   );

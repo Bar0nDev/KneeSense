@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { IoChevronBackOutline, IoChevronForwardOutline } from "react-icons/io5";
-
+import { useCalendar } from "@/hooks/useCalendar";
 
 const DAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -16,102 +15,80 @@ interface DashboardCalendarProps {
 }
 
 export default function DashboardCalendar({ highlightedDates }: DashboardCalendarProps) {
-  const today = new Date();
-  const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-  const [selectedDate, setSelectedDate] = useState<string>(String(today.getDate()));
+  const { 
+    year, 
+    month, 
+    calendarGrid, 
+    selectedDay, 
+    setSelectedDay, 
+    navigateMonth, 
+    isToday 
+  } = useCalendar();
 
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
   const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
 
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const daysInPrevMonth = new Date(year, month, 0).getDate();
-
-  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
-  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
-
-  const isToday = (day: string) =>
-    today.getFullYear() === year &&
-    today.getMonth() === month &&
-    today.getDate() === Number(day);
-
-  const isHighlighted = (day: string) =>
-    highlightedDates[monthKey]?.includes(day);
-
-  // Build calendar grid
-  const cells: { day: string; type: "prev" | "current" | "next" }[] = [];
-
-  // Previous month trailing days
-  for (let i = firstDay - 1; i >= 0; i--) {
-    cells.push({ day: String(daysInPrevMonth - i), type: "prev" });
-  }
-
-  // Current month days
-  for (let d = 1; d <= daysInMonth; d++) {
-    cells.push({ day: String(d), type: "current" });
-  }
-
-  // Next month leading days
-  const remaining = 42 - cells.length;
-  for (let d = 1; d <= remaining; d++) {
-    cells.push({ day: String(d), type: "next" });
-  }
-
   return (
-    <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <button
-            onClick={prevMonth}
-            className="p-1 rounded-md hover:bg-[#0e4f57]/10 text-[#12606A] transition-colors cursor-pointer"
-        >
+    <div className="w-full">
+      {/* Header: Month & Navigation */}
+      <div className="flex items-center justify-between mb-3 px-1">
+        <h2 className="text-[15px] font-bold text-[#1C2121]">
+          {MONTHS[month]} <span className="text-[#455858]/60 font-medium">{year}</span>
+        </h2>
+        
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={() => navigateMonth("prev")} 
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-[#455858]"
+          >
             <IoChevronBackOutline size={16} />
-        </button>
-        <span className="text-sm font-bold ">
-          {MONTHS[month]} {year}
-        </span>
-        <button
-            onClick={nextMonth}
-            className="p-1 rounded-md hover:bg-[#0e4f57]/10 text-[#12606A] transition-colors cursor-pointer"
-        >
+          </button>
+          <button 
+            onClick={() => navigateMonth("next")} 
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-[#455858]"
+          >
             <IoChevronForwardOutline size={16} />
-        </button>
-
+          </button>
+        </div>
       </div>
 
       {/* Day Labels */}
       <div className="grid grid-cols-7 mb-1">
-        {DAYS.map((d, i) => (
-          <div key={i} className="text-center text-xs font-semibold text-gray-400 py-1">
-            {d}
+        {DAYS.map((day, i) => (
+          <div key={i} className="text-center text-[10px] font-bold text-[#455858]/40 uppercase">
+            {day}
           </div>
         ))}
       </div>
 
-      {/* Date Grid */}
-      <div className="grid grid-cols-7">
-        {cells.map((cell, i) => {
+      {/* Calendar Grid */}
+      <div className="grid grid-cols-7 gap-y-1">
+        {calendarGrid.map((cell, i) => {
           const isCurrent = cell.type === "current";
-          const todayCell = isCurrent && isToday(cell.day);
-          const highlighted = isCurrent && isHighlighted(cell.day);
-          const selected = isCurrent && selectedDate === cell.day;
+          const highlighted = isCurrent && highlightedDates[monthKey]?.includes(cell.day);
+          const active = isCurrent && selectedDay === cell.day;
+          const currentDay = isCurrent && isToday(cell.day);
 
           return (
-            <div
+            <button
               key={i}
-              onClick={() => isCurrent && setSelectedDate(cell.day)}
+              disabled={!isCurrent}
+              onClick={() => isCurrent && setSelectedDay(cell.day)}
               className={`
-                flex items-center justify-center text-xs rounded-full w-7 h-7 mx-auto my-1 transition-colors
-                ${isCurrent ? "cursor-pointer" : "cursor-default"}
-                ${!isCurrent ? "text-gray-300" : "text-gray-700 hover:bg-gray-100"}
-                ${todayCell ? "bg-[#12606A] text-white hover:bg-[#0e4f57] font-bold" : ""}
-                ${highlighted && !todayCell ? "border border-[#30C3B1] text-[#12606A] font-semibold" : ""}
-                ${selected && !todayCell ? "bg-[#E6F4F5] text-[#12606A] font-semibold" : ""}
+                relative flex items-center justify-center text-[11px] font-semibold rounded-full w-8 h-8 mx-auto
+                transition-all duration-200
+                ${!isCurrent ? "text-gray-200" : "text-[#455858] hover:bg-[#F4F7F7]"}
+                ${currentDay ? "bg-[#12606A] !text-white shadow-md shadow-[#12606A]/20" : ""}
+                ${active && !currentDay ? "bg-[#30C3B1]/10 text-[#12606A] ring-1 ring-[#30C3B1]/30" : ""}
+                ${highlighted && !currentDay && !active ? "text-[#12606A]" : ""}
               `}
             >
               {cell.day}
-            </div>
+              
+              {/* Highlight Indicator (Little dot below number) */}
+              {highlighted && !currentDay && (
+                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-[#30C3B1]" />
+              )}
+            </button>
           );
         })}
       </div>

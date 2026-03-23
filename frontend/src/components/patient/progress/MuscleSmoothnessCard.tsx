@@ -1,42 +1,47 @@
-import MuscleSmoothnessChart, { MuscleSmoothnessDataPoint } from "@/components/charts/MuscleSmoothnessChart";
+"use client";
 
-const mockData: MuscleSmoothnessDataPoint[] = [
-  { t: 0, value: 0.1 },
-  { t: 1, value: 0.46 },
-  { t: 2, value: 0.74 },
-  { t: 3, value: 0.79 },
-  { t: 4, value: 0.85 },
-  { t: 5, value: 0.56 },
-  { t: 6, value: 0.42 },
-  { t: 7, value: 0.46 },
-  { t: 8, value: 0.77 },
-  { t: 9, value: 0.25 },
-];
+import Card from "@/components/ui/Card";
+import MuscleSmoothnessChart, { 
+  MuscleSmoothnessDataPoint 
+} from "@/components/charts/MuscleSmoothnessChart";
 
-const BENCHMARK = 0.6;
+interface MuscleSmoothnessCardProps {
+  data: MuscleSmoothnessDataPoint[];
+  benchmark?: number;
+}
 
-export default function MuscleSmoothnessCard() {
+export default function MuscleSmoothnessCard({ 
+  data, 
+  benchmark = 0.6 
+}: MuscleSmoothnessCardProps) {
   return (
-    <div className="flex flex-col gap-4">
-
-      {/* Header */}
-      <p className="text-base font-bold">Muscle Smoothness Index</p>
+    <Card className="flex-1 flex flex-col gap-4">
+      {/* Header Section */}
+      <div className="flex flex-col gap-1">
+        <h2 className="text-sm font-bold text-gray-900">Muscle Smoothness Index</h2>
+        <p className="text-xs text-[#9CA3AF]">Real-time force distribution analysis</p>
+      </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-3 rounded-sm bg-[#12606A] opacity-40" />
-          <p className="text-xs text-[#455858]">Benchmark force</p>
+      <div className="flex items-center gap-5">
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-sm bg-[#12606A]" />
+          <p className="text-[10px] font-bold text-[#455858] uppercase tracking-wider">
+            Benchmark Force
+          </p>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-3 rounded-sm bg-red-300 opacity-60" />
-          <p className="text-xs text-[#455858]">Underperforming</p>
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-sm bg-[#EF4444]" />
+          <p className="text-[10px] font-bold text-[#455858] uppercase tracking-wider">
+            Underperforming
+          </p>
         </div>
       </div>
 
-      {/* Chart */}
-      <MuscleSmoothnessChart data={mockData} benchmark={BENCHMARK} />
-
-    </div>
+      {/* Chart Container */}
+      <div className="w-full">
+        <MuscleSmoothnessChart data={data} benchmark={benchmark} />
+      </div>
+    </Card>
   );
 }

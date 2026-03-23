@@ -5,6 +5,7 @@ import { useState } from "react";
 import { GiKneeCap } from "react-icons/gi";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { Field } from "@/components/ui/FormFields";
+import HeroButton from "@/components/ui/HeroButton";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,16 +19,16 @@ export default function LoginPage() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-0.5">
           <GiKneeCap size={26} color="#12606A" />
-          <span className="text-[17px] font-semibold tracking-tight text-[#12606A]" style={{ fontFamily: "Georgia, serif" }}>
+          <h1 className="text-[17px] font-semibold tracking-tight text-[#12606A]">
             KneeSense
-          </span>
+          </h1>
         </Link>
 
         {/* Form area */}
         <div className="mx-auto w-full max-w-sm">
-          <h1 className="mb-1 text-2xl font-bold" style={{ fontFamily: "Georgia, serif", letterSpacing: "-0.02em" }}>
+          <h2 className="mb-1 text-2xl font-bold">
             Welcome back
-          </h1>
+          </h2>
           <p className="mb-8 text-sm text-[#455858]">
             Enter your credentials to access your account.
           </p>
@@ -59,13 +60,9 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="mt-2 w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
-              style={{ background: "linear-gradient(135deg, #12606A, #30C3B1)" }}
-            >
+            <HeroButton type="submit">
               Login
-            </button>
+            </HeroButton>
           </form>
 
           <p className="mt-6 text-center text-xs text-[#455858]">
@@ -97,7 +94,6 @@ export default function LoginPage() {
           </p>
           <h2
             className="mb-4 max-w-xs text-4xl font-bold leading-tight text-white"
-            style={{ fontFamily: "Georgia, serif", letterSpacing: "-0.03em" }}
           >
             Smart recovery, <br />
             <span className="text-[#30C3B1]">every step forward.</span>

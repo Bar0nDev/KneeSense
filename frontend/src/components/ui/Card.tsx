@@ -32,7 +32,7 @@ export default function Card({
   return (
     <div
       className={`
-        bg-white rounded-2xl
+        bg-white rounded-3xl
         ${paddingMap[padding]}
         ${shadowMap[shadow]}
         ${border ? "border border-gray-200" : ""}
