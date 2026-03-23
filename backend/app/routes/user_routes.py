@@ -235,11 +235,23 @@ def get_user(user_id):
         schema:
           $ref: '#/definitions/Error'
     """
+    try:
+        doc_ref = fs_db.collection("user").document(str(user_id))
+        doc = doc_ref.get()
+
+        if doc.exists:
+            user_data = doc.to_dict()
+            user_data['id'] = doc.id
+            return jsonify(user_data), 200
+            
+    except Exception as e:
+        print(f"Cloud fetch failed, checking local: {e}")
+
     user = db.session.get(User, user_id)
     if not user:
-        return jsonify({"error": "User not found"}), 404
+        return jsonify({"error": "User not found in Cloud or Local DB"}), 404
+        
     return jsonify(_serialize_user(user))
-
 
 # =========================
 # UPDATE USER
