@@ -6,18 +6,13 @@ import PractitionerCard from "@/components/patient/dashboard/PractitionerCard";
 import CalendarCard from "@/components/patient/dashboard/CalendarCard";
 import KneeAngleCard from "@/components/patient/dashboard/KneeAngleCard";
 import PatientTaskCard from "@/components/patient/dashboard/PatientTaskCard";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function DashboardPage() {
   const { patient, practitioner, tasks, isLoading } = useDashboardData();
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-pulse text-[#12606A] font-medium uppercase tracking-widest text-xs">
-          Loading Dashboard...
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (

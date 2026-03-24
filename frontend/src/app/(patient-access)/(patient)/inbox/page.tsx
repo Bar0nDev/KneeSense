@@ -64,11 +64,7 @@ export default function InboxPage() {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden min-h-[400px] flex flex-col">
         <table className="w-full table-fixed">
           <colgroup>
-            <col className="w-10" />       {/* Unread dot */}
-            <col className="w-[22%]" />    {/* Sender */}
-            <col />                         {/* Preview — takes remaining space */}
-            <col className="w-24" />       {/* Timestamp */}
-            <col className="w-20" />       {/* PrimaryButton */}
+            <col className="w-10" /><col className="w-[22%]" /><col /><col className="w-24" /><col className="w-20" />
           </colgroup>
 
           <thead>

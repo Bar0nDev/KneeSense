@@ -1,9 +1,9 @@
-"use client"; // Required for useRouter and onClick handlers
+"use client";
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { GiKneeCap } from "react-icons/gi";
-import CTAButton from "@/components/ui/CTAButton"; // Adjust path as needed
+import CTAButton from "@/components/ui/CTAButton";
 
 export default function Home() {
   const router = useRouter();
@@ -38,16 +38,16 @@ export default function Home() {
       <div className="relative z-10 flex h-screen w-full flex-col items-center justify-end pb-16">
         <div className="flex flex-col items-center px-6 text-center">
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/70">
-            Intelligent Knee Rehabilitation
+            The Future of Visuotactile Knee Rehabilitation
           </p>
           <h2
             className="mb-4 max-w-lg text-[2.6rem] font-bold leading-[1.15] text-white"
           >
-            Smart recovery, <br />
-            <span className="text-[#30C3B1]">every step forward.</span>
+            <span className="text-[#30C3B1]">Visuotactile Sensing</span> <br />
+            for High-Resolution Knee Monitoring. 
           </h2>
           <p className="mb-10 max-w-[360px] text-[13px] leading-relaxed text-white/70">
-            AI-driven motion sensing connects patients and practitioners for precise, personalized knee rehabilitation.
+            KneeSense bridges the gap between laboratory motion capture and home recovery. 
           </p>
 
           {/* CTA - Now using your Button Component */}
