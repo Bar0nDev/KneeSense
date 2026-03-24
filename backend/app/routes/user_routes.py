@@ -285,7 +285,7 @@ def get_user(user_id):
 
     user = db.session.get(User, user_id)
     if not user:
-        return jsonify({"error": "User not found in Cloud or Local DB"}), 404
+        return jsonify({"error": "User not found."}), 404
         
     return jsonify(_serialize_user(user))
 

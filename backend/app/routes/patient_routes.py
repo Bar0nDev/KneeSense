@@ -1,11 +1,11 @@
 from flask import Blueprint, request, jsonify
 from datetime import date
-
+from app.database.firebase import firestore_repo as fsdb
 from app.database.db import db
-from app.database.models import Patient
+from app.database.models import Patient, Practitioner
 
 patient_bp = Blueprint("patients", __name__)
-
+fs_db = fsdb.get_fs_db()
 
 # =========================
 # GET ALL PATIENTS
@@ -32,8 +32,28 @@ def get_all_patients():
                     $ref: '#/definitions/Patient'
     """
     include_inactive = request.args.get("include_inactive", "false").lower() == "true"
-    query = Patient.query if include_inactive else Patient.query.filter_by(is_active=True)
-    return jsonify([_serialize_patient(p) for p in query.all()])
+    
+    try:
+        docs = fs_db.collection("patients").stream()
+        patients_list = []
+
+        for doc in docs:
+            patient_data = doc.to_dict()
+            patient_data['id'] = doc.id 
+            is_active = patient_data.get("is_active", True)
+            if not include_inactive and not is_active:
+                continue
+
+            patients_list.append(patient_data)
+
+        return jsonify(patients_list), 200
+        
+    except Exception as e:
+        query = Patient.query if include_inactive else Patient.query.filter_by(is_active=True)
+        return jsonify([_serialize_patient(p) for p in query.all()])
+    
+    
+    
 
 
 # =========================
@@ -61,9 +81,21 @@ def get_patient(patient_id):
             schema:
                 $ref: '#/definitions/Error'
     """
+    try:
+        doc_ref = fs_db.collection("patients").document(str(patient_id))
+        doc = doc_ref.get()
+
+        if doc.exists:
+            patient_data = doc.to_dict()
+            patient_data['id'] = doc.id 
+            return jsonify(patient_data), 200
+        
+    except Exception as e:
+        print(f"Error fetching from Cloud: {e}")
+    
     patient = db.session.get(Patient, patient_id)
     if not patient:
-        return jsonify({"error": "Patient not found"}), 404
+        return jsonify({"error": "Patient not found."}), 404
     return jsonify(_serialize_patient(patient))
 
 
@@ -93,10 +125,24 @@ def get_patient_by_user(user_id):
             schema:
                 $ref: '#/definitions/Error'
     """
+    try:
+        pt_ref = fs_db.collection("patients")
+        query = pt_ref.where("user_id", "==", user_id).limit(1).get()
+
+        if query:
+            doc = query[0]
+            patient_data = doc.to_dict()
+            patient_data['id'] = doc.id 
+            return jsonify(patient_data), 200
+        
+    except Exception as e:
+        print(f"Error fetching from Cloud: {e}")
+    
     patient = Patient.query.filter_by(user_id=user_id).first()
-    if not patient:
-        return jsonify({"error": "No patient profile found for this user"}), 404
-    return jsonify(_serialize_patient(patient))
+    if patient:
+        return jsonify(_serialize_patient(patient))
+    
+    return jsonify({"error": "No patient profile found for this user"}), 404
 
 
 # =========================
@@ -151,8 +197,8 @@ def create_patient():
                 $ref: '#/definitions/Error'
     """
     data = request.json
-
     name = data.get("name")
+
     if not name:
         return jsonify({"error": "name is required"}), 400
 
@@ -175,6 +221,11 @@ def create_patient():
     )
     db.session.add(patient)
     db.session.commit()
+
+    try:
+        fsdb.fsdb_patient(patient)
+    except Exception as e:
+        print(f"Error creating patient profile: {e}")
 
     return jsonify({"message": "Patient created", "patient_id": patient.id}), 201
 
@@ -231,33 +282,39 @@ def update_patient(patient_id):
             schema:
                 $ref: '#/definitions/Error'
     """
+    data = request.json
     patient = db.session.get(Patient, patient_id)
+    doc_ref = fs_db.collection("patients").document(str(patient_id))
+
     if not patient:
         return jsonify({"error": "Patient not found"}), 404
+    
+    allowed_fields = ["name", "sex", "height_cm", "weight_kg", "notes", "practitioner_id", "is_active"]
+    update_fields = {k: v for k, v in data.items() if k in allowed_fields}
 
-    data = request.json
-
-    if "name" in data:
-        patient.name = data["name"]
     if "birthday" in data and data["birthday"]:
         try:
             patient.birthday = date.fromisoformat(data["birthday"])
+            update_fields["birthday"] = data["birthday"] 
         except ValueError:
             return jsonify({"error": "birthday must be YYYY-MM-DD"}), 400
-    if "sex" in data:
-        patient.sex = data["sex"]
-    if "height_cm" in data:
-        patient.height_cm = data["height_cm"]
-    if "weight_kg" in data:
-        patient.weight_kg = data["weight_kg"]
-    if "notes" in data:
-        patient.notes = data["notes"]
-    if "practitioner_id" in data:
-        patient.practitioner_id = data["practitioner_id"]
-    if "is_active" in data:
-        patient.is_active = data["is_active"]
 
-    db.session.commit()
+    if not update_fields and "birthday" not in data:
+        return jsonify({"message": "No changes detected"}), 200
+
+    try:
+        for key, value in update_fields.items():
+            if key != "birthday":
+                setattr(patient, key, value)
+        
+        db.session.commit()
+        doc_ref.set(update_fields, merge=True)
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Update failed: {e}")
+        return jsonify({"error": "Update failed", "details": str(e)}), 500
+    
     return jsonify({"message": "Patient updated", "patient": _serialize_patient(patient)})
 
 
@@ -311,10 +368,25 @@ def assign_practitioner(patient_id):
     data = request.json
     practitioner_id = data.get("practitioner_id")
     if not practitioner_id:
-        return jsonify({"error": "practitioner_id is required"}), 400
+        return jsonify({"error": "Practitioner_id is required"}), 400
+    
+    # Verify practitioner exists
+    practitioner = db.session.get(Practitioner, practitioner_id)
+    if not practitioner:
+        return jsonify({"error": "Practitioner does not exist"}), 404
+    
+    try:
+        patient.practitioner_id = practitioner_id
+        db.session.commit()
 
-    patient.practitioner_id = practitioner_id
-    db.session.commit()
+        doc_ref = fs_db.collection("patients").document(str(patient_id))
+        doc_ref.set({"practitioner_id": practitioner_id}, merge=True)
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Assignment failed: {e}")
+        return jsonify({"error": "Failed to assign practitioner", "details": str(e)}), 500
+    
     return jsonify({"message": "Practitioner assigned", "patient": _serialize_patient(patient)})
 
 
@@ -350,9 +422,17 @@ def delete_patient(patient_id):
     patient = db.session.get(Patient, patient_id)
     if not patient:
         return jsonify({"error": "Patient not found"}), 404
+    
+    try:
+        patient.is_active = False
+        db.session.commit()
+        doc_ref = fs_db.collection("patients").document(str(patient_id))
+        doc_ref.update({"is_active": False})
 
-    patient.is_active = False
-    db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to deactivate patient", "details": str(e)}), 500
+
     return jsonify({"message": "Patient deactivated"})
 
 
@@ -388,9 +468,16 @@ def purge_patient(patient_id):
     patient = db.session.get(Patient, patient_id)
     if not patient:
         return jsonify({"error": "Patient not found"}), 404
+    try:
+        db.session.delete(patient)
+        db.session.commit()
+        doc_ref = fs_db.collection("patients").document(str(patient_id))
+        doc_ref.delete()
 
-    db.session.delete(patient)
-    db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to permanently delete patient", "details": str(e)}), 500
+    
     return jsonify({"message": "Patient permanently deleted"})
 
 
