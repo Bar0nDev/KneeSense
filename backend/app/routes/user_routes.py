@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from app.database.firebase.firestore_repo import create_fsdb_user, get_fs_db
+from app.database.firebase.firestore_repo import create_fsdb_user, get_fs_db, delete_fsdb_user
 from app.database.db import db
 from app.database.models import User, Practitioner, Patient
 
@@ -155,7 +155,41 @@ def login():
     password = data.get("password")
 
     user = User.query.filter_by(username=username).first()
-    if not user or not check_password_hash(user.password_hash, password):
+    if not user:
+        try:
+            users_ref = fs_db.collection("user")
+            query = users_ref.where("username", "==", username).limit(1).stream()
+            
+            fsdb_user_doc = None
+            for doc in query:
+                fsdb_user_doc = doc
+                break
+
+            if fsdb_user_doc:
+                user_data = fsdb_user_doc.to_dict()
+                if check_password_hash(user_data.get("password_hash", ""), password):
+                    #sync from cloud to local
+                    user = User(
+                        id=int(fsdb_user_doc.id),
+                        name=user_data.get("name"),
+                        username=user_data.get("username"),
+                        email=user_data.get("email"),
+                        password_hash=user_data.get("password_hash"),
+                        role=user_data.get("role", "practitioner")
+                    )
+                    db.session.add(user)
+                    db.session.commit()
+                    print(f"User {username} recovered from Cloud to Local DB.") 
+                else:
+                    return jsonify({"error": "Invalid credentials"}), 401
+            else:
+                return jsonify({"error": "User not found"}), 401
+
+        except Exception as e:
+            print(f"Cloud Login Check Failed: {e}")
+            return jsonify({"error": "Authentication service error"}), 500
+    
+    elif not check_password_hash(user.password_hash, password):
         return jsonify({"error": "Invalid credentials"}), 401
 
     profile_id = None
@@ -376,12 +410,29 @@ def delete_user(user_id):
         schema:
           $ref: '#/definitions/Error'
     """
+    cloud_deleted = False
+    try:
+        cloud_deleted = delete_fsdb_user(user_id)
+    except Exception:
+        pass
+    # try:
+    #     doc_ref = fs_db.collection("user").document(str(user_id))
+    #     if doc_ref.get().exists:
+    #         doc_ref.delete()
+    #         cloud_deleted = True
+    #         print(f"User {user_id} deleted from Firestore.")
+    # except Exception as e:
+    #     print(f"Cloud Delete Failed: {e}")
+    
     user = db.session.get(User, user_id)
-    if not user:
+    local_deleted = False
+
+    if not cloud_deleted and not local_deleted:
         return jsonify({"error": "User not found"}), 404
 
     db.session.delete(user)
     db.session.commit()
+    local_deleted = True
     return jsonify({"message": "User deleted"})
 
 
