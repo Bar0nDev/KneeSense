@@ -1,10 +1,10 @@
 from flask import Blueprint, request, jsonify
-
+from app.database.firebase import firestore_repo as fsdb
 from app.database.db import db
 from app.database.models import Practitioner, Patient
 
 practitioner_bp = Blueprint("practitioners", __name__)
-
+fs_db = fsdb.get_fs_db()
 
 # =========================
 # GET ALL PRACTITIONERS
@@ -25,8 +25,20 @@ def get_all_practitioners():
                 items:
                     $ref: '#/definitions/Practitioner'
     """
-    practitioners = Practitioner.query.all()
-    return jsonify([_serialize_practitioner(p) for p in practitioners])
+    try:
+        docs = fs_db.collection("practitioners").stream()
+        practitioners_list = []
+        for doc in docs:
+            practitioner_data = doc.to_dict()
+            practitioner_data['id'] = doc.id 
+            practitioners_list.append(practitioner_data)
+
+        return jsonify(practitioners_list), 200
+
+    except Exception as e:
+        print(f"Error fetching from Cloud: {e}")
+        practitioners = Practitioner.query.all()
+        return jsonify([_serialize_practitioner(p) for p in practitioners])
 
 
 # =========================
@@ -56,6 +68,18 @@ def get_practitioner(practitioner_id):
             schema:
                 $ref: '#/definitions/Error'
     """
+    try:
+        doc_ref = fs_db.collection("practitioners").document(str(practitioner_id))
+        doc = doc_ref.get()
+
+        if doc.exists:
+            practitioner_data = doc.to_dict()
+            practitioner_data['id'] = doc.id
+            return jsonify(practitioner_data), 200
+            
+    except Exception as e:
+        print(f"Cloud fetch failed, checking local: {e}")
+        
     practitioner = db.session.get(Practitioner, practitioner_id)
     if not practitioner:
         return jsonify({"error": "Practitioner not found"}), 404
@@ -101,7 +125,7 @@ def create_practitioner():
                 $ref: '#/definitions/Error'
     """
     data = request.json
-
+    
     user_id = data.get("user_id")
     if not user_id:
         return jsonify({"error": "user_id is required"}), 400
@@ -159,19 +183,32 @@ def update_practitioner(practitioner_id):
             schema:
                 $ref: '#/definitions/Error'
     """
+    data = request.json
     practitioner = db.session.get(Practitioner, practitioner_id)
-    if not practitioner:
+    doc_ref = fs_db.collection("practitioners").document(str(practitioner_id))
+    
+    if not practitioner or not doc_ref.get().exists:
         return jsonify({"error": "Practitioner not found"}), 404
 
-    data = request.json
-    if "clinic_name" in data:
-        practitioner.clinic_name = data["clinic_name"]
-    if "specialization" in data:
-        practitioner.specialization = data["specialization"]
+    allowed_fields = ["clinic_name", "specialization"]
+    update_fields = {k: v for k, v in data.items() if k in allowed_fields}
 
-    db.session.commit()
+    if not update_fields:
+        return jsonify({"message": "No changes detected"}), 200
+
+    try:
+        for key, value in update_fields.items():
+            setattr(practitioner, key, value)
+        
+        db.session.commit()
+        doc_ref.set(update_fields, merge=True)
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Update failed: {e}")
+        return jsonify({"error": "Sync failed", "details": str(e)}), 500
+
     return jsonify({"message": "Practitioner updated", "practitioner": _serialize_practitioner(practitioner)})
-
 
 # =========================
 # DELETE PRACTITIONER
