@@ -87,7 +87,7 @@ def get_practitioner(practitioner_id):
 
 
 # =========================
-# CREATE PRACTITIONER
+# CREATE PRACTITIONER (TBD)*
 # =========================
 
 @practitioner_bp.route("/practitioners", methods=["POST"])
@@ -138,8 +138,14 @@ def create_practitioner():
         clinic_name=data.get("clinic_name"),
         specialization=data.get("specialization"),
     )
-    db.session.add(practitioner)
-    db.session.commit()
+    try:
+        db.session.add(practitioner)
+        db.session.commit()
+        fsdb.fsdb_practitioner(practitioner)
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to create profile", "details": str(e)}), 500
 
     return jsonify({"message": "Practitioner created", "practitioner_id": practitioner.id}), 201
 
@@ -206,7 +212,7 @@ def update_practitioner(practitioner_id):
     except Exception as e:
         db.session.rollback()
         print(f"Update failed: {e}")
-        return jsonify({"error": "Sync failed", "details": str(e)}), 500
+        return jsonify({"error": "Update failed", "details": str(e)}), 500
 
     return jsonify({"message": "Practitioner updated", "practitioner": _serialize_practitioner(practitioner)})
 
@@ -236,6 +242,7 @@ def delete_practitioner(practitioner_id):
     if not practitioner:
         return jsonify({"error": "Practitioner not found"}), 404
 
+    fsdb.delete_fsdb_doc("practitioners", practitioner_id)
     db.session.delete(practitioner)
     db.session.commit()
     return jsonify({"message": "Practitioner deleted"})

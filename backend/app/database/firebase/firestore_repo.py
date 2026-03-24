@@ -24,16 +24,15 @@ def get_user_firestore(user_id):
         return doc.to_dict()
     return None
 
-def delete_fsdb_user(user_id):
+def delete_fsdb_doc(collection_name, doc_id):
     try:
-        user_ref = fs_db.collection("user").document(str(user_id))
-        if user_ref.get().exists:
-            user_ref.delete()
+        doc_ref = fs_db.collection(collection_name).document(str(doc_id))
+        if doc_ref.get().exists:
+            doc_ref.delete()
             return True
         return False
     except Exception as e:
-        print(f"Firestore Delete Error: {e}")
-        raise e
+        return False
     
 # =========================
 # PRACTITIONERS & PATIENTS

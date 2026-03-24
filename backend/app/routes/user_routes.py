@@ -414,17 +414,9 @@ def delete_user(user_id):
     """
     cloud_deleted = False
     try:
-        cloud_deleted = fsdb.delete_fsdb_user(user_id)
+        cloud_deleted = fsdb.delete_fsdb_doc("user", user_id)
     except Exception:
         pass
-    # try:
-    #     doc_ref = fs_db.collection("user").document(str(user_id))
-    #     if doc_ref.get().exists:
-    #         doc_ref.delete()
-    #         cloud_deleted = True
-    #         print(f"User {user_id} deleted from Firestore.")
-    # except Exception as e:
-    #     print(f"Cloud Delete Failed: {e}")
     
     user = db.session.get(User, user_id)
     local_deleted = False
