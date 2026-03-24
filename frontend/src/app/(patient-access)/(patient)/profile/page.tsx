@@ -4,13 +4,14 @@ import PageHeader from "@/components/ui/PageHeader";
 import { FaUserAlt } from "react-icons/fa";
 import { HiOutlineLockClosed, HiOutlineArrowRightOnRectangle } from "react-icons/hi2";
 import { useProfile, Tab } from "@/hooks/useProfile";
-import { InputField, ReadField } from "@/components/profile/ProfileFields";
+import { InputField, ReadField } from "@/components/auth/profile/ProfileFields";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import HeroButton from "@/components/ui/HeroButton";
+import { useAuthActions } from "@/hooks/useAuthActions"; 
 
 export default function ProfilePage() {
   const { tab, setTab, profile } = useProfile();
-
+  const { logout, isLoading } = useAuthActions();
   const tabs = [
     { key: "personal", label: "Personal Information", icon: FaUserAlt },
     { key: "medical", label: "Medical Information", icon: HiOutlineLockClosed },
@@ -18,13 +19,13 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div>
       <PageHeader title="My Profile" subtitle="Manage your personal information" />
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* Left Panel */}
         <div className="w-full lg:w-64 shrink-0 bg-white rounded-2xl shadow-sm p-6 flex flex-col items-center gap-6">
-          {/* Avatar */}
+          {/* Avatar (Initials and Name) */}
           <div className="flex flex-col items-center gap-2">
             <div
               className="flex h-20 w-20 items-center justify-center rounded-full text-white text-2xl font-bold"
@@ -45,7 +46,7 @@ export default function ProfilePage() {
               <button
                 key={key}
                 onClick={() => setTab(key as Tab)}
-                className={`flex items-center gap-3 w-full rounded-xl px-4 py-2.5 text-sm font-medium transition-all text-left ${
+                className={`flex items-center gap-3 w-full rounded-xl px-4 py-2.5 text-sm font-medium transition-all text-left cursor-pointer ${
                   tab === key
                     ? "bg-[#E6F4F4] text-[#12606A]"
                     : "text-[#455858] hover:bg-gray-50"
@@ -62,10 +63,10 @@ export default function ProfilePage() {
         </div>
 
         {/* Right Panel */}
-        <div className="flex-1 bg-white rounded-2xl shadow-sm p-6">
+        <div className="flex-1 bg-white rounded-2xl shadow-sm p-6 min-h-[400px]">
           {/* Personal Information */}
           {tab === "personal" && (
-            <>
+            <div className="animate-in fade-in duration-300">
               <p className="text-base font-bold text-gray-900 mb-6">Personal Information</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InputField label="First Name" defaultValue={profile.personal.firstName} />
@@ -90,12 +91,12 @@ export default function ProfilePage() {
                   Save Changes
                 </HeroButton>
               </div>
-            </>
+            </div>
           )}
 
           {/* Medical Information */}
           {tab === "medical" && (
-            <>
+            <div className="animate-in fade-in duration-300">
               <p className="text-base font-bold text-gray-900 mb-6">Medical Information</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <ReadField label="Assigned Practitioner" value={profile.medical.practitioner} />
@@ -106,12 +107,12 @@ export default function ProfilePage() {
               <p className="mt-6 text-xs text-[#9CA3AF]">
                 Medical information is managed by your practitioner and cannot be edited here.
               </p>
-            </>
+            </div>
           )}
 
           {/* Log Out */}
           {tab === "logout" && (
-            <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
+            <div className="flex flex-col items-center justify-center py-16 gap-4 text-center animate-in zoom-in-95 duration-200">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
                 <HiOutlineArrowRightOnRectangle size={28} className="text-red-400" />
               </div>
@@ -126,6 +127,7 @@ export default function ProfilePage() {
                   color="#9CA3AF"
                   textColor="#455858"
                   className="flex-1 py-3"
+                  disabled={isLoading}
                 >
                   Cancel
                 </PrimaryButton>
@@ -134,9 +136,10 @@ export default function ProfilePage() {
                   color="#EF4444" // red-500
                   textColor="#FFFFFF"
                   className="flex-1 py-3"
-                  onClick={() => console.log("Logging out...")}
+                  onClick={logout}
+                  disabled={isLoading}
                 >
-                  Log Out
+                  {isLoading ? "Logging out..." : "Log Out"}
                 </PrimaryButton>
               </div>
             </div>

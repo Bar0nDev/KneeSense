@@ -5,7 +5,8 @@ interface HeroButtonProps {
   onClick?: MouseEventHandler<HTMLButtonElement>;
   type?: "button" | "submit" | "reset";
   className?: string;
-  variant?: "solid" | "outline"; // Added variant prop
+  variant?: "solid" | "outline"; 
+  disabled?: boolean;
 }
 
 const HeroButton = ({ 
@@ -13,10 +14,10 @@ const HeroButton = ({
   onClick, 
   type = "button", 
   className = "",
-  variant = "solid" // Default to solid
+  variant = "solid", 
+  disabled = false,
 }: HeroButtonProps) => {
   
-  // Define styles based on variant
   const isOutline = variant === "outline";
   
   const variantStyles = isOutline 

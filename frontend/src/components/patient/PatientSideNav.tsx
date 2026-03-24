@@ -82,7 +82,7 @@ export default function PatientSideNav() {
       </nav>
 
       {/* Patient Footer */}
-      <div className="flex items-center justify-between mt-6 py-3 rounded-lg hover:bg-[#C8E6E6]/40 cursor-pointer transition-colors duration-150">
+      <div className="flex items-center justify-between mt-6 p-3 rounded-lg hover:bg-[#C8E6E6]/40 cursor-pointer transition-colors duration-150">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-[#30C3B1] flex items-center justify-center text-[#FDFDFD] text-sm font-semibold">
             {patient.initials}
