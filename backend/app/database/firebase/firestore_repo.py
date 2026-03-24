@@ -34,3 +34,28 @@ def delete_fsdb_user(user_id):
     except Exception as e:
         print(f"Firestore Delete Error: {e}")
         raise e
+    
+# =========================
+# PRACTITIONERS & PATIENTS
+# =========================
+def fsdb_practitioner(practitioner):
+    fs_db.collection("practitioners").document(str(practitioner.id)).set({
+        "user_id": practitioner.user_id,
+        "clinic_name": practitioner.clinic_name,
+        "specialization": practitioner.specialization,
+        "created_at": practitioner.created_at
+    })
+    
+def fsdb_patient(patient):
+    fs_db.collection("patients").document(str(patient.id)).set({
+        "user_id": patient.user_id, 
+        "practitioner_id": patient.practitioner_id,
+        "name": patient.name,
+        "birthday": patient.birthday.isoformat() if patient.birthday else None,
+        "sex": patient.sex,
+        "height_cm": patient.height_cm,
+        "weight_kg": patient.weight_kg,
+        "notes": patient.notes,
+        "is_active": patient.is_active,
+        "created_at": patient.created_at
+    })

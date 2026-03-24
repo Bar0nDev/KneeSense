@@ -1,12 +1,11 @@
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-
-from app.database.firebase.firestore_repo import create_fsdb_user, get_fs_db, delete_fsdb_user
+from app.database.firebase import firestore_repo as fsdb
 from app.database.db import db
 from app.database.models import User, Practitioner, Patient
 
 user_bp = Blueprint("users", __name__)
-fs_db = get_fs_db()
+fs_db = fsdb.get_fs_db()
 
 # =========================
 # REGISTER
@@ -82,20 +81,24 @@ def register_user():
         password_hash=generate_password_hash(password),
         role=role,
     )
-    # SQLite (Local DB)
     db.session.add(user)
     db.session.commit()
 
-    if role == "practitioner":
-        db.session.add(Practitioner(user_id=user.id))
-        db.session.commit()
-    elif role == "patient":
-        db.session.add(Patient(user_id=user.id, name=name))
-        db.session.commit()
-
-    # Firestore (Cloud DB)
     try:
-        create_fsdb_user(user)
+        fsdb.create_fsdb_user(user)
+
+        if role == "practitioner":
+            practitioner = Practitioner(user_id=user.id)
+            db.session.add(practitioner)
+            db.session.commit()
+            fsdb.fsdb_practitioner(practitioner)
+
+        elif role == "patient":
+            patient = Patient(user_id=user.id, name=user.name)
+            db.session.add(patient)
+            db.session.commit()
+            fsdb.fsdb_patient(patient)
+
     except Exception as e:
         print(f"Cloud Sync Failed: {e}")
 
@@ -237,7 +240,6 @@ def get_all_users():
 
     except Exception as e:
         print(f"Error fetching from Cloud: {e}")
-        # Fallback: if Cloud fails, check the local SQLite shelf
         users = User.query.all()
         return jsonify([_serialize_user(u) for u in users])
 
@@ -412,7 +414,7 @@ def delete_user(user_id):
     """
     cloud_deleted = False
     try:
-        cloud_deleted = delete_fsdb_user(user_id)
+        cloud_deleted = fsdb.delete_fsdb_user(user_id)
     except Exception:
         pass
     # try:
