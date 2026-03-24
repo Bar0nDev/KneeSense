@@ -5,8 +5,8 @@ import { ReactNode } from "react";
 interface PrimaryButtonProps {
   children: ReactNode;
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
-  color?: string; // Accepts hex like "#12606A"
-  textColor?: string; // Override for filled text, defaults to white
+  color?: string; 
+  textColor?: string; 
   variant?: "filled" | "outline" | "ghost" | "link";
   size?: "sm" | "md" | "lg";
   className?: string;
@@ -34,9 +34,8 @@ export default function PrimaryButton({
   fullWidth = false,
 }: PrimaryButtonProps) {
   
-  // Base styles kept exactly as you had them
   const baseStyles = `
-    inline-flex items-center justify-center font-bold rounded-full 
+    inline-flex items-center justify-center font-semibold rounded-full 
     transition-all duration-200 
     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 
     disabled:opacity-50 disabled:pointer-events-none 
@@ -44,7 +43,6 @@ export default function PrimaryButton({
     hover:brightness-95 active:brightness-90
   `;
 
-  // Logic to determine style object based on variant
   const getVariantStyles = () => {
     switch (variant) {
       case "filled":

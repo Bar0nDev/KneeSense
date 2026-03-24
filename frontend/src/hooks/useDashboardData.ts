@@ -24,11 +24,10 @@ export function useDashboardData() {
         subtitle: "Complete your daily exercises",
       }
     },
-    isLoading: true
+    isLoading: false // turned loading off
   });
 
   useEffect(() => {
-    // Simulate a small delay for a realistic feel
     const timer = setTimeout(() => {
       setData(prev => ({ ...prev, isLoading: false }));
     }, 500);

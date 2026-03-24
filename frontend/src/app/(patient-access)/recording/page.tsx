@@ -27,7 +27,7 @@ export default function RecordingPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <div className="flex items-center justify-between px-6 py-4 bg-[#12606A]">
-        <button onClick={actions.handleExit} className="flex items-center gap-2 text-sm text-white hover:opacity-80">
+        <button onClick={actions.handleExit} className="flex items-center gap-2 text-sm text-white hover:opacity-80 cursor-pointer">
           <BsArrowLeft size={16} /> Back
         </button>
         <h3 className="text-xs font-semibold tracking-widest uppercase text-white">Recording Session</h3>
