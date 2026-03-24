@@ -299,25 +299,51 @@ def update_user(user_id):
         schema:
           $ref: '#/definitions/Error'
     """
+    data = request.json
+    update_fields = {}
+
     user = db.session.get(User, user_id)
-    if not user:
+    doc = fs_db.collection("user").document(str(user_id)).get()
+    if not doc.exists:
         return jsonify({"error": "User not found"}), 404
 
-    data = request.json
-
     if "name" in data:
-        user.name = data["name"]
-    if "email" in data:
-        if data["email"] != user.email and User.query.filter_by(email=data["email"]).first():
-            return jsonify({"error": "Email already in use"}), 400
-        user.email = data["email"]
-    if "password" in data:
-        user.password_hash = generate_password_hash(data["password"])
-    if "is_active" in data:
-        user.is_active = data["is_active"]
+        update_fields["name"] = data["name"]
+        if user:
+            user.name = data["name"]
 
-    db.session.commit()
-    return jsonify({"message": "User updated", "user": _serialize_user(user)})
+    if "email" in data:
+        new_email = data["email"]
+
+        existing = (fs_db.collection("user").where("email", "==", new_email).limit(1).get())
+        if existing and existing[0].id != str(user_id):
+            return jsonify({"error": "Email already in use"}), 400
+        if user:
+            user.email = new_email
+        update_fields["email"] = new_email
+
+    if "password" in data and user:
+        user.password_hash = generate_password_hash(data["password"])
+    
+    if "is_active" in data:
+        update_fields["is_active"] = data["is_active"]
+        if user:
+            user.is_active = data["is_active"]
+
+    if user:
+        db.session.commit()
+
+    try:
+        if update_fields:
+            fs_db.collection("user").document(str(user_id)).set(update_fields, merge=True)
+    except Exception as e:
+        print(f"Cloud Update Failed: {e}")
+        return jsonify({"error": "Firestore update failed"}), 500
+    if user:
+        return jsonify({"message": "User updated", "updated_fields": update_fields, "user": _serialize_user(user)})
+    
+    updated_doc = fs_db.collection("user").document(str(user_id)).get()
+    return jsonify({"message": "User updated", "updated_fields": update_fields, "user": {"id": user_id, **updated_doc.to_dict()}})
 
 
 # =========================
