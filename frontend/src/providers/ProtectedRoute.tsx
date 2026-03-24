@@ -4,43 +4,49 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { UserRole } from "@/types/user";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRole?: UserRole | UserRole[];
-  publicOnly?: boolean;
+  allowedRole?: "patient" | "practitioner" | "admin";
+  publicOnly?: boolean; 
 }
 
 export default function ProtectedRoute({ children, allowedRole, publicOnly }: ProtectedRouteProps) {
-  const { session, isAuthenticated, hasRole, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (isLoading) return;
 
-    // Public only page (login/register) — redirect logged in users to their dashboard
-    if (publicOnly && isAuthenticated) {
-      router.push(session!.role === "practitioner" ? "/practitioner-dashboard" : "/dashboard");
+    // If it's a public only page (Login/Register) and user IS logged in
+    if (publicOnly && user) {
+      const home = user.role === "practitioner" ? "/practitioner-dashboard" : "/dashboard";
+      router.push(home);
       return;
     }
 
-    // Protected page — redirect unauthenticated users to login
-    if (!publicOnly && !isAuthenticated) {
+    // If it's a Protected page and user is NOT logged in
+    if (!publicOnly && !user) {
       router.push("/login");
       return;
     }
 
-    // Role mismatch — redirect to their correct dashboard
-    if (!publicOnly && allowedRole && !hasRole(allowedRole)) {
-      router.push(session!.role === "practitioner" ? "/practitioner-dashboard" : "/dashboard");
+    // Role mismatch logic
+    if (!publicOnly && allowedRole && user?.role !== allowedRole) {
+      const redirectPath = user?.role === "practitioner" ? "/practitioner-dashboard" : "/dashboard";
+      router.push(redirectPath);
     }
-  }, [isAuthenticated, isLoading, router, allowedRole, publicOnly]);
+  }, [user, isLoading, router, allowedRole, publicOnly]);
 
-  if (isLoading) return <LoadingSpinner />;
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
 
-  if (publicOnly) return !isAuthenticated ? <>{children}</> : null;
+  // Determine if content should render
+  if (publicOnly) {
+    return !user ? <>{children}</> : null;
+  }
 
-  const isAuthorized = isAuthenticated && (!allowedRole || hasRole(allowedRole));
+  const isAuthorized = user && (!allowedRole || user.role === allowedRole);
   return isAuthorized ? <>{children}</> : null;
 }
