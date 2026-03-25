@@ -1,42 +1,63 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { AuthResponse } from '@/types/user';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { AuthResponse, UserRole } from "@/types/user";
 
 interface AuthContextType {
-  user: AuthResponse | null;
-  login: (userData: AuthResponse) => void;
-  logout: () => void;
+  session: AuthResponse | null;
   isLoading: boolean;
+  isAuthenticated: boolean;
+  hasRole: (role: UserRole | UserRole[]) => boolean;
+  saveSession: (data: AuthResponse) => void;
+  clearSession: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<AuthResponse | null>(null);
+  const [session, setSession] = useState<AuthResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Rehydrate session on page refresh
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    const saved = localStorage.getItem("session");
+    if (saved) {
+      setSession(JSON.parse(saved));
     }
     setIsLoading(false);
   }, []);
 
-  const login = (userData: AuthResponse) => {
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+  const saveSession = (data: AuthResponse) => {
+    setSession(data);
+    localStorage.setItem("session", JSON.stringify(data));
+    // Ready for JWT: localStorage.setItem("access_token", data.access_token)
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
-    window.location.href = '/login';
+  const clearSession = () => {
+    setSession(null);
+    localStorage.removeItem("session");
+    // Ready for JWT: localStorage.removeItem("access_token")
+  };
+
+  // Check if current user has a required role
+  // Usage: hasRole("admin") or hasRole(["admin", "manager"])
+  const hasRole = (role: UserRole | UserRole[]): boolean => {
+    if (!session) return false;
+    if (Array.isArray(role)) return role.includes(session.role);
+    return session.role === role;
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        isLoading,
+        isAuthenticated: !!session,
+        hasRole,
+        saveSession,
+        clearSession,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

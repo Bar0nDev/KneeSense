@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext"; 
+import { useAuth } from "@/context/AuthContext";
+import { useUser } from "@/context/UserContext";
 import { userService } from "@/services/userService";
 
 export const useAuthActions = () => {
-  const { logout: clearAuthContext } = useAuth();
-  const { login: setAuthContext } = useAuth();
+  const { saveSession, clearSession } = useAuth();
+  const { setUserProfile, clearUserProfile } = useUser();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -14,9 +15,18 @@ export const useAuthActions = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const userData = await userService.login(username, password);
-      setAuthContext(userData);
-      router.push(userData.role === "practitioner" ? "/practitioner-dashboard" : "/dashboard");
+      // 1. LOGIN — get session data (user_id, role, profile_id)
+      const sessionData = await userService.login(username, password);
+      saveSession(sessionData); // → AuthContext
+
+      // 2. FETCH PROFILE — get name + role-specific fields
+      const profileData = sessionData.role === "patient"
+        ? await userService.getPatientProfile(sessionData.user_id)
+        : await userService.getPractitionerProfile(sessionData.profile_id);
+
+      setUserProfile({ ...sessionData, profile: profileData }); // → UserContext
+
+      router.push(sessionData.role === "practitioner" ? "/practitioner-dashboard" : "/dashboard");
     } catch (err: any) {
       setError(err.response?.data?.error || "Login failed.");
     } finally {
@@ -34,41 +44,40 @@ export const useAuthActions = () => {
         username: formData.username,
         email: formData.email,
         password: formData.password,
-        role: role
+        role,
       });
 
-      // 2. LOGIN TO GET PROFILE_ID
-      const userData = await userService.login(formData.username, formData.password);
-      const profileId = userData.profile_id;
+      // 2. LOGIN TO GET SESSION
+      const sessionData = await userService.login(formData.username, formData.password);
+      saveSession(sessionData); // → AuthContext
 
-      // 3. UPDATE PROFILE DETAILS
-      if (profileId && role === "patient") {
-        const profilePayload = {
+      // 3. UPDATE ROLE-SPECIFIC PROFILE
+      if (sessionData.profile_id && role === "patient") {
+        await userService.updatePatientProfile(sessionData.profile_id, {
           name: formData.name || "",
-          birthday: formData.birthday || null, 
+          birthday: formData.birthday || null,
           sex: formData.sex || "",
           height_cm: formData.height_cm ?? null,
           weight_kg: formData.weight_kg ?? null,
           practitioner_id: null,
           notes: "",
-          is_active: true
-        };
-        console.log("Patient profile PUT payload:", JSON.stringify(profilePayload, null, 2));
-        await userService.updatePatientProfile(profileId, profilePayload);
+          is_active: true,
+        });
       }
-      if (profileId && role === "practitioner") {
-        const profilePayload = {
+      if (sessionData.profile_id && role === "practitioner") {
+        await userService.updatePractitionerProfile(sessionData.profile_id, {
           clinic_name: formData.clinic_name || "",
-          specialization: formData.specialization || ""
-        };
-        console.log("Practitioner profile PUT payload:", JSON.stringify(profilePayload, null, 2));
-
-        if (userService.updatePractitionerProfile) {
-          await userService.updatePractitionerProfile(profileId, profilePayload);
-        }
+          specialization: formData.specialization || "",
+        });
       }
 
-      setAuthContext(userData);
+      // 4. FETCH FULL PROFILE and populate UserContext
+      const profileData = role === "patient"
+        ? await userService.getPatientProfile(sessionData.user_id)
+        : await userService.getPractitionerProfile(sessionData.profile_id);
+
+      setUserProfile({ ...sessionData, profile: profileData }); // → UserContext
+
       router.push(role === "patient" ? "/dashboard" : "/practitioner-dashboard");
     } catch (err: any) {
       setError(err.response?.data?.error || "Registration failed.");
@@ -78,9 +87,9 @@ export const useAuthActions = () => {
   };
 
   const logout = () => {
-    localStorage.removeItem("access_token"); 
-    clearAuthContext(); 
-    router.push("/"); 
+    clearSession();      // clears AuthContext + localStorage session
+    clearUserProfile();  // clears UserContext + localStorage userProfile
+    router.push("/");
   };
 
   return { login, register, logout, isLoading, error };

@@ -1,29 +1,33 @@
 import apiClient from '@/lib/apiClient';
-import { AuthResponse } from '@/types/user';
 
 export const userService = {
-  async login(username: string, password: string): Promise<AuthResponse> {
+  async login(username: string, password: string) {
     const { data } = await apiClient.post('/users/login', { username, password });
+    return data; 
+  },
+
+  async register(payload: any) {
+    const { data } = await apiClient.post('/users/register', payload);
     return data;
   },
 
-  async register(authPayload: any): Promise<any> {
-    const { data } = await apiClient.post('/users/register', authPayload);
-    return data;
-  },
-
-  async updatePatientProfile(profileId: number, profilePayload: any): Promise<any> {
-    const { data } = await apiClient.put(`/patients/${profileId}`, profilePayload);
-    return data;
-  },
-
-  async getPatientProfile(userId: number): Promise<any> {
+  async getPatientProfile(userId: number) {
     const { data } = await apiClient.get(`/users/${userId}/patient`);
+    return data; 
+  },
+
+  async updatePatientProfile(profileId: number, payload: any) {
+    const { data } = await apiClient.put(`/patients/${profileId}`, payload);
     return data;
   },
 
-  async updatePractitionerProfile(profileId: number, profilePayload: any): Promise<any> {
-    const { data } = await apiClient.put(`/practitioners/${profileId}`, profilePayload);
+  async getPractitionerProfile(profileId: number) {
+    const { data } = await apiClient.get(`/practitioners/${profileId}`);
+    return data; 
+  },
+
+  async updatePractitionerProfile(profileId: number, payload: any) {
+    const { data } = await apiClient.put(`/practitioners/${profileId}`, payload);
     return data;
   },
 };
