@@ -88,3 +88,14 @@ def mark_analysis_failed(session_id):
     fs_db.collection("sessions").document(str(session_id)).update({
         "status": "failed"
     })
+
+def mark_insight_complete(session_id, insight_text, model_used):
+    doc_ref = fs_db.collection("sessions").document(str(session_id))
+    insight_payload = {
+        "insight_text": insight_text,
+        "model": model_used,
+        "session_id": session_id,
+        "has_insight": True,
+        "status": "completed"
+    }
+    doc_ref.update(insight_payload)
