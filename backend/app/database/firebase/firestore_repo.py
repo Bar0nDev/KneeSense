@@ -58,3 +58,20 @@ def fsdb_patient(patient):
         "is_active": patient.is_active,
         "created_at": patient.created_at
     })
+
+# =========================
+# SESSIONS & AI ANALYSIS
+# =========================
+def fsdb_session(session):
+    fs_db.collection("sessions").document(str(session.id)).set({
+        "patient_id": session.patient_id,
+        "practitioner_id": session.practitioner_id,
+        "video_path": session.video_path,
+        "fps": session.fps or 30,
+        "notes": session.notes,
+        "created_at": session.created_at,
+        "status": "pending",  
+        "has_analysis": False, 
+        "has_llm_insight": False,
+        "prediction_count": len(session.frame_predictions) if session.frame_predictions else 0
+    }, merge=True)
