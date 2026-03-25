@@ -1,7 +1,7 @@
 import os
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
-
+from app.database.firebase import firestore_repo as fsdb
 from app.database.db import db
 from app.database.models import Session, FramePrediction, LLMInsight
 from app.services.video_service import run_inference_and_store
@@ -73,6 +73,7 @@ def create_session():
         return jsonify({"error": "patient_id and practitioner_id are required"}), 400
 
     video_path = None
+    cloud_url = None
 
     if "video" in request.files:
         file = request.files["video"]
@@ -88,16 +89,35 @@ def create_session():
         video_path = os.path.join(videos_dir, filename)
         file.save(video_path)
 
-    session = Session(
-        patient_id=int(patient_id),
-        practitioner_id=int(practitioner_id),
-        video_path=video_path,
-        notes=notes,
-    )
-    db.session.add(session)
-    db.session.commit()
+    try:
+      session = Session(
+          patient_id=int(patient_id),
+          practitioner_id=int(practitioner_id),
+          video_path=video_path,
+          notes=notes,
+      )
+      db.session.add(session)
+      db.session.commit()
 
-    return jsonify({"message": "Session created", "session_id": session.id})
+      session_data = {
+            "id": session.id,
+            "patient_id": session.patient_id,
+            "practitioner_id": session.practitioner_id,
+            "video_path": session.video_path,
+            "fps": session.fps,
+            "notes": session.notes,
+            "created_at": session.created_at,
+            "status": "pending", 
+            "has_analysis": False,
+            "has_llm_insight": False 
+        }
+      
+      fsdb.collection("sessions").document(str(session.id)).set(session_data)
+      return jsonify({"message": "Session created", "session_id": session.id})
+    
+    except Exception as e:
+      db.session.rollback()
+      return jsonify({"error": "Failed to create session", "details": str(e)}), 500
 
 
 # =========================
@@ -125,6 +145,24 @@ def get_patient_sessions(patient_id):
           items:
             $ref: '#/definitions/Session'
     """
+    
+    try:
+        session_ref = fsdb.collection("sessions")
+        docs = session_ref.where("patient_id", "==", patient_id).stream()
+        
+        cloud_sessions = []
+        for doc in docs:
+            s_data = doc.to_dict()
+            s_data['id'] = doc.id
+            if 'created_at' in s_data and hasattr(s_data['created_at'], 'isoformat'):
+                s_data['created_at'] = s_data['created_at'].isoformat()
+            cloud_sessions.append(s_data)
+            
+        if cloud_sessions:
+            return jsonify(cloud_sessions), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to fetch sessions from cloud", "details": str(e)}), 500
+    
     sessions = Session.query.filter_by(patient_id=patient_id).all()
     return jsonify([
         {
@@ -197,13 +235,29 @@ def analyze_session(session_id):
     if not session.video_path or not os.path.exists(session.video_path):
         return jsonify({"error": "No video found for this session"}), 400
 
-    # Don't re-run if predictions already exist
     existing = FramePrediction.query.filter_by(session_id=session_id).first()
     if existing:
         return jsonify({"error": "Session already analyzed"}), 409
 
     try:
         predictions = run_inference_and_store(session_id, session.video_path)
+        session_ref = fsdb.collection("sessions").document(str(session_id))
+        # Calculate summary stats for the Cloud Dashboard
+        analysis_summary = {
+            "status": "completed",
+            "analyzed_at": datetime.utcnow().isoformat(),
+            "total_frames": len(predictions),
+            "has_predictions": True
+        }
+
+        session_ref.update(analysis_summary)
+
+        if predictions:
+            # push the first frame as a preview of the data
+            session_ref.collection("previews").document("first_frame").set(predictions[0])
+
+        print(f"AI Sync: Analysis for Session {session_id} pushed to Cloud.")
+
         return jsonify({
             "session_id": session_id,
             "total_frames_analyzed": len(predictions),
