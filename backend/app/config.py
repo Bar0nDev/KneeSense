@@ -14,7 +14,7 @@ class Config:
     API_PREFIX = "/api"
 
     # Model configuration
-    MODEL_PATH = os.getenv("MODEL_PATH", "models/knee_model.pt")
+    MODEL_PATH = os.getenv("MODEL_PATH", "models/knee_model.pth")
 
     # Data storage
     DATA_DIR = os.getenv("DATA_DIR", "data/")

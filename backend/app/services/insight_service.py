@@ -6,7 +6,7 @@ using the OpenAI API, then stores it in LLMInsight.
 """
 
 import os
-from openai import AsyncOpenAI
+from openai import OpenAI
 import numpy as np
 
 from app.database.db import db
@@ -23,7 +23,7 @@ def _get_client():
         api_key = os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
             raise RuntimeError("DEEPSEEK_API_KEY not set in environment")
-        _client = AsyncOpenAI(
+        _client = OpenAI(
             api_key=api_key,
             base_url="https://api.deepseek.com"
         )
