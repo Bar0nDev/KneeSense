@@ -75,3 +75,16 @@ def fsdb_session(session):
         "has_llm_insight": False,
         "prediction_count": len(session.frame_predictions) if session.frame_predictions else 0
     }, merge=True)
+
+def mark_analysis_complete(session_id, json_filename, total_frames):
+    fs_db.collection("sessions").document(str(session_id)).update({
+        "status": "completed",
+        "has_analysis": True,
+        "total_frames": total_frames,
+        "analysis_json_name": json_filename
+    })
+
+def mark_analysis_failed(session_id):
+    fs_db.collection("sessions").document(str(session_id)).update({
+        "status": "failed"
+    })

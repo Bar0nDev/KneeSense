@@ -8,6 +8,7 @@ from app.services.video_service import run_inference_and_store
 from app.services.insight_service import generate_and_store_insight
 
 session_bp = Blueprint("sessions", __name__)
+fs_db = fsdb.get_fs_db()
 
 ALLOWED_EXTENSIONS = {"mp4", "mov", "avi", "mkv"}
 
@@ -137,7 +138,7 @@ def get_patient_sessions(patient_id):
     """
     
     try:
-        session_ref = fsdb.collection("sessions")
+        session_ref = fs_db.collection("sessions")
         docs = session_ref.where("patient_id", "==", patient_id).stream()
         
         cloud_sessions = []
@@ -231,26 +232,20 @@ def analyze_session(session_id):
 
     try:
         predictions = run_inference_and_store(session_id, session.video_path)
-        # save as json for dashboard access without DB hits
+        
         json_filename = f"analysis_{session_id}.json"
-        json_path = os.path.join(current_app.config["DATA_DIR"], "analysis", json_filename)
-        os.makedirs(os.path.dirname(json_path), exist_ok=True)
+        analysis_dir = os.path.join(current_app.config["DATA_DIR"], "analysis")
+        os.makedirs(analysis_dir, exist_ok=True)
+        final_json_path = os.path.join(analysis_dir, json_filename)
         
-        with open(json_path, "w") as f:
+        with open(final_json_path, "w") as f:
             json.dump(predictions, f)
-
-        session_ref = fsdb.collection("sessions").document(str(session_id))
-        
-        analysis_metadata = {
-            "status": "completed",
-            "has_analysis": True,
-            "total_frames": len(predictions),
-            "analysis_json_name": json_filename
-        }
-
-        session_ref.update(analysis_metadata)
-        
-        print(f"Sync Success: Session {session_id} analyzed and JSON metadata pushed.")
+            
+        fsdb.mark_analysis_complete(
+            session_id=session_id, 
+            json_filename=json_filename, 
+            total_frames=len(predictions)
+        )
 
         return jsonify({
             "session_id": session_id,
@@ -259,11 +254,12 @@ def analyze_session(session_id):
         }), 200
 
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+      fsdb.mark_analysis_failed(session_id)
+      return jsonify({"error": str(e)}), 400
+    
     except Exception as e:
-        fsdb.collection("sessions").document(str(session_id)).update({"status": "failed"})
-        return jsonify({"error": f"Inference failed: {str(e)}"}), 500
-
+      return jsonify({"error": f"Inference pipeline failed: {str(e)}"}), 500
+        
 # =========================
 # GET PREDICTIONS FOR SESSION
 # =========================
@@ -290,7 +286,7 @@ def get_predictions(session_id):
             $ref: '#/definitions/Prediction'
     """
     try:
-        doc = fsdb.collection("sessions").document(str(session_id)).get()
+        doc = fs_db.collection("sessions").document(str(session_id)).get()
         if doc.exists:
             data = doc.to_dict()
             json_name = data.get("analysis_json_name")
@@ -302,18 +298,23 @@ def get_predictions(session_id):
                     "file_name": json_name,
                     "status": data.get("status")
                 }), 200
+            
     except Exception as e:
         print(f"Cloud check failed: {e}")
     
-    # predictions = FramePrediction.query.filter_by(session_id=session_id)\
-    #     .order_by(FramePrediction.frame_index).all()
-    # return jsonify([
-    #     {
-    #         "frame_index": p.frame_index,
-    #         "predicted_angle": p.predicted_angle,
-    #     }
-    #     for p in predictions
-    # ])
+    predictions = FramePrediction.query.filter_by(session_id=session_id)\
+        .order_by(FramePrediction.frame_index).all()
+    
+    if predictions:
+      return jsonify([
+          {
+              "frame_index": p.frame_index,
+              "predicted_angle": p.predicted_angle,
+          }
+          for p in predictions
+      ])
+
+    return jsonify({"error": "No predictions found for this session"}), 404
 
 
 # =========================
