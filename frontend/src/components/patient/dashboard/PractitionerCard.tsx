@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Avatar from "@/components/ui/Avatar";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import Card from "@/components/ui/Card";
 import { PiChatCircleDotsBold } from "react-icons/pi";
@@ -8,34 +8,21 @@ import { PiChatCircleDotsBold } from "react-icons/pi";
 interface PractitionerCardProps {
   name: string;
   role: string;
-  initials: string;
+  // initials: string; // Removed initials from props
   image?: string | null;
 }
 
 export default function PractitionerCard({ 
   name, 
   role, 
-  initials, 
+  // initials, // Removed initials from function parameters
   image = null,
 }: PractitionerCardProps) {
   return (
     <Card className="flex flex-col items-center text-center gap-2">
       
-      {/* Avatar / Image */}
-      {image ? (
-        <div className="relative w-20 h-20 rounded-full overflow-hidden shrink-0 shadow-sm">
-          <Image
-            src={image}
-            alt={name}
-            fill
-            className="object-cover"
-          />
-        </div>
-      ) : (
-        <div className="w-17 h-17 rounded-full bg-[#30C3B1] flex items-center justify-center text-[#FDFDFD] text-2xl font-bold shrink-0 shadow-sm">
-          {initials}
-        </div>
-      )}
+      {/* Avatar */}
+      <Avatar name={name} image={image} size={80} />
 
       {/* Name + Role */}
       <div className="leading-snug">

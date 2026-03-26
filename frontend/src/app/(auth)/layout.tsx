@@ -8,13 +8,11 @@ export default function AuthLayout({
 }) {
   return (
     <ProtectedRoute publicOnly>
-    <div className="min-h-screen flex justify-center ">
-      <div className="flex w-full min-h-screen ">
-        <main className="flex-1">
-          {children}
-        </main>
+      <div className="min-h-screen flex justify-center">
+        <div className="flex w-full min-h-screen">
+          <main className="flex-1">{children}</main>
+        </div>
       </div>
-    </div>
     </ProtectedRoute>
   );
 }

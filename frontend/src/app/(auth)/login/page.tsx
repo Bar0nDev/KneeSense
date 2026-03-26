@@ -6,14 +6,14 @@ import { GiKneeCap } from "react-icons/gi";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { Field } from "@/components/ui/FormFields";
 import HeroButton from "@/components/ui/HeroButton";
-import { useAuthActions } from "@/hooks/useAuthActions";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const { login, isLoading, error } = useAuthActions();
+  const { login, isLoading, error } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +40,6 @@ export default function LoginPage() {
             Enter your credentials to access your account.
           </p>
 
-          {/* Global Error Message (Usually for "Invalid Credentials") */}
           {error && (
             <div className="mb-4 rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-600 border border-red-100 text-center animate-in fade-in zoom-in duration-200">
               {error}
@@ -48,17 +47,16 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-
-            <Field 
-              label="Username" 
-              type="text" 
+            <Field
+              label="Username"
+              type="text"
               placeholder="Enter your username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              error={error ? "" : undefined} // Highlights red if login fails
+              error={error ? "" : undefined}
             />
 
-            {/* Password Field (custom for icon placement) */}
+            {/* Password Field */}
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between mb-0.5">
                 <label className="text-xs font-medium text-[#455858]">Password</label>
@@ -82,7 +80,11 @@ export default function LoginPage() {
                 >
                   {showPassword ? <FaRegEyeSlash size={16} /> : <FaRegEye size={16} />}
                 </button>
-                {error && <p className="mt-1 text-[10px] font-medium text-red-500 animate-pulse absolute left-0 -bottom-5">{error}</p>}
+                {error && (
+                  <p className="mt-1 text-[10px] font-medium text-red-500 animate-pulse absolute left-0 -bottom-5">
+                    {error}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -116,18 +118,17 @@ export default function LoginPage() {
           backgroundPosition: "center",
         }}
       >
-        <div className="absolute inset-0 bg-black/10" /> {/* Subtle overlay for text readability */}
+        <div className="absolute inset-0 bg-black/10" />
         <div className="relative z-10 flex flex-col justify-end h-full">
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/80">
             The Future of Visuotactile Knee Rehabilitation
           </p>
           <h2 className="mb-4 max-w-xs text-3xl font-bold leading-tight text-white">
             <span className="text-[#30C3B1]">Visuotactile Sensing</span><br />
-            for High-Resolution Knee Monitoring. 
-            
+            for High-Resolution Knee Monitoring.
           </h2>
           <p className="max-w-xs text-sm leading-relaxed text-white/70">
-            KneeSense bridges the gap between laboratory motion capture and home recovery. 
+            KneeSense bridges the gap between laboratory motion capture and home recovery.
           </p>
         </div>
       </div>
