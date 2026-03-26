@@ -21,7 +21,6 @@ export default function DashboardPage() {
       {/* Main Insights */}
       <div className="flex flex-col gap-6 flex-1 min-w-0">
         <WelcomeCard
-          name={patient.name}
           lastSession={patient.lastSession}
         />
         

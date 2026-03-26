@@ -9,6 +9,8 @@ import { FaUserAlt } from "react-icons/fa";
 import { GiKneeCap } from "react-icons/gi";
 import { IconType } from "react-icons";
 import PatientSideNavItem from "@/components/patient/PatientSideNavItem";
+import Avatar from "@/components/ui/Avatar";
+import { useUser } from "@/context/UserContext";
 
 interface NavLink {
   label: string;
@@ -39,14 +41,14 @@ const navSections: NavSection[] = [
   },
 ];
 
-const patient = {
-  name: "Kevin Chen",
-  role: "Patient",
-  initials: "KC",
-};
-
 export default function PatientSideNav() {
   const [isOpen, setIsOpen] = useState(false);
+  const { userProfile } = useUser();
+
+  // Safely extract patient-specific fields
+  const name = userProfile?.role === "patient" ? userProfile.profile.name : "";
+  const role = userProfile?.role ?? "";
+  const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
 
   const sideNavContent = (
     <div className="flex flex-col h-full px-4">
@@ -84,12 +86,14 @@ export default function PatientSideNav() {
       {/* Patient Footer */}
       <div className="flex items-center justify-between mt-6 p-3 rounded-lg hover:bg-[#C8E6E6]/40 cursor-pointer transition-colors duration-150">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-[#30C3B1] flex items-center justify-center text-[#FDFDFD] text-sm font-semibold">
-            {patient.initials}
-          </div>
+          <Avatar
+            name={name}
+            size={36}
+            className="text-sm font-semibold"
+          />
           <div className="leading-tight">
-            <p className="text-sm font-semibold">{patient.name}</p>
-            <p className="text-xs text-[#455858]">{patient.role}</p>
+            <p className="text-sm font-semibold">{name}</p>
+            <p className="text-xs text-[#455858]">{roleLabel}</p>
           </div>
         </div>
         <HiOutlineDotsHorizontal size={18} className="text-[#455858]" />

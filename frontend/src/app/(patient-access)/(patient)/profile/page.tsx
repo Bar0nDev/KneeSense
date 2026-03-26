@@ -1,17 +1,33 @@
 "use client";
 
 import PageHeader from "@/components/ui/PageHeader";
+import Avatar from "@/components/ui/Avatar";
 import { FaUserAlt } from "react-icons/fa";
 import { HiOutlineLockClosed, HiOutlineArrowRightOnRectangle } from "react-icons/hi2";
 import { useProfile, Tab } from "@/hooks/useProfile";
 import { InputField, ReadField } from "@/components/auth/profile/ProfileFields";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import HeroButton from "@/components/ui/HeroButton";
-import { useAuthActions } from "@/hooks/useAuthActions"; 
+import { useAuth } from "@/context/AuthContext";
+import { useUser } from "@/context/UserContext";
 
 export default function ProfilePage() {
   const { tab, setTab, profile } = useProfile();
-  const { logout, isLoading } = useAuthActions();
+  const { logout, isLoading } = useAuth();
+  const { userProfile } = useUser();
+
+  // Real data from context
+  const isPatient = userProfile?.role === "patient";
+  const p = isPatient ? userProfile.profile : null;
+  const nameParts = (p?.name ?? "").split(" ");
+  const firstName = nameParts[0] ?? "";
+  const lastName = nameParts.slice(1).join(" ") ?? "";
+  const email = userProfile?.user?.email ?? "";
+  const displayName = p?.name || profile.name;
+  const displayRole = userProfile?.role
+    ? userProfile.role.charAt(0).toUpperCase() + userProfile.role.slice(1)
+    : profile.role;
+
   const tabs = [
     { key: "personal", label: "Personal Information", icon: FaUserAlt },
     { key: "medical", label: "Medical Information", icon: HiOutlineLockClosed },
@@ -25,17 +41,11 @@ export default function ProfilePage() {
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* Left Panel */}
         <div className="w-full lg:w-64 shrink-0 bg-white rounded-2xl shadow-sm p-6 flex flex-col items-center gap-6">
-          {/* Avatar (Initials and Name) */}
           <div className="flex flex-col items-center gap-2">
-            <div
-              className="flex h-20 w-20 items-center justify-center rounded-full text-white text-2xl font-bold"
-              style={{ background: "linear-gradient(135deg, #12606A, #30C3B1)" }}
-            >
-              {profile.initials}
-            </div>
+            <Avatar name={displayName} size={80} />
             <div className="text-center">
-              <p className="text-base font-bold text-gray-900">{profile.name}</p>
-              <p className="text-sm text-[#455858]">{profile.role}</p>
+              <p className="text-base font-bold text-gray-900">{displayName}</p>
+              <p className="text-sm text-[#455858]">{displayRole}</p>
               <p className="text-xs text-[#9CA3AF] mt-0.5">{profile.location}</p>
             </div>
           </div>
@@ -69,25 +79,16 @@ export default function ProfilePage() {
             <div className="animate-in fade-in duration-300">
               <p className="text-base font-bold text-gray-900 mb-6">Personal Information</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InputField label="First Name" defaultValue={profile.personal.firstName} />
-                <InputField label="Last Name" defaultValue={profile.personal.lastName} />
-                <InputField label="Email Address" type="email" defaultValue={profile.personal.email} />
-                <InputField label="Date of Birth" defaultValue={profile.personal.dateOfBirth} />
+                <InputField label="First Name" defaultValue={firstName} />
+                <InputField label="Last Name" defaultValue={lastName} />
+                <InputField label="Email Address" type="email"  defaultValue={email}/>
+                <InputField label="Date of Birth" defaultValue={p?.birthday ?? ""} />
               </div>
-
               <div className="flex gap-3 mt-8">
-                <HeroButton
-                  variant="outline"
-                  className="flex-1 py-3"
-                  onClick={() => { /* handle discard */ }}
-                >
+                <HeroButton variant="outline" className="flex-1 py-3" onClick={() => {}}>
                   Discard Changes
                 </HeroButton>
-
-                <HeroButton
-                  className="flex-1 py-3"
-                  onClick={() => { /* handle save */ }}
-                >
+                <HeroButton className="flex-1 py-3" onClick={() => {}}>
                   Save Changes
                 </HeroButton>
               </div>
@@ -102,7 +103,11 @@ export default function ProfilePage() {
                 <ReadField label="Assigned Practitioner" value={profile.medical.practitioner} />
                 <ReadField label="Clinic / Hospital" value={profile.medical.clinic} />
                 <ReadField label="Practitioner Code" value={profile.medical.practitionerCode} />
-                <ReadField label="Joined Date" value={profile.medical.joinedDate} />
+                <ReadField label="Joined Date" value={
+                  p?.created_at
+                    ? new Date(p.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                    : profile.medical.joinedDate
+                } />
               </div>
               <p className="mt-6 text-xs text-[#9CA3AF]">
                 Medical information is managed by your practitioner and cannot be edited here.
@@ -131,9 +136,8 @@ export default function ProfilePage() {
                 >
                   Cancel
                 </PrimaryButton>
-                
-                <PrimaryButton 
-                  color="#EF4444" // red-500
+                <PrimaryButton
+                  color="#EF4444"
                   textColor="#FFFFFF"
                   className="flex-1 py-3"
                   onClick={logout}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Nunito, Poppins } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { UserProvider } from "@/context/UserContext";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -27,13 +28,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body 
+      <body
         className={`${nunito.variable} ${poppins.variable} font-sans`}
         suppressHydrationWarning
       >
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <UserProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </UserProvider>
       </body>
     </html>
   );
