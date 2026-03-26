@@ -37,7 +37,9 @@ type Props = {
 export default function PatientDetail({ patient }: Props) {
   const { sessionData, metrics: hookMetrics } = useProgress();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const s = STATUS_COLORS[patient.status] || STATUS_COLORS.stable;
+  
+  const isUnassigned = patient.status === "unassigned";
+  const s = isUnassigned ? { bg: "#FFFBF2", text: "#FF8C00", icon: "?" } : (STATUS_COLORS[patient.status] || STATUS_COLORS.stable);
 
   return (
     <div className="space-y-6">
@@ -47,7 +49,7 @@ export default function PatientDetail({ patient }: Props) {
           <div className="flex items-center gap-3">
             <Avatar 
               name={patient.name} 
-              subtext={`65 yrs • Week ${Math.ceil(patient.daysIn / 7)}`} 
+              subtext={`65 yrs${!isUnassigned ? ` • Week ${Math.ceil(patient.daysIn / 7)}` : ""}`} 
               size={56} 
             />
             <span style={{ fontSize: "11px", fontWeight: 700, color: s.text, background: s.bg, borderRadius: "999px", padding: "4px 12px", whiteSpace: "nowrap", flexShrink: 0 }}>
@@ -58,9 +60,9 @@ export default function PatientDetail({ patient }: Props) {
         
         <div className="flex flex-wrap gap-3">
           <PrimaryButton
-            onClick={() => console.log("View Patient Details")}
+            onClick={() => console.log(isUnassigned ? "Add Patient" : "View Patient Details")}
           >
-            View Patient Details
+            {isUnassigned ? "Add Patient" : "View Patient Details"}
           </PrimaryButton>
         </div>
       </div>
@@ -74,26 +76,26 @@ export default function PatientDetail({ patient }: Props) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <MetricCard 
               type="rehabConsistency" 
-              value={`${patient.compliance}%`} 
+              value={isUnassigned ? "—" : `${patient.compliance}%`} 
             />
             <MetricCard 
               type="angleBenchmarkGap" 
-              value={hookMetrics.find(m => m.type === 'angleBenchmarkGap')?.value || '-15°'} 
+              value={isUnassigned ? "—" : (hookMetrics.find(m => m.type === 'angleBenchmarkGap')?.value || '-15°')} 
             />
             <MetricCard 
               type="zoneBalanceScore" 
-              value={hookMetrics.find(m => m.type === 'zoneBalanceScore')?.value || 'Stable'} 
+              value={isUnassigned ? "—" : (hookMetrics.find(m => m.type === 'zoneBalanceScore')?.value || 'Stable')} 
             />
           </div>
 
           <BenchmarkComparisonCard 
-            data={sessionData.benchmarkData} 
+            data={isUnassigned ? [] : sessionData.benchmarkData} 
             userName={patient.name}
             ageGroup="Elderly Benchmark"
           />
 
           <MuscleSmoothnessCard 
-            data={sessionData.smoothnessData} 
+            data={isUnassigned ? [] : sessionData.smoothnessData} 
             benchmark={0.6} 
           />
         </div>
@@ -110,26 +112,36 @@ export default function PatientDetail({ patient }: Props) {
                 </div>
                 <h3 className="text-sm font-bold text-gray-900">Current Program</h3>
               </div>
-              <button 
-                className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
-                onClick={() => setIsEditModalOpen(true)}
-              >
-                <FiEdit2 size={16} color="#12606A" />
-              </button>
+              {!isUnassigned && (
+                <button 
+                  className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+                  onClick={() => setIsEditModalOpen(true)}
+                >
+                  <FiEdit2 size={16} color="#12606A" />
+                </button>
+              )}
             </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-800">Post-Op Knee Replacement</p>
-              <p className="text-xs text-gray-500 mt-1">Week 3 of 6 • 5x per week</p>
-            </div>
-            <div className="mt-1">
-              <div className="flex items-center justify-between text-[11px] font-bold mb-1.5" style={{ color: '#12606A' }}>
-                <span>0</span>
-                <span>50%</span>
+            {isUnassigned ? (
+              <div className="flex items-center justify-center p-6 bg-gray-50 rounded-lg">
+                <p className="text-sm font-medium text-gray-500">No active program.</p>
               </div>
-              <div className="w-full bg-gray-100 rounded-full h-2">
-                <div className="bg-[#12606A] h-2 rounded-full" style={{ width: '50%' }}></div>
-              </div>
-            </div>
+            ) : (
+              <>
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">Post-Op Knee Replacement</p>
+                  <p className="text-xs text-gray-500 mt-1">Week 3 of 6 • 5x per week</p>
+                </div>
+                <div className="mt-1">
+                  <div className="flex items-center justify-between text-[11px] font-bold mb-1.5" style={{ color: '#12606A' }}>
+                    <span>0</span>
+                    <span>50%</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div className="bg-[#12606A] h-2 rounded-full" style={{ width: '50%' }}></div>
+                  </div>
+                </div>
+              </>
+            )}
           </Card>
 
           {/* Metrics Card */}
@@ -140,7 +152,7 @@ export default function PatientDetail({ patient }: Props) {
                 <span className="text-sm font-semibold text-gray-500 uppercase">Knee Angle</span>
                 <div className="text-right">
                   <span className="text-2xl font-bold text-gray-900">{sessionData.stats[0]?.value || '67°'}</span>
-                  <p className="text-xs text-green-600 font-medium">{sessionData.stats[0]?.benchmark || '+12% above elderly avg'}</p>
+                  {!isUnassigned && <p className="text-xs text-green-600 font-medium">{sessionData.stats[0]?.benchmark || '+12% above elderly avg'}</p>}
                 </div>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -154,7 +166,7 @@ export default function PatientDetail({ patient }: Props) {
                 <span className="text-sm font-semibold text-gray-500 uppercase">Force Estimate Avg</span>
                 <div className="text-right">
                   <span className="text-2xl font-bold text-gray-900">{patient.forceAvg} N</span>
-                  <p className="text-xs text-green-600 font-medium">{sessionData.stats[1]?.benchmark || '+5% above average'}</p>
+                  {!isUnassigned && <p className="text-xs text-green-600 font-medium">{sessionData.stats[1]?.benchmark || '+5% above average'}</p>}
                 </div>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -167,9 +179,9 @@ export default function PatientDetail({ patient }: Props) {
           <div className="w-full shrink-0">
             <ZoneMap 
               videoSrc={sessionData.video.videoSrc}
-              medialPct={sessionData.video.medialPct} 
-              centralPct={sessionData.video.centralPct} 
-              lateralPct={sessionData.video.lateralPct} 
+              medialPct={isUnassigned ? "0" : String(sessionData.video.medialPct)} 
+              centralPct={isUnassigned ? "0" : String(sessionData.video.centralPct)} 
+              lateralPct={isUnassigned ? "0" : String(sessionData.video.lateralPct)} 
             />
           </div>
 

@@ -22,11 +22,11 @@ export const patients = [
 ];
 
 const unassigned = [
-  { id: "u1", name: "Harper Mitchell" },
-  { id: "u2", name: "Elijah Scott" },
+  { id: "u1", name: "Harper Mitchell", daysIn: 0, status: "unassigned", compliance: 0, forceAvg: 20, nextSession: "N/A" },
+  { id: "u2", name: "Elijah Scott", daysIn: 0, status: "unassigned", compliance: 0, forceAvg: 18, nextSession: "N/A" },
 ];
 
-type FilterType = "Current" | "Stalled";
+type FilterType = "Current" | "Stalled" | "Unassigned";
 type Patient = typeof patients[0];
 type Props = {
   onSelect: (patient: Patient) => void;
@@ -36,15 +36,16 @@ type Props = {
 export default function PatientList({ onSelect, selectedId }: Props) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("Current");
-  const [showUnassigned, setShowUnassigned] = useState(false);
 
-  const filtered = patients.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
-    const matchesFilter = filter === "Current"
-      ? p.status !== "declining" || p.compliance >= 40
-      : p.compliance < 40 || p.status === "declining";
-    return matchesSearch && matchesFilter;
-  });
+  const filtered = filter === "Unassigned" 
+    ? unassigned.filter((u) => u.name.toLowerCase().includes(search.toLowerCase()))
+    : patients.filter((p) => {
+        const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
+        const matchesFilter = filter === "Current"
+          ? p.status !== "declining" || p.compliance >= 40
+          : p.compliance < 40 || p.status === "declining";
+        return matchesSearch && matchesFilter;
+      });
 
   return (
     <div
@@ -60,45 +61,66 @@ export default function PatientList({ onSelect, selectedId }: Props) {
         
         <SearchBar 
           placeholder="Search patients..." 
+          value={search}
+          onChange={setSearch}
         />
 
       </div>
 
-      {/* Filters + Unassigned */}
+      {/* Filters */}
       <div style={{ padding: "8px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #F3F4F6" }}>
         <div style={{ display: "flex", gap: "4px" }}>
-          {(["Current", "Stalled"] as FilterType[]).map((f) => (
-            <button key={f} onClick={() => setFilter(f)} style={{ padding: "4px 12px", borderRadius: "999px", border: `1.5px solid ${filter === f ? BRAND : "#E5E7EB"}`, background: filter === f ? `${BRAND}12` : "transparent", color: filter === f ? BRAND : "#6B7280", fontSize: "11px", fontWeight: filter === f ? 700 : 500, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
-              {f}
+          {(["Current", "Stalled", "Unassigned"] as FilterType[]).map((f) => (
+            <button key={f} onClick={() => setFilter(f)} style={{ padding: "4px 12px", borderRadius: "999px", border: `1.5px solid ${filter === f ? (f === "Unassigned" ? "#FF8C00" : BRAND) : "#E5E7EB"}`, background: filter === f ? (f === "Unassigned" ? "#FFF7E6" : `${BRAND}12`) : "transparent", color: filter === f ? (f === "Unassigned" ? "#FF8C00" : BRAND) : "#6B7280", fontSize: "11px", fontWeight: filter === f ? 700 : 500, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+              {f === "Unassigned" ? (
+                <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  Unassigned
+                  <span style={{ background: filter === "Unassigned" ? "#FF8C00" : "#E5E7EB", color: filter === "Unassigned" ? "#FFF" : "#6B7280", padding: "0 6px", borderRadius: "999px", fontSize: "9px" }}>{unassigned.length}</span>
+                </span>
+              ) : f}
             </button>
           ))}
         </div>
-        <button onClick={() => setShowUnassigned(!showUnassigned)} style={{ display: "flex", alignItems: "center", gap: "4px", padding: "4px 10px", borderRadius: "999px", border: `1.5px solid ${showUnassigned ? "#FF8C00" : "#E5E7EB"}`, background: showUnassigned ? "#FFF7E6" : "transparent", color: showUnassigned ? "#FF8C00" : "#6B7280", fontSize: "11px", fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
-          <span style={{ fontSize: "14px", lineHeight: 1 }}>+</span>
-          <span>{unassigned.length}</span>
-        </button>
       </div>
-
-      {/* Unassigned dropdown */}
-      {showUnassigned && (
-        <div style={{ background: "#FFFBF2", borderBottom: "1px solid #FFE4B0", padding: "8px 14px" }}>
-          <p style={{ fontSize: "10px", fontWeight: 700, color: "#FF8C00", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px" }}>Unassigned</p>
-          {unassigned.map((u) => (
-            <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 0" }}>
-              <span style={{ fontSize: "12px", color: "#374151", fontWeight: 500 }}>{u.name}</span>
-              <button style={{ fontSize: "10px", fontWeight: 700, color: BRAND, background: `${BRAND}12`, border: `1px solid ${BRAND}`, borderRadius: "6px", padding: "2px 8px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Assign</button>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Patient list */}
       <div style={{ flex: 1, overflowY: "auto" }}>
         {filtered.length === 0 ? (
           <div style={{ padding: "32px 14px", textAlign: "center", color: "#9CA3AF", fontSize: "12px" }}>No patients found</div>
         ) : filtered.map((p) => {
-          const s = STATUS_COLORS[p.status];
+          const isUnassignedCard = p.status === "unassigned";
+          const s = isUnassignedCard ? { bg: "#FFFBF2", text: "#FF8C00", icon: "?" } : STATUS_COLORS[p.status];
           const isSelected = p.id === selectedId;
+          
+          if (isUnassignedCard) {
+            return (
+              <div 
+                key={p.id} 
+                onClick={() => onSelect(p)}
+                style={{ 
+                  padding: "12px 14px", borderBottom: "1px solid #E5E7EB", cursor: "pointer", transition: "background 0.1s", 
+                  background: isSelected ? "#FFE4B050" : "transparent", 
+                  borderLeft: isSelected ? `3px solid #FF8C00` : "3px solid transparent" 
+                }}
+                onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = "#FFE4B020"; }}
+                onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "999px", background: "#FFF7E6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <span style={{ fontSize: "11px", fontWeight: 700, color: "#FF8C00" }}>{p.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)}</span>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "14px", fontWeight: 700, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                      <div style={{ fontSize: "11px", color: "#FF8C00", fontWeight: 600 }}>Needs Assessment</div>
+                    </div>
+                  </div>
+                  <button style={{ fontSize: "10px", fontWeight: 700, color: BRAND, background: `${BRAND}12`, border: `1px solid ${BRAND}`, borderRadius: "6px", padding: "4px 10px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Assign</button>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div key={p.id} onClick={() => onSelect(p)}
               style={{ padding: "12px 14px", borderBottom: "1px solid #E5E7EB", cursor: "pointer", transition: "background 0.1s", background: isSelected ? `${BRAND}1A` : "transparent", borderLeft: isSelected ? `3px solid ${BRAND}` : "3px solid transparent" }}
