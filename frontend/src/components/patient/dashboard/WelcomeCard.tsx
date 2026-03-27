@@ -17,6 +17,8 @@ export default function WelcomeCard({ lastSession, className = "" }: WelcomeCard
   const fullName = userProfile?.role === "patient" ? userProfile.profile.name : "";
   const firstName = fullName.split(" ")[0];
 
+  console.log(userProfile);
+
   return (
     <div
       className={`relative flex flex-col overflow-hidden rounded-[2rem] px-10 py-10 shadow-sm ${className}`}
