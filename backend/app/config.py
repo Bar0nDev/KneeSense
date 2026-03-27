@@ -37,4 +37,7 @@ class Config:
         "app/database/firebase/firebase-key.json"
     )
 
+    #LLM-Insights settings
+    DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+
     SQLALCHEMY_TRACK_MODIFICATIONS = False
