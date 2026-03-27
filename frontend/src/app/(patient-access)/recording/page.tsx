@@ -14,14 +14,15 @@ import ErrorStep from "@/components/patient/recording/ErrorStep";
 
 export default function RecordingPage() {
   const router = useRouter();
-  const { 
-    pageState, 
-    videoRef, 
-    recordedUrl, 
-    errorMessage, 
-    instructionSteps, 
-    stream, // <--- Destructure stream
-    actions 
+  const {
+    pageState,
+    processingMessage,
+    videoRef,
+    recordedUrl,
+    errorMessage,
+    instructionSteps,
+    stream,
+    actions,
   } = useRecordingSession();
 
   return (
@@ -38,15 +39,15 @@ export default function RecordingPage() {
         {pageState === "instructions" && (
           <InstructionsStep onContinue={actions.handleRequestCamera} steps={instructionSteps} />
         )}
-        
+
         {pageState === "permission-denied" && (
           <PermissionDeniedStep onRetry={actions.handleRequestCamera} />
         )}
-        
+
         {(pageState === "ready" || pageState === "recording") && (
           <CameraStep
             videoRef={videoRef}
-            stream={stream} // <--- Critical: Pass the stream
+            stream={stream}
             isRecording={pageState === "recording"}
             onStart={actions.handleStart}
             onStop={actions.stopRecording}
@@ -55,16 +56,27 @@ export default function RecordingPage() {
         )}
 
         {pageState === "review" && (
-          <ReviewStep 
-            videoUrl={recordedUrl} 
-            onRetake={actions.handleRetake} 
-            onSubmit={actions.handleSubmit} 
+          <ReviewStep
+            videoUrl={recordedUrl}
+            onRetake={actions.handleRetake}
+            onSubmit={actions.handleSubmit}
           />
         )}
 
-        {pageState === "processing" && <ProcessingStep />}
-        {pageState === "success" && <SuccessStep onRedirect={() => router.push("/progress")} />}
-        {pageState === "error" && <ErrorStep message={errorMessage} onRetry={() => actions.setPageState("instructions")} />}
+        {pageState === "processing" && (
+          <ProcessingStep message={processingMessage} />
+        )}
+
+        {pageState === "success" && (
+          <SuccessStep onRedirect={() => router.push("/progress")} />
+        )}
+
+        {pageState === "error" && (
+          <ErrorStep
+            message={errorMessage}
+            onRetry={() => actions.setPageState("instructions")}
+          />
+        )}
       </div>
     </div>
   );

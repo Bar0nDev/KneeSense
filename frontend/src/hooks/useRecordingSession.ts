@@ -1,6 +1,8 @@
 import { useRef, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useMediaRecorder } from "@/hooks/useMediaRecorder";
+import { useUser } from "@/context/UserContext";
+import { sessionService } from "@/services/sessionService";
 
 export type RecordingState =
   | "instructions"
@@ -14,19 +16,21 @@ export type RecordingState =
 
 export function useRecordingSession() {
   const router = useRouter();
+  const { userProfile } = useUser();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [pageState, setPageState] = useState<RecordingState>("instructions");
   const [errorMessage, setErrorMessage] = useState("");
+  const [processingMessage, setProcessingMessage] = useState("");
 
-  const { 
-    requestCamera, 
-    startRecording, 
-    stopRecording, 
-    stopStream, 
-    clearRecording, 
+  const {
+    requestCamera,
+    startRecording,
+    stopRecording,
+    stopStream,
+    clearRecording,
     recordedUrl,
     recordedBlob,
-    stream // <--- Get the live stream from the hardware hook
+    stream,
   } = useMediaRecorder();
 
   const handleRequestCamera = useCallback(async () => {
@@ -52,17 +56,65 @@ export function useRecordingSession() {
   }, [pageState, stopRecording, stopStream]);
 
   const handleSubmit = useCallback(async () => {
-    if (!recordedBlob) return;
+    // if (!recordedBlob) return;
+
+    if (userProfile?.role !== "patient") {
+      setErrorMessage("Only patients can submit recordings.");
+      setPageState("error");
+      return;
+    }
+
+    const patientProfileId = userProfile.profile?.id;
+    const practitionerId = userProfile.profile?.practitioner_id;
+
+    if (!patientProfileId) {
+      setErrorMessage("Patient profile not found. Please log in again.");
+      setPageState("error");
+      return;
+    }
+
+    if (!practitionerId) {
+      setErrorMessage("No practitioner assigned to your account. Please contact your clinic.");
+      setPageState("error");
+      return;
+    }
+
     setPageState("processing");
+
     try {
-      // API call simulation
-      await new Promise((res) => setTimeout(res, 3500));
+      // Step 1 — Upload video and create session
+      setProcessingMessage("Uploading your recording...");
+
+      const devVideoResponse = await fetch("/video/knee-vid.mp4");
+      const devBlob = await devVideoResponse.blob();
+
+      const formData = new FormData();
+      // formData.append("video", recordedBlob, "recording.webm");
+      formData.append("video", devBlob, "recording.mp4");
+      formData.append("patient_id", String(patientProfileId));
+      formData.append("practitioner_id", String(practitionerId));
+      const { session_id } = await sessionService.uploadSession(formData);
+
+      // Step 2 — Run AI inference on the video frames
+      setProcessingMessage("Analyzing knee movement...");
+      await sessionService.analyzeSession(session_id);
+
+      // Step 3 — Fetch and confirm predictions stored correctly
+      setProcessingMessage("Retrieving predictions...");
+      await sessionService.getPredictions(session_id);
+
+      // Step 4 — Generate Claude clinical insight from predictions
+      setProcessingMessage("Generating clinical insights...");
+      await sessionService.generateInsight(session_id);
+
       setPageState("success");
-    } catch {
-      setErrorMessage("Upload failed. Please try again.");
+    } catch (err: any) {
+      console.error("Pipeline error:", err.response?.data || err.message || err);
+      setErrorMessage(err.response?.data?.error || "Something went wrong. Please try again.");
       setPageState("error");
     }
-  }, [recordedBlob]);
+  }, [recordedBlob, userProfile]);
+
 
   const handleRetake = useCallback(() => {
     clearRecording();
@@ -78,11 +130,12 @@ export function useRecordingSession() {
 
   return {
     pageState,
+    processingMessage,
     videoRef,
     recordedUrl,
     errorMessage,
     instructionSteps,
-    stream, // <--- Expose it here
+    stream,
     actions: {
       handleRequestCamera,
       handleStart,
@@ -91,7 +144,7 @@ export function useRecordingSession() {
       handleRetake,
       stopRecording: () => stopRecording(false),
       setPageState,
-      handleExit: () => { stopStream(); router.back(); }
+      handleExit: () => { stopStream(); router.back(); },
     },
   };
 }
