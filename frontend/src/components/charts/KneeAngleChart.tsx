@@ -23,7 +23,7 @@ interface KneeAngleChartProps {
 
 export default function KneeAngleChart({ data, benchmark }: KneeAngleChartProps) {
   return (
-    <ResponsiveContainer width="100%" height={185}>
+    <ResponsiveContainer width="100%" height={190}>
       {/* Fixed Margins: 
         left: 0 and width: 35 on YAxis creates a dedicated lane for labels.
         bottom: 10 ensures XAxis dates don't clip.

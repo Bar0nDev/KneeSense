@@ -3,7 +3,7 @@
 import { IconType } from "react-icons";
 import { LuClipboardCheck } from "react-icons/lu";
 import { TbAngle } from "react-icons/tb";
-import { MdOutlineRadar } from "react-icons/md";
+import { TbArrowsVertical } from "react-icons/tb";
 import Card from "@/components/ui/Card";
 
 interface MetricConfig {
@@ -27,8 +27,8 @@ const METRIC_CONFIG: Record<string, MetricConfig> = {
     iconBg: "#EAECF8",
   },
   zoneBalanceScore: {
-    label: "Zone Balance Score",
-    icon: MdOutlineRadar,
+    label: "Range of Motion",
+    icon: TbArrowsVertical,
     iconColor: "#27AE60",
     iconBg: "#E8F8EF",
   },

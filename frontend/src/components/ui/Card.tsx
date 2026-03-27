@@ -1,8 +1,9 @@
-import { ReactNode } from "react";
+import { CSSProperties, ReactNode } from "react";
 
 interface CardProps {
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
   padding?: "none" | "sm" | "md" | "lg";
   shadow?: "none" | "sm" | "md" | "lg";
   border?: boolean;
@@ -25,12 +26,14 @@ const shadowMap = {
 export default function Card({
   children,
   className = "",
+  style,
   padding = "md",
   shadow = "sm",
   border = false,
 }: CardProps) {
   return (
     <div
+      style={style}
       className={`
         bg-white rounded-3xl
         ${paddingMap[padding]}

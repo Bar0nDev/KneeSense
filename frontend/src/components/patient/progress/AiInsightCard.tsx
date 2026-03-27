@@ -2,7 +2,7 @@
 
 import { BsStars } from "react-icons/bs";
 import { FaCaretUp, FaCaretDown, FaCaretRight } from "react-icons/fa";
-import Card from "@/components/ui/Card"; // Assuming this is your standard Card path
+import Card from "@/components/ui/Card";
 
 type InsightStatus = "improving" | "stable" | "declining";
 
@@ -11,7 +11,10 @@ interface AIInsightCardProps {
   summary: string;
 }
 
-const STATUS_CONFIG: Record<InsightStatus, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
+const STATUS_CONFIG: Record<
+  InsightStatus,
+  { label: string; color: string; bg: string; icon: React.ReactNode }
+> = {
   improving: {
     label: "Improving",
     color: "text-[#27AE60]",
@@ -32,14 +35,29 @@ const STATUS_CONFIG: Record<InsightStatus, { label: string; color: string; bg: s
   },
 };
 
+function parseSections(text: string) {
+  const regex = /\*\*(.*?)\*\*(.*?)(?=\*\*|$)/gs;
+  return [...text.matchAll(regex)].map((match) => ({
+    title: match[1].replace(":", "").trim(),
+    content: match[2].trim(),
+  }));
+}
+
 export default function AIInsightCard({ status, summary }: AIInsightCardProps) {
   const { label, color, bg, icon } = STATUS_CONFIG[status];
+  const sections = parseSections(summary);
 
   return (
-    <Card className="min-h-[152px]">
-      <div className="flex flex-col gap-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+    <Card
+      padding="none"
+      shadow="sm"
+      className="overflow-hidden"
+      style={{ maxHeight: "250px" }}
+    >
+      <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
+
+        {/* Header — never scrolls */}
+        <div className="flex items-center justify-between" style={{ flexShrink: 0 }}>
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#12606A]/10">
               <BsStars size={14} className="text-[#12606A]" />
@@ -52,10 +70,33 @@ export default function AIInsightCard({ status, summary }: AIInsightCardProps) {
           </span>
         </div>
 
-        {/* Summary */}
-        <p className="text-sm leading-relaxed text-[#455858]">
-          {summary}
-        </p>
+        {/*
+          Scrollable sections.
+          maxHeight = 300px card - 20px top pad - 44px header - 16px gap - 20px bottom pad = 200px
+          Using inline style so it's guaranteed — not subject to Tailwind purge.
+        */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+            overflowY: "auto",
+            paddingRight: "4px",
+            maxHeight: "150px",
+          }}
+        >
+          {sections.map((section, index) => (
+            <div key={index} className="flex flex-col gap-1">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#12606A]">
+                {section.title}
+              </h4>
+              <p className="text-sm leading-relaxed text-[#455858]">
+                {section.content}
+              </p>
+            </div>
+          ))}
+        </div>
+
       </div>
     </Card>
   );
