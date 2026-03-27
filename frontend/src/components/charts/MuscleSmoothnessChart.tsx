@@ -24,7 +24,7 @@ interface MuscleSmoothnessChartProps {
 
 export default function MuscleSmoothnessChart({ data, benchmark }: MuscleSmoothnessChartProps) {
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <ResponsiveContainer width="100%" height={214}>
       <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }} barCategoryGap="30%">
         <CartesianGrid strokeDasharray="4 4" stroke="#E5E7EB" vertical={false} />
 

@@ -18,7 +18,7 @@ const schedules = [
 
 export default function CalendarCard() {
   return (
-    <Card>
+    <Card className="h-full">
       
       {/* Visual Calendar Component */}
       <div className="w-full border-b border-gray-100 pb-1.5 mb-3.5">

@@ -22,7 +22,7 @@ interface BenchmarkComparisonChartProps {
 
 export default function BenchmarkComparisonChart({ data }: BenchmarkComparisonChartProps) {
   return (
-    <ResponsiveContainer width="100%" height={160}>
+    <ResponsiveContainer width="100%" height={170}>
       <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }} barCategoryGap="30%" barGap={3}>
         <CartesianGrid strokeDasharray="4 4" stroke="#E5E7EB" vertical={false} />
 

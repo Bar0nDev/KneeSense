@@ -15,7 +15,6 @@ export const sessionService = {
     return data; 
   },
 
- 
   getPredictions: async (sessionId: number) => {
     const { data } = await apiClient.get(`/sessions/${sessionId}/predictions`);
     return data; 
@@ -40,5 +39,11 @@ export const sessionService = {
     return data; 
   },
 
+  getAnalysisFile: async (filename: string) => {
+    const { data } = await apiClient.get(`/data/analysis/${filename}`, {
+      timeout: 30000, // 30 seconds — analysis files can be large
+    });
+    return data;
+  },
 
 };
