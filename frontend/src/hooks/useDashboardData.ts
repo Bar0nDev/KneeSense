@@ -6,7 +6,7 @@ export function useDashboardData() {
   const [data, setData] = useState({
     patient: {
       name: "Kevin",
-      lastSession: "Feb 28, 2026",
+      lastSession: "-",
     },
     practitioner: {
       name: "Dr. Jane Doe, MD",
