@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useMediaRecorder } from "@/hooks/useMediaRecorder";
 import { useUser } from "@/context/UserContext";
+import { useSessionData } from "@/context/SessionDataContext";
 import { sessionService } from "@/services/sessionService";
 
 export type RecordingState =
@@ -17,6 +18,7 @@ export type RecordingState =
 export function useRecordingSession() {
   const router = useRouter();
   const { userProfile } = useUser();
+  const { refresh } = useSessionData();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [pageState, setPageState] = useState<RecordingState>("instructions");
   const [errorMessage, setErrorMessage] = useState("");
@@ -107,6 +109,7 @@ export function useRecordingSession() {
       setProcessingMessage("Generating clinical insights...");
       await sessionService.generateInsight(session_id);
 
+      refresh();
       setPageState("success");
     } catch (err: any) {
       console.error("Pipeline error:", err.response?.data || err.message || err);

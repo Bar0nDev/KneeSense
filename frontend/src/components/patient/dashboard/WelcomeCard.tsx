@@ -34,7 +34,7 @@ export default function WelcomeCard({ lastSession, className = "" }: WelcomeCard
           Welcome back, {firstName}
         </h2>
         <p className="mb-8 font-semibold text-sm text-white/80">
-          Your last recorded session was on {lastSession}.
+          {lastSession}
         </p>
         <div className="mt-auto">
           <CTAButton onClick={() => router.push("/progress")}>

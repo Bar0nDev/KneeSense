@@ -54,8 +54,8 @@ export default function ProgressPage() {
       {/* Main Dashboard */}
       <div className="flex flex-col lg:flex-row gap-4 items-stretch">
 
-        {/* Left Column: Session Metrics */}
-        <div className="flex flex-col gap-4 flex-1 min-w-0">
+        {/* Left Column — overflow-hidden added */}
+        <div className="flex flex-col gap-4 flex-1 min-w-0 overflow-hidden">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-bold text-gray-900">Session Metrics</h2>
             <span className="text-sm font-medium text-[#455858] bg-white border border-gray-200 px-3 py-0.5 rounded-full shadow-sm">
@@ -67,7 +67,8 @@ export default function ProgressPage() {
             <div className="w-full lg:w-90 lg:shrink-0">
               <ZoneMap {...sessionData.video} />
             </div>
-            <div className="flex flex-row lg:flex-col gap-3 flex-1">
+            {/* min-w-0 added to stat cards container */}
+            <div className="flex flex-row lg:flex-col gap-3 flex-1 min-w-0">
               {sessionData.stats.map((stat) => (
                 <SessionStatCard
                   key={stat.label}
@@ -82,8 +83,8 @@ export default function ProgressPage() {
           <BenchmarkComparisonCard data={sessionData.benchmarkData} />
         </div>
 
-        {/* Right Column: AI & Smoothness */}
-        <div className="flex flex-col gap-4 w-full lg:w-96 shrink-0">
+        {/* Right Column — lg:shrink-0 added */}
+        <div className="flex flex-col gap-4 w-full lg:w-96 lg:shrink-0">
           <AIInsightCard
             status={isLoading ? "stable" : insights.status}
             summary={isLoading ? "Loading insight…" : insights.summary}

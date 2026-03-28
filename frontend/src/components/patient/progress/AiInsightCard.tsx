@@ -48,12 +48,7 @@ export default function AIInsightCard({ status, summary }: AIInsightCardProps) {
   const sections = parseSections(summary);
 
   return (
-    <Card
-      padding="none"
-      shadow="sm"
-      className="overflow-hidden"
-      style={{ maxHeight: "250px" }}
-    >
+    <Card padding="none" shadow="sm" className="overflow-hidden">
       <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
 
         {/* Header — never scrolls */}
@@ -70,19 +65,15 @@ export default function AIInsightCard({ status, summary }: AIInsightCardProps) {
           </span>
         </div>
 
-        {/*
-          Scrollable sections.
-          maxHeight = 300px card - 20px top pad - 44px header - 16px gap - 20px bottom pad = 200px
-          Using inline style so it's guaranteed — not subject to Tailwind purge.
-        */}
+        {/* Scrollable sections — capped on desktop, natural height on mobile */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "16px",
+            gap: "12px",
             overflowY: "auto",
             paddingRight: "4px",
-            maxHeight: "150px",
+            maxHeight: "clamp(120px, 30vh, 150px)"
           }}
         >
           {sections.map((section, index) => (
