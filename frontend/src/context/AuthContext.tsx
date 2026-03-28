@@ -127,6 +127,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = () => {
     clearSession();
     clearUserProfile();
+    // Clear React Query localStorage cache so next user gets fresh data
+    localStorage.removeItem("kneesense-query-cache");
     router.push("/");
   };
 
