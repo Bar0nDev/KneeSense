@@ -1,7 +1,7 @@
 "use client";
 
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { useSessionData } from "@/context/SessionDataContext";
+import { useSessionData } from "@/hooks/useSessionQueries";
 import WelcomeCard from "@/components/patient/dashboard/WelcomeCard";
 import PractitionerCard from "@/components/patient/dashboard/PractitionerCard";
 import CalendarCard from "@/components/patient/dashboard/CalendarCard";

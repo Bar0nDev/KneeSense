@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useMediaRecorder } from "@/hooks/useMediaRecorder";
 import { useUser } from "@/context/UserContext";
-import { useSessionData } from "@/context/SessionDataContext";
+import { useSessionData } from "@/hooks/useSessionQueries";
 import { sessionService } from "@/services/sessionService";
 
 export type RecordingState =

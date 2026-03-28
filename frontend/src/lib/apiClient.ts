@@ -11,7 +11,8 @@ const apiClient = axios.create({
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isLoginRequest = error.config?.url?.includes('/users/login');
+    if (error.response?.status === 401 && !isLoginRequest) {
       console.error('Session expired. Logging out...');
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
