@@ -3,6 +3,7 @@ import { Nunito, Poppins } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { UserProvider } from "@/context/UserContext";
+import QueryProvider from "@/providers/QueryProvider";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -32,11 +33,13 @@ export default function RootLayout({
         className={`${nunito.variable} ${poppins.variable} font-sans`}
         suppressHydrationWarning
       >
-        <UserProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </UserProvider>
+        <QueryProvider>
+          <UserProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </UserProvider>
+        </QueryProvider>
       </body>
     </html>
   );

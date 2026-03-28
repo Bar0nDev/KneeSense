@@ -1,6 +1,6 @@
 // hooks/useProgress.ts
 import { useMemo } from "react";
-import { useSessionData } from "@/context/SessionDataContext";
+import { useSessionData } from "@/hooks/useSessionQueries";
 
 // ─── Benchmarks ──────────────────────────────────────────────────────────────
 
