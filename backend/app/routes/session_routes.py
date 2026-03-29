@@ -532,12 +532,16 @@ def add_llm_insight(session_id):
     if not data or "insight_text" not in data:
         return jsonify({"error": "Missing insight_text"}), 400
     
+    existing = LLMInsight.query.filter_by(session_id=session_id).first()
+    if existing:
+        return jsonify({"error": "Insight already exists"}), 409
+
     try:
         doc_ref = fs_db.collection("sessions").document(str(session_id))
         doc = doc_ref.get()
         
         if not doc.exists:
-            return jsonify({"error": "Session not found in the Cloud"}), 404
+            return jsonify({"error": "Session not found in the Cloud."}), 404
         
         doc_data = doc.to_dict()
         if doc_data.get("has_insight"):
@@ -546,19 +550,22 @@ def add_llm_insight(session_id):
     except Exception as e:
         return jsonify({"error": f"Cloud verification failed: {str(e)}"}), 500
 
+    model_used = data.get("model", "manual")
+
     insight = LLMInsight(
         session_id=session_id,
         insight_text=data["insight_text"],
-        model_used=data.get("model", "manual")
+        model_used=model_used
     )
     db.session.add(insight)
-    
+
     try:
         db.session.commit()
-        fsdb.mark_insight_complete(
+
+        fs_db.mark_insight_complete(
             session_id=session_id,
             insight_text=data["insight_text"],
-            model_used=data.get("model", "manual")
+            model_used=model_used
         )
 
         return jsonify({"message": "Insight saved"})
@@ -566,12 +573,3 @@ def add_llm_insight(session_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to save insight: {str(e)}"}), 500
-
-    # insight = LLMInsight(
-    #     session_id=session_id,
-    #     insight_text=data["insight_text"],
-    #     model_used=data.get("model", "manual")
-    # )
-    # db.session.add(insight)
-    # db.session.commit()
-    # return jsonify({"message": "Insight saved"})
