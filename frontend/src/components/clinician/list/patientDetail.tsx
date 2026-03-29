@@ -6,7 +6,7 @@ import ZoneMap from "@/components/patient/progress/ZoneMap";
 import MuscleSmoothnessCard from "@/components/patient/progress/MuscleSmoothnessCard";
 import BenchmarkComparisonCard from "@/components/patient/progress/BenchmarkComparisonCard";
 import MetricCard from "@/components/patient/progress/MetricCard";
-import Avatar from "@/components/ui/avatar";
+import Avatar from "@/components/ui/Avatar";
 import { useProgress } from "@/hooks/useProgress";
 import { FiEdit2, FiActivity } from "react-icons/fi";
 import EditProgramModal from "@/components/clinician/modals/EditProgramModal";
@@ -47,11 +47,15 @@ export default function PatientDetail({ patient }: Props) {
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <Avatar 
-              name={patient.name} 
-              subtext={`65 yrs${!isUnassigned ? ` • Week ${Math.ceil(patient.daysIn / 7)}` : ""}`} 
-              size={56} 
-            />
+            <div className="flex items-center gap-3">
+              <Avatar name={patient.name} size={56} />
+              <div className="flex flex-col justify-center">
+                <span className="text-sm font-semibold text-gray-900 leading-tight">{patient.name}</span>
+                <span className="text-xs text-gray-500 leading-tight">
+                  {`65 yrs${!isUnassigned ? ` • Week ${Math.ceil(patient.daysIn / 7)}` : ""}`}
+                </span>
+              </div>
+            </div>
             <span style={{ fontSize: "11px", fontWeight: 700, color: s.text, background: s.bg, borderRadius: "999px", padding: "4px 12px", whiteSpace: "nowrap", flexShrink: 0 }}>
               {s.icon} {patient.status.charAt(0).toUpperCase() + patient.status.slice(1)}
             </span>

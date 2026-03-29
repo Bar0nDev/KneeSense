@@ -12,7 +12,6 @@ export default function Page() {
   return (
     <div className="flex flex-col h-screen" style={{ backgroundColor: '#EFF1FE' }}>
       <Topbar
-        profileImgUrl="/images/profile.jpg"
         username="Dr. Smith"
         userTitle="Clinician"
       />
