@@ -5,7 +5,6 @@ import LinkButton from '../buttons/linkbutton';
 import Avatar from '@/components/ui/Avatar';
 
 type TopbarProps = {
-  profileImgUrl: string;
   username: string;
   userTitle: string;
 };
@@ -15,7 +14,7 @@ const NAV_LINKS = [
   { label: "Patient",   href: "/patients", matchPrefix: "/patients" },
   { label: "Library",   href: "/library/exercises", matchPrefix: "/library" },
 ];
-export default function Topbar({ profileImgUrl, username, userTitle }: TopbarProps) {
+export default function Topbar({username, userTitle }: TopbarProps) {
   const pathname = usePathname();
 
   return (

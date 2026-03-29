@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 
-import Topbar from "@/components/clinician/headers/topbar";
 import LibSubheader from "@/components/clinician/headers/libSubheader";
 import SearchBar from "@/components/ui/searchBar";
 import Dropdown from "@/components/ui/dropDown";
@@ -60,15 +59,7 @@ export default function Exercises() {
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-50">
-        <Topbar
-          username="Dr. Smith"
-          userTitle="Clinician"
-        />
-        <LibSubheader onAddClick={() => setIsAddModalOpen(true)} addButtonLabel="Add Exercise" />
-      </div>
-
-      <main className="min-h-screen pt-32 pb-12" style={{ backgroundColor: '#EFF1FE' }}>
+      <main className="min-h-screen pt-12 pb-12" style={{ backgroundColor: '#EFF1FE' }}>
         <div className="px-8 py-4 flex flex-wrap items-center gap-4 w-full justify-start">
           <div className="w-[400px]">
             <SearchBar 
