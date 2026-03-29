@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 export const usePractitionerRegister = () => {
-  const { register, isLoading, error: apiError } = useAuth();
+  const { register, isRegistering: isLoading, registerError: apiError, clearRegisterError } = useAuth();
+
+  useEffect(() => { clearRegisterError(); }, []);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({

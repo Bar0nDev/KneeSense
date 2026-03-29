@@ -10,6 +10,9 @@ import PrimaryButton from "@/components/ui/PrimaryButton";
 import HeroButton from "@/components/ui/HeroButton";
 import { useAuth } from "@/context/AuthContext";
 import { useUser } from "@/context/UserContext";
+import { useQuery } from "@tanstack/react-query";
+import { userService } from "@/services/userService";
+import { PatientProfile } from "@/types/patient";
 
 export default function ProfilePage() {
   const { tab, setTab, profile } = useProfile();
@@ -18,7 +21,22 @@ export default function ProfilePage() {
 
   // Real data from context
   const isPatient = userProfile?.role === "patient";
-  const p = isPatient ? userProfile.profile : null;
+  const p = isPatient ? (userProfile.profile as PatientProfile) : null;
+  const practitionerId = p?.practitioner_id ?? null;
+
+  const { data: practitionerData } = useQuery({
+    queryKey: ["practitioner", practitionerId],
+    queryFn: async () => {
+      const practProfile = await userService.getPractitionerProfile(practitionerId!);
+      const practUser = await userService.getUser(practProfile.user_id);
+      return {
+        name: practUser.name as string,
+        specialization: practProfile.specialization as string | null,
+        clinic_name: practProfile.clinic_name as string | null,
+      };
+    },
+    enabled: !!practitionerId,
+  });
   const nameParts = (p?.name ?? "").split(" ");
   const firstName = nameParts[0] ?? "";
   const lastName = nameParts.slice(1).join(" ") ?? "";
@@ -100,9 +118,9 @@ export default function ProfilePage() {
             <div className="animate-in fade-in duration-300">
               <p className="text-base font-bold text-gray-900 mb-6">Medical Information</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <ReadField label="Assigned Practitioner" value={profile.medical.practitioner} />
-                <ReadField label="Clinic / Hospital" value={profile.medical.clinic} />
-                <ReadField label="Practitioner Code" value={profile.medical.practitionerCode} />
+                <ReadField label="Assigned Practitioner" value={practitionerData?.name ?? profile.medical.practitioner} />
+                <ReadField label="Specialization" value={practitionerData?.specialization ?? "—"} />
+                <ReadField label="Clinic / Hospital" value={practitionerData?.clinic_name ?? profile.medical.clinic} />
                 <ReadField label="Joined Date" value={
                   p?.created_at
                     ? new Date(p.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })

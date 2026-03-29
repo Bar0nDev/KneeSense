@@ -10,9 +10,12 @@ import { buildUserProfile } from "@/context/UserContext";
 interface AuthContextType {
   session: AuthResponse | null;
   isLoading: boolean;
+  isRegistering: boolean;
   isAuthenticated: boolean;
-  error: string | null;
+  loginError: string | null;
+  registerError: string | null;
   hasRole: (role: UserRole | UserRole[]) => boolean;
+  clearRegisterError: () => void;
   login: (username: string, password: string) => Promise<void>;
   register: (formData: any, role: "patient" | "practitioner") => Promise<void>;
   logout: () => void;
@@ -23,7 +26,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<AuthResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [registerError, setRegisterError] = useState<string | null>(null);
   const { setUserProfile, clearUserProfile } = useUser();
   const router = useRouter();
 
@@ -39,13 +44,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const saveSession = (data: AuthResponse) => {
     setSession(data);
     localStorage.setItem("session", JSON.stringify(data));
-    // Ready for JWT: localStorage.setItem("access_token", data.access_token)
   };
 
   const clearSession = () => {
     setSession(null);
     localStorage.removeItem("session");
-    // Ready for JWT: localStorage.removeItem("access_token")
   };
 
   const hasRole = (role: UserRole | UserRole[]): boolean => {
@@ -56,29 +59,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (username: string, password: string) => {
     setIsLoading(true);
-    setError(null);
+    setLoginError(null);
     try {
-      // 1. LOGIN — get session data (user_id, role, profile_id)
       const sessionData = await userService.login(username, password);
       saveSession(sessionData);
 
-      // 2. FETCH full user + role-specific profile → UserContext
       const built = await buildUserProfile(sessionData);
       if (built) setUserProfile(built);
 
       router.push(sessionData.role === "practitioner" ? "/practitioner-dashboard" : "/dashboard");
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || "Login failed.");
+      setLoginError(err.response?.data?.error || err.message || "Login failed.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const register = async (formData: any, role: "patient" | "practitioner") => {
-    setIsLoading(true);
-    setError(null);
+    setIsRegistering(true);
+    setRegisterError(null);
     try {
-      // 1. CREATE ACCOUNT
       await userService.register({
         name: formData.name,
         username: formData.username,
@@ -87,11 +87,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         role,
       });
 
-      // 2. LOGIN TO GET SESSION
       const sessionData = await userService.login(formData.username, formData.password);
       saveSession(sessionData);
 
-      // 3. UPDATE ROLE-SPECIFIC PROFILE
       if (!sessionData.profile_id) throw new Error("No profile_id returned after login.");
 
       if (role === "patient") {
@@ -112,22 +110,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
       }
 
-      // 4. FETCH full user + role-specific profile → UserContext
       const built = await buildUserProfile(sessionData);
       if (built) setUserProfile(built);
 
       router.push(role === "patient" ? "/dashboard" : "/practitioner-dashboard");
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || "Registration failed.");
+      setRegisterError(err.response?.data?.error || err.message || "Registration failed.");
     } finally {
-      setIsLoading(false);
+      setIsRegistering(false);
     }
   };
 
   const logout = () => {
     clearSession();
     clearUserProfile();
-    // Clear React Query localStorage cache so next user gets fresh data
     localStorage.removeItem("kneesense-query-cache");
     router.push("/");
   };
@@ -137,9 +133,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       value={{
         session,
         isLoading,
+        isRegistering,
         isAuthenticated: !!session,
-        error,
+        loginError,
+        registerError,
         hasRole,
+        clearRegisterError: () => setRegisterError(null),
         login,
         register,
         logout,

@@ -131,25 +131,28 @@ export default function PatientForm() {
 
         {/* Row 5: Biometrics */}
         <div className="grid grid-cols-3 gap-2">
-          <SelectField 
+          <SelectField
             label="Sex"
             placeholder="Sex"
             options={SEX_OPTIONS}
             value={formData.sex}
+            error={errors.sex}
             onChange={(e) => updateField("sex", e.target.value)}
           />
-          <Field 
-            label="Weight (kg)" 
-            type="number" 
-            placeholder="70" 
+          <Field
+            label="Weight (kg)"
+            type="number"
+            placeholder="70"
             value={formData.weight}
+            error={errors.weight}
             onChange={(e) => updateField("weight", e.target.value)}
           />
-          <Field 
-            label="Height (cm)" 
-            type="number" 
-            placeholder="170" 
+          <Field
+            label="Height (cm)"
+            type="number"
+            placeholder="170"
             value={formData.height}
+            error={errors.height}
             onChange={(e) => updateField("height", e.target.value)}
           />
         </div>
