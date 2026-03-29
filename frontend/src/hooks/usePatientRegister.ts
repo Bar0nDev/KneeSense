@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 const MONTHS = [
@@ -9,7 +9,9 @@ const MONTHS = [
 ];
 
 export const usePatientRegister = () => {
-  const { register, isLoading, error: apiError } = useAuth();
+  const { register, isRegistering: isLoading, registerError: apiError, clearRegisterError } = useAuth();
+
+  useEffect(() => { clearRegisterError(); }, []);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [formData, setFormData] = useState({
@@ -32,6 +34,9 @@ export const usePatientRegister = () => {
     if (formData.password.length < 8) newErrors.password = "Min 8 characters";
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Passwords must match";
     if (!formData.month || !formData.day || !formData.year) newErrors.dob = "Date of birth is required";
+    if (!formData.sex) newErrors.sex = "Required";
+    if (!formData.weight.trim()) newErrors.weight = "Required";
+    if (!formData.height.trim()) newErrors.height = "Required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
