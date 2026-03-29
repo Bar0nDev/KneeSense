@@ -1,57 +1,57 @@
-type AvatarProps = {
+import Image from "next/image";
+import React from "react";
+
+interface AvatarProps {
   name: string;
-  subtext?: string;
-  imgUrl?: string;
+  image?: string | null;
   size?: number;
-  textColor?: string;
-  bgColor?: string;
-  reverse?: boolean;  // text on left, circle on right
+  className?: string;
+}
+
+
+const Avatar: React.FC<AvatarProps> = ({
+	name,
+	image = null,
+	size = 64,
+	className = "",
+}) => {
+	const dimension = `${size}px`;
+	const getInitials = (fullName: string) => {
+		if (!fullName) return "?";
+		const words = fullName.trim().split(" ").filter(Boolean);
+		if (words.length === 1) return words[0][0].toUpperCase();
+		return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+	};
+	const initials = getInitials(name);
+	return (
+		image ? (
+			<div
+				className={`relative rounded-full overflow-hidden shrink-0 shadow-sm ${className}`}
+				style={{ width: dimension, height: dimension }}
+			>
+				<Image
+					src={image}
+					alt={name}
+					fill
+					className="object-cover"
+					sizes={dimension}
+				/>
+			</div>
+		) : (
+			<div
+				className={`flex items-center justify-center rounded-full text-[#FDFDFD] font-bold shrink-0 shadow-sm ${className}`}
+				style={{
+					width: dimension,
+					height: dimension,
+					fontSize: size * 0.35,
+					background: "linear-gradient(135deg, #12606A, #30C3B1)"
+				}}
+				aria-label={name}
+			>
+				{initials}
+			</div>
+		)
+	);
 };
 
-export default function Avatar({
-  name,
-  subtext,
-  imgUrl,
-  size = 40,
-  textColor = "#12606A",
-  bgColor = "#EFF1FE",
-  reverse = false,
-}: AvatarProps) {
-  const initials = name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: "10px", fontFamily: "'DM Sans', sans-serif", flexDirection: reverse ? "row-reverse" : "row" }}>
-      {/* Circle */}
-      <div style={{ width: size, height: size, borderRadius: "999px", backgroundColor: bgColor, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-        {imgUrl ? (
-          <img src={imgUrl} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        ) : (
-          <span style={{ fontSize: size * 0.3, fontWeight: 700, color: textColor }}>
-            {initials}
-          </span>
-        )}
-      </div>
-
-      {/* Name + subtext */}
-      {(name || subtext) && (
-        <div style={{ textAlign: reverse ? "right" : "left" }}>
-          {name && (
-            <div style={{ fontSize: "17px", fontWeight: 700, color: textColor, lineHeight: 1.2 }}>
-              {name}
-            </div>
-          )}
-          {subtext && (
-            <div style={{ fontSize: "15px", color: textColor, opacity: 0.6, lineHeight: 1.2 }}>
-              {subtext}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
+export default Avatar;
