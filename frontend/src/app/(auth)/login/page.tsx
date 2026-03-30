@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { GiKneeCap } from "react-icons/gi";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { Field } from "@/components/ui/FormFields";
@@ -12,23 +12,29 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { login, isLoading, loginError: error, clearLoginError } = useAuth();
-
-  useEffect(() => {
-    clearLoginError();
-  }, []);
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(username, password);
+    setError(null);
+    setIsLoading(true);
+    try {
+      await login(username, password);
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || "Login failed.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="flex min-h-screen">
       {/* LEFT — Login form */}
       <div className="flex w-full flex-col justify-between bg-white px-10 py-10 md:w-[48%] lg:px-16">
-        
+
         {/* Logo */}
         <Link href="/" className="flex items-center gap-0.5">
           <GiKneeCap size={26} color="#12606A" />
@@ -84,11 +90,6 @@ export default function LoginPage() {
                 >
                   {showPassword ? <FaRegEyeSlash size={16} /> : <FaRegEye size={16} />}
                 </button>
-                {error && (
-                  <p className="mt-1 text-[10px] font-medium text-red-500 animate-pulse absolute left-0 -bottom-5">
-                    {error}
-                  </p>
-                )}
               </div>
             </div>
 

@@ -16,7 +16,7 @@ import { PatientProfile } from "@/types/patient";
 
 export default function ProfilePage() {
   const { tab, setTab, profile } = useProfile();
-  const { logout, isLoading } = useAuth();
+  const { logout } = useAuth();
   const { userProfile } = useUser();
 
   // Real data from context
@@ -150,7 +150,6 @@ export default function ProfilePage() {
                   color="#9CA3AF"
                   textColor="#455858"
                   className="flex-1 py-3"
-                  disabled={isLoading}
                 >
                   Cancel
                 </PrimaryButton>
@@ -159,9 +158,8 @@ export default function ProfilePage() {
                   textColor="#FFFFFF"
                   className="flex-1 py-3"
                   onClick={logout}
-                  disabled={isLoading}
                 >
-                  {isLoading ? "Logging out..." : "Log Out"}
+                  Log Out
                 </PrimaryButton>
               </div>
             </div>

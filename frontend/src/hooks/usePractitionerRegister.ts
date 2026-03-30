@@ -1,12 +1,11 @@
-"use client";
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 export const usePractitionerRegister = () => {
-  const { register, isRegistering: isLoading, registerError: apiError, clearRegisterError } = useAuth();
+  const { register } = useAuth();
 
-  useEffect(() => { clearRegisterError(); }, []);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
@@ -39,14 +38,22 @@ export const usePractitionerRegister = () => {
     e.preventDefault();
     if (!validate()) return;
 
-    await register({
-      name: `${formData.firstName} ${formData.lastName}`.trim(),
-      username: formData.username,
-      email: formData.email,
-      password: formData.password,
-      clinic_name: formData.clinicName,
-      specialization: formData.specialty, // matches backend field name
-    }, "practitioner");
+    setIsLoading(true);
+    setError(null);
+    try {
+      await register({
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        clinic_name: formData.clinicName,
+        specialization: formData.specialty,
+      }, "practitioner");
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || "Registration failed.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const updateField = (field: string, value: string) => {
@@ -60,5 +67,5 @@ export const usePractitionerRegister = () => {
     }
   };
 
-  return { formData, updateField, handleFormSubmit, isLoading, error: apiError, errors };
+  return { formData, updateField, handleFormSubmit, isLoading, error, errors };
 };

@@ -13,7 +13,7 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, allowedRole, publicOnly }: ProtectedRouteProps) {
-  const { session, isAuthenticated, hasRole, isLoading } = useAuth();
+  const { session, isAuthenticated, hasRole, isRehydrating: isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
