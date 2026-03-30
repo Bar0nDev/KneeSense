@@ -232,19 +232,37 @@ def analyze_session(session_id):
 
     try:
         predictions = run_inference_and_store(session_id, session.video_path)
-        
+        angles = [
+            p.get("predicted_angle")
+            for p in predictions
+            if p.get("predicted_angle") is not None
+        ]
+
+        avg_angle = sum(angles) / len(angles) if angles else None
+
+        # calculate stats for Cloud metadata
+        min_angle = min(angles) if angles else None
+        max_angle = max(angles) if angles else None
+        rom_arc = (max_angle - min_angle) if angles else None
+        avg_angle = sum(angles) / len(angles) if angles else None
+
         json_filename = f"analysis_{session_id}.json"
         analysis_dir = os.path.join(current_app.config["DATA_DIR"], "analysis")
         os.makedirs(analysis_dir, exist_ok=True)
         final_json_path = os.path.join(analysis_dir, json_filename)
-        
+
         with open(final_json_path, "w") as f:
             json.dump(predictions, f)
-            
+        
+        #FIX: mark analysis complete with new stats
         fsdb.mark_analysis_complete(
-            session_id=session_id, 
-            json_filename=json_filename, 
-            total_frames=len(predictions)
+            session_id=session_id,
+            json_filename=json_filename,
+            total_frames=len(predictions),
+            min_angle=min_angle,
+            max_angle=max_angle,
+            avg_angle=avg_angle,
+            rom_arc=rom_arc
         )
 
         return jsonify({
@@ -254,11 +272,11 @@ def analyze_session(session_id):
         }), 200
 
     except ValueError as e:
-      fsdb.mark_analysis_failed(session_id)
-      return jsonify({"error": str(e)}), 400
-    
+        fsdb.mark_analysis_failed(session_id)
+        return jsonify({"error": str(e)}), 400
+
     except Exception as e:
-      return jsonify({"error": f"Inference pipeline failed: {str(e)}"}), 500
+        return jsonify({"error": f"Inference pipeline failed: {str(e)}"}), 500
         
 # =========================
 # GET PREDICTIONS FOR SESSION
@@ -291,17 +309,26 @@ def get_predictions(session_id):
             data = doc.to_dict()
             json_name = data.get("analysis_json_name")
             
+            #FIX
             if json_name:
-                return jsonify({
-                    "session_id": session_id,
-                    "source": "cloud_storage",
-                    "file_name": json_name,
-                    "status": data.get("status")
-                }), 200
+              analysis_dir = os.path.join(current_app.config["DATA_DIR"], "analysis")
+              json_path = os.path.join(analysis_dir, json_name)
+
+              if os.path.exists(json_path):
+                  with open(json_path, "r") as f:
+                      predictions = json.load(f)
+
+                  return jsonify({
+                      "session_id": session_id,
+                      "source": "json_file",
+                      "total_frames": len(predictions),
+                      "predictions": predictions
+                  }), 200
             
     except Exception as e:
         print(f"Cloud check failed: {e}")
-    
+
+    # sql as fallback
     predictions = FramePrediction.query.filter_by(session_id=session_id)\
         .order_by(FramePrediction.frame_index).all()
     
@@ -390,7 +417,7 @@ def generate_insight(session_id):
         i_text = result.get("insight_text")
         i_model = result.get("model_used")
 
-        fs_db.mark_insight_complete(
+        fsdb.mark_insight_complete(
             session_id=session_id, 
             insight_text=i_text, 
             model_used=i_model
@@ -444,12 +471,11 @@ def get_insight(session_id):
         
         if doc.exists:
             data = doc.to_dict()
-            if not data.get("has_insight"):
-                fs_db.mark_insight_complete(
-                    session_id=session_id,
-                    insight_text=insight.insight_text,
-                    model_used=insight.model_used
-                )
+            fsdb.mark_insight_complete(
+                session_id=session_id,
+                insight_text=insight.insight_text,
+                model_used=insight.model_used
+            )
     except Exception as e:
         print(f"Failed to retrieve insight {insight.id}: {e}")
 
@@ -510,12 +536,16 @@ def add_llm_insight(session_id):
     if not data or "insight_text" not in data:
         return jsonify({"error": "Missing insight_text"}), 400
     
+    existing = LLMInsight.query.filter_by(session_id=session_id).first()
+    if existing:
+        return jsonify({"error": "Insight already exists"}), 409
+
     try:
         doc_ref = fs_db.collection("sessions").document(str(session_id))
         doc = doc_ref.get()
         
         if not doc.exists:
-            return jsonify({"error": "Session not found in the Cloud"}), 404
+            return jsonify({"error": "Session not found in the Cloud."}), 404
         
         doc_data = doc.to_dict()
         if doc_data.get("has_insight"):
@@ -524,19 +554,22 @@ def add_llm_insight(session_id):
     except Exception as e:
         return jsonify({"error": f"Cloud verification failed: {str(e)}"}), 500
 
+    model_used = data.get("model", "manual")
+
     insight = LLMInsight(
         session_id=session_id,
         insight_text=data["insight_text"],
-        model_used=data.get("model", "manual")
+        model_used=model_used
     )
     db.session.add(insight)
-    
+
     try:
         db.session.commit()
-        fsdb.mark_insight_complete(
+
+        fs_db.mark_insight_complete(
             session_id=session_id,
             insight_text=data["insight_text"],
-            model_used=data.get("model", "manual")
+            model_used=model_used
         )
 
         return jsonify({"message": "Insight saved"})
@@ -544,12 +577,3 @@ def add_llm_insight(session_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to save insight: {str(e)}"}), 500
-
-    # insight = LLMInsight(
-    #     session_id=session_id,
-    #     insight_text=data["insight_text"],
-    #     model_used=data.get("model", "manual")
-    # )
-    # db.session.add(insight)
-    # db.session.commit()
-    # return jsonify({"message": "Insight saved"})
