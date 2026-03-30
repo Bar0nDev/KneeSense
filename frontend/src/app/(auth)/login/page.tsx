@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GiKneeCap } from "react-icons/gi";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { Field } from "@/components/ui/FormFields";
@@ -13,7 +13,11 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const { login, isLoading, loginError: error } = useAuth();
+  const { login, isLoading, loginError: error, clearLoginError } = useAuth();
+
+  useEffect(() => {
+    clearLoginError();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

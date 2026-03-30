@@ -16,6 +16,7 @@ interface AuthContextType {
   registerError: string | null;
   hasRole: (role: UserRole | UserRole[]) => boolean;
   clearRegisterError: () => void;
+  clearLoginError: () => void;
   login: (username: string, password: string) => Promise<void>;
   register: (formData: any, role: "patient" | "practitioner") => Promise<void>;
   logout: () => void;
@@ -139,6 +140,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         registerError,
         hasRole,
         clearRegisterError: () => setRegisterError(null),
+        clearLoginError: () => setLoginError(null),
         login,
         register,
         logout,
