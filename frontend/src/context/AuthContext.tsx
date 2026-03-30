@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const built = await buildUserProfile(sessionData);
       if (built) setUserProfile(built);
 
-      router.push(sessionData.role === "practitioner" ? "/practitioner-dashboard" : "/dashboard");
+      router.push(sessionData.role === "practitioner" ? "/analytics" : "/dashboard");
     } catch (err: any) {
       setLoginError(err.response?.data?.error || err.message || "Login failed.");
     } finally {
@@ -113,7 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const built = await buildUserProfile(sessionData);
       if (built) setUserProfile(built);
 
-      router.push(role === "patient" ? "/dashboard" : "/practitioner-dashboard");
+      router.push(role === "patient" ? "/dashboard" : "/analytics");
     } catch (err: any) {
       setRegisterError(err.response?.data?.error || err.message || "Registration failed.");
     } finally {

@@ -390,7 +390,7 @@ def generate_insight(session_id):
         i_text = result.get("insight_text")
         i_model = result.get("model_used")
 
-        fsdb.mark_insight_complete(
+        fs_db.mark_insight_complete(
             session_id=session_id, 
             insight_text=i_text, 
             model_used=i_model
@@ -445,7 +445,7 @@ def get_insight(session_id):
         if doc.exists:
             data = doc.to_dict()
             if not data.get("has_insight"):
-                fsdb.mark_insight_complete(
+                fs_db.mark_insight_complete(
                     session_id=session_id,
                     insight_text=insight.insight_text,
                     model_used=insight.model_used
@@ -555,6 +555,10 @@ def add_llm_insight(session_id):
     # return jsonify({"message": "Insight saved"})
 
 
+
+# =========================
+# Temporary route to serve analysis JSON files (for frontend dev testing)
+# =========================
 @session_bp.route("/data/analysis/<path:filename>", methods=["GET"])
 def serve_analysis_file(filename):
     analysis_dir = os.path.join(current_app.root_path, "..", current_app.config["DATA_DIR"], "analysis")

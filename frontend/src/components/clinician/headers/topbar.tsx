@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import LinkButton from '../buttons/linkbutton';
 import Avatar from '@/components/ui/Avatar';
+import { useAuth } from '@/context/AuthContext';
 
 type TopbarProps = {
   username: string;
@@ -16,6 +17,7 @@ const NAV_LINKS = [
 ];
 export default function Topbar({username, userTitle }: TopbarProps) {
   const pathname = usePathname();
+  const { logout } = useAuth();
 
   return (
     <header
@@ -58,6 +60,8 @@ export default function Topbar({username, userTitle }: TopbarProps) {
 
         {/* Right Side: Avatar - Remains centered */}
         <div className="flex items-center gap-3">
+
+          <button onClick={logout} className="text-xs text-white/80 border border-white/30 rounded px-2 py-1 hover:bg-white/10">Logout</button>
           <div className="flex flex-col items-end justify-center">
             <span className="text-sm font-semibold text-white leading-tight">{username}</span>
             <span className="text-xs text-white/80 leading-tight">{userTitle}</span>

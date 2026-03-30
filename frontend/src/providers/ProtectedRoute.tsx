@@ -21,7 +21,7 @@ export default function ProtectedRoute({ children, allowedRole, publicOnly }: Pr
 
     // Public only page (login/register) — redirect logged in users to their dashboard
     if (publicOnly && isAuthenticated) {
-      router.push(session!.role === "practitioner" ? "/practitioner-dashboard" : "/dashboard");
+      router.push(session!.role === "practitioner" ? "/analytics" : "/dashboard");
       return;
     }
 
@@ -33,7 +33,7 @@ export default function ProtectedRoute({ children, allowedRole, publicOnly }: Pr
 
     // Role mismatch — redirect to their correct dashboard
     if (!publicOnly && allowedRole && !hasRole(allowedRole)) {
-      router.push(session!.role === "practitioner" ? "/practitioner-dashboard" : "/dashboard");
+      router.push(session!.role === "practitioner" ? "/analytics" : "/dashboard");
     }
   }, [isAuthenticated, isLoading, router, allowedRole, publicOnly]);
 
