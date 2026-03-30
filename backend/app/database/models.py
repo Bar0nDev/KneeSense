@@ -172,6 +172,12 @@ class Session(db.Model):
         lazy=True
     )
 
+    optical_flow_results = db.relationship(
+        "OpticalFlowResult",
+        backref="session",
+        lazy=True
+    )
+
 
 # =========================
 # FRAME PREDICTIONS
@@ -191,12 +197,6 @@ class FramePrediction(db.Model):
     frame_index = db.Column(db.Integer, nullable=False)
 
     predicted_angle = db.Column(db.Float)
-
-    region1_activation = db.Column(db.Float)
-
-    region2_activation = db.Column(db.Float)
-
-    region3_activation = db.Column(db.Float)
 
     created_at = db.Column(
         db.DateTime,
@@ -227,3 +227,33 @@ class LLMInsight(db.Model):
         db.DateTime,
         default=datetime.now(UTC)
     )
+
+# =========================
+# OPTICAL FLOW RESULTS
+# =========================
+
+class OpticalFlowResult(db.Model):
+    __tablename__ = "optical_flow_results"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    session_id = db.Column(
+        db.Integer,
+        db.ForeignKey("sessions.id"),
+        nullable=False,
+        index=True
+    )
+
+    frame_index = db.Column(db.Integer, nullable=False)
+
+    zone1_score   = db.Column(db.Float, nullable=False)
+    zone2_score   = db.Column(db.Float, nullable=False)
+    zone3_score   = db.Column(db.Float, nullable=False)
+
+    zone1_percent = db.Column(db.Float, nullable=False)
+    zone2_percent = db.Column(db.Float, nullable=False)
+    zone3_percent = db.Column(db.Float, nullable=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.now(UTC))
+
+    session = db.relationship("Session", backref=db.backref("optical_flow_results", lazy=True))

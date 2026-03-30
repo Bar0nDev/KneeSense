@@ -172,57 +172,10 @@ def get_patient_sessions(patient_id):
 
 @session_bp.route("/sessions/<int:session_id>/analyze", methods=["POST"])
 def analyze_session(session_id):
-    """
-    Trigger AI inference on session video
-    ---
-    tags:
-      - AI Analysis
-    parameters:
-      - name: session_id
-        in: path
-        type: integer
-        required: true
-
-    responses:
-      200:
-        description: Analysis complete
-        schema:
-          type: object
-          properties:
-            session_id:
-              type: integer
-            total_frames_analyzed:
-              type: integer
-            predictions:
-              type: array
-              items:
-                $ref: '#/definitions/Prediction'
-
-      400:
-        description: Bad request
-        schema:
-          $ref: '#/definitions/Error'
-
-      404:
-        description: Session not found
-        schema:
-          $ref: '#/definitions/Error'
-
-      409:
-        description: Already analyzed
-        schema:
-          $ref: '#/definitions/Error'
-
-      500:
-        description: Inference failure
-        schema:
-          $ref: '#/definitions/Error'
-    """
     session = db.session.get(Session, session_id)
 
     if not session:
         return jsonify({"error": "Session not found"}), 404
-
     if not session.video_path or not os.path.exists(session.video_path):
         return jsonify({"error": "No video found for this session"}), 400
 
@@ -231,30 +184,24 @@ def analyze_session(session_id):
         return jsonify({"error": "Session already analyzed"}), 409
 
     try:
-        predictions = run_inference_and_store(session_id, session.video_path)
-        angles = [
-            p.get("predicted_angle")
-            for p in predictions
-            if p.get("predicted_angle") is not None
-        ]
+        # run_inference_and_store returns both
+        predictions, flow_results = run_inference_and_store(session_id, session.video_path)
 
+        angles    = [p["predicted_angle"] for p in predictions if p.get("predicted_angle") is not None]
         avg_angle = sum(angles) / len(angles) if angles else None
-
-        # calculate stats for Cloud metadata
         min_angle = min(angles) if angles else None
         max_angle = max(angles) if angles else None
-        rom_arc = (max_angle - min_angle) if angles else None
-        avg_angle = sum(angles) / len(angles) if angles else None
+        rom_arc   = (max_angle - min_angle) if angles else None
 
         json_filename = f"analysis_{session_id}.json"
-        analysis_dir = os.path.join(current_app.config["DATA_DIR"], "analysis")
+        analysis_dir  = os.path.join(current_app.config["DATA_DIR"], "analysis")
         os.makedirs(analysis_dir, exist_ok=True)
         final_json_path = os.path.join(analysis_dir, json_filename)
 
+        # Persist both to JSON for cloud/fallback reads
         with open(final_json_path, "w") as f:
-            json.dump(predictions, f)
-        
-        #FIX: mark analysis complete with new stats
+            json.dump({"predictions": predictions, "flow_results": flow_results}, f)
+
         fsdb.mark_analysis_complete(
             session_id=session_id,
             json_filename=json_filename,
@@ -266,18 +213,18 @@ def analyze_session(session_id):
         )
 
         return jsonify({
-            "session_id": session_id,
+            "session_id":            session_id,
             "total_frames_analyzed": len(predictions),
-            "predictions": predictions,
-        }), 200
+            "predictions":           predictions,
+            "flow_results":          flow_results,
+        })
 
     except ValueError as e:
-        fsdb.mark_analysis_failed(session_id)
         return jsonify({"error": str(e)}), 400
-
     except Exception as e:
-        return jsonify({"error": f"Inference pipeline failed: {str(e)}"}), 500
-        
+        db.session.rollback()
+        return jsonify({"error": f"Inference failed: {str(e)}"}), 500
+    
 # =========================
 # GET PREDICTIONS FOR SESSION
 # =========================

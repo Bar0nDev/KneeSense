@@ -5,11 +5,12 @@ Full inference pipeline — entirely in memory, no intermediate PNGs written.
 
 Flow:
   1. Load all frames from video as numpy arrays
-  2. Fisheye correct + crop + scale each frame  (same params as ultimateDataGathering.py)
+  2. Fisheye correct + crop + scale each frame
   3. Run Eulerian Motion Magnification across the full frame sequence
   4. Apply EMA temporal smoothing (alpha=0.20, the best-performing setting)
-  5. Slide a 9-frame window, preprocess each window into a tensor, run model
-  6. Bulk insert FramePrediction rows
+  5. Compute dense Farneback optical flow → zone scores (stored every 10th frame)
+  6. Slide a 9-frame window, preprocess each window into a tensor, run model
+  7. Bulk insert FramePrediction + OpticalFlowResult rows
 """
 
 import cv2
@@ -20,7 +21,7 @@ from scipy.signal import butter, filtfilt
 import torchvision.transforms as transforms
 
 from app.database.db import db
-from app.database.models import FramePrediction
+from app.database.models import FramePrediction, OpticalFlowResult
 from app.ml.knee_model import get_model
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -48,12 +49,26 @@ EMM_FREQ_MIN       = 0.8
 EMM_FREQ_MAX       = 2.0
 EMM_PYRAMID_LEVELS = 4
 
-# EMA  (only α=0.20 used — best performing setting)
+# EMA (only α=0.20 used — best performing setting)
 EMA_ALPHA_SLOW    = 0.20
 EMA_ALPHA_FAST    = 0.60
-EMA_MOTION_THRESH = 10.0   # mean abs-diff (grayscale, 0-255 scale)
+EMA_MOTION_THRESH = 10.0
 
-# Preprocessing transform — matches testModel.py exactly
+# Optical flow
+ZONE_COUNT           = 3
+FLOW_STORE_EVERY_NTH = 10
+
+FARNEBACK_PARAMS = dict(
+    pyr_scale=0.5,
+    levels=3,
+    winsize=15,
+    iterations=3,
+    poly_n=5,
+    poly_sigma=1.2,
+    flags=0
+)
+
+# Preprocessing transform
 _TRANSFORM = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -71,7 +86,7 @@ _TRANSFORM = transforms.Compose([
 def _load_and_preprocess_frames(video_path: str) -> tuple[list[np.ndarray], float]:
     """
     Opens video, applies fisheye correction + crop + scale to every frame.
-    Returns (frames_bgr, fps)  where frames_bgr is a list of uint8 BGR arrays.
+    Returns (frames_bgr, fps) where frames_bgr is a list of uint8 BGR arrays.
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -81,7 +96,6 @@ def _load_and_preprocess_frames(video_path: str) -> tuple[list[np.ndarray], floa
     width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    # Build fisheye matrices once (depends on original frame size)
     fx = EMM_FX_SCALE * width
     fy = EMM_FY_SCALE * height
     K  = np.array([[fx, 0,  width  / 2],
@@ -114,7 +128,7 @@ def _load_and_preprocess_frames(video_path: str) -> tuple[list[np.ndarray], floa
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# STEP 2 — Eulerian Motion Magnification  (ported from ultimateDataGathering.py)
+# STEP 2 — Eulerian Motion Magnification
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _build_laplacian_pyramid(img: np.ndarray, levels: int) -> list[np.ndarray]:
@@ -150,10 +164,7 @@ def _apply_emm(frames_bgr: list[np.ndarray], fps: float) -> list[np.ndarray]:
     Returns a new list of uint8 BGR frames with motion magnified.
     """
     N = len(frames_bgr)
-
-    # Convert to float32 YUV and build pyramids
-    frames_yuv  = []
-    pyramid_seq = []
+    frames_yuv, pyramid_seq = [], []
 
     for frame in frames_bgr:
         yuv = cv2.cvtColor(frame, cv2.COLOR_BGR2YUV).astype(np.float32) / 255.0
@@ -162,14 +173,12 @@ def _apply_emm(frames_bgr: list[np.ndarray], fps: float) -> list[np.ndarray]:
 
     num_levels = len(pyramid_seq[0])
 
-    # Temporal bandpass filter per pyramid level
     filtered_pyramids = []
     for lv in range(num_levels):
         seq  = np.array([pyramid_seq[t][lv] for t in range(N)], dtype=np.float32)
         filt = _temporal_bandpass(seq, fps)
         filtered_pyramids.append(filt)
 
-    # Reconstruct magnified frames
     out_frames = []
     for t in range(N):
         orig_pyr = pyramid_seq[t]
@@ -188,7 +197,7 @@ def _apply_emm(frames_bgr: list[np.ndarray], fps: float) -> list[np.ndarray]:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# STEP 3 — EMA temporal smoothing  (α=0.20, ported from applyBlurFramesGenerator.py)
+# STEP 3 — EMA temporal smoothing
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _apply_ema(frames_bgr: list[np.ndarray]) -> list[np.ndarray]:
@@ -197,15 +206,13 @@ def _apply_ema(frames_bgr: list[np.ndarray]) -> list[np.ndarray]:
     Low-motion frames blend slowly; high-motion frames blend faster.
     """
     out_frames = []
-    prev_f32   = None
-    prev_gray  = None
+    prev_f32 = prev_gray = None
 
     for frame in frames_bgr:
         curr_f32  = frame.astype(np.float32)
         curr_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         if prev_f32 is None:
-            # First frame — pass through unchanged
             out_frames.append(frame)
             prev_f32  = curr_f32.copy()
             prev_gray = curr_gray.copy()
@@ -219,14 +226,71 @@ def _apply_ema(frames_bgr: list[np.ndarray]) -> list[np.ndarray]:
 
         prev_f32  = blended
         prev_gray = cv2.cvtColor(out_frame, cv2.COLOR_BGR2GRAY)
-
         out_frames.append(out_frame)
 
     return out_frames
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# STEP 4 — tensor preprocessing for a 9-frame window
+# STEP 4 — Dense optical flow (Farneback) → zone scores, stored every 10th frame
+# ──────────────────────────────────────────────────────────────────────────────
+
+def _compute_optical_flow(
+    session_id: int,
+    frames_bgr: list[np.ndarray]
+) -> list[OpticalFlowResult]:
+    """
+    Runs dense Farneback optical flow across the full frame sequence.
+    Flow is computed every frame (required for accuracy) but only stored
+    every FLOW_STORE_EVERY_NTH frames to keep DB rows manageable.
+    Returns a list of ORM objects ready for bulk insert.
+    """
+    H, W = frames_bgr[0].shape[:2]
+    zone_width = W // ZONE_COUNT
+    zone_ranges = []
+    for i in range(ZONE_COUNT):
+        x1 = i * zone_width
+        x2 = (i + 1) * zone_width if i < ZONE_COUNT - 1 else W
+        zone_ranges.append((x1, x2))
+
+    rows = []
+    prev_gray = cv2.cvtColor(frames_bgr[0], cv2.COLOR_BGR2GRAY)
+
+    for idx in range(1, len(frames_bgr)):
+        curr_gray = cv2.cvtColor(frames_bgr[idx], cv2.COLOR_BGR2GRAY)
+
+        flow = cv2.calcOpticalFlowFarneback(
+            prev_gray, curr_gray, None, **FARNEBACK_PARAMS
+        )
+
+        mag = np.sqrt(flow[..., 0] ** 2 + flow[..., 1] ** 2)
+
+        zone_scores = [
+            float(np.mean(mag[:, x1:x2])) for x1, x2 in zone_ranges
+        ]
+        total = sum(zone_scores) + 1e-8
+        zone_percents = [round((s / total) * 100, 2) for s in zone_scores]
+
+        # Compute every frame, store every 10th
+        if idx % FLOW_STORE_EVERY_NTH == 0:
+            rows.append(OpticalFlowResult(
+                session_id=session_id,
+                frame_index=idx,
+                zone1_score=zone_scores[0],
+                zone2_score=zone_scores[1],
+                zone3_score=zone_scores[2],
+                zone1_percent=zone_percents[0],
+                zone2_percent=zone_percents[1],
+                zone3_percent=zone_percents[2],
+            ))
+
+        prev_gray = curr_gray
+
+    return rows
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# STEP 5 — tensor preprocessing for a 9-frame window
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _window_to_tensor(window: list[np.ndarray]) -> torch.Tensor:
@@ -236,7 +300,6 @@ def _window_to_tensor(window: list[np.ndarray]) -> torch.Tensor:
     """
     imgs = []
     for frame in window:
-        # cv2 is BGR, PIL expects RGB
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(rgb)
         imgs.append(_TRANSFORM(img))   # (3, 224, 224)
@@ -249,12 +312,18 @@ def _window_to_tensor(window: list[np.ndarray]) -> torch.Tensor:
 # PUBLIC — called by session_routes.py
 # ──────────────────────────────────────────────────────────────────────────────
 
-def run_inference_and_store(session_id: int, video_path: str) -> list[dict]:
+def run_inference_and_store(
+    session_id: int,
+    video_path: str
+) -> tuple[list[dict], list[dict]]:
     """
     Full in-memory pipeline:
-      load → fisheye/crop/scale → EMM → EMA → sliding window inference → DB insert
+      load → fisheye/crop/scale → EMM → EMA → optical flow + sliding window inference → DB insert
 
-    Returns list of {frame_index, predicted_angle} dicts.
+    Returns:
+      predictions  — list of {frame_index, predicted_angle}
+      flow_results — list of {frame_index, zone1_score, zone2_score, zone3_score,
+                               zone1_percent, zone2_percent, zone3_percent}
     """
     # 1. Load + geometric preprocessing
     frames, fps = _load_and_preprocess_frames(video_path)
@@ -270,17 +339,20 @@ def run_inference_and_store(session_id: int, video_path: str) -> list[dict]:
     # 3. EMA temporal smoothing at α=0.20
     frames = _apply_ema(frames)
 
-    # 4. Sliding window inference
-    model       = get_model()
-    total       = len(frames)
-    predictions = []
+    # 4. Optical flow — computed every frame, stored every 10th
+    flow_orm_rows = _compute_optical_flow(session_id, frames)
+
+    # 5. Sliding window inference
+    model         = get_model()
+    total         = len(frames)
+    pred_orm_rows = []
 
     for center in range(HALF, total - HALF):
-        window     = frames[center - HALF : center + HALF + 1]
-        tensor     = _window_to_tensor(window)
-        angle_deg  = model.predict(tensor)
+        window    = frames[center - HALF : center + HALF + 1]
+        tensor    = _window_to_tensor(window)
+        angle_deg = model.predict(tensor)
 
-        predictions.append(
+        pred_orm_rows.append(
             FramePrediction(
                 session_id=session_id,
                 frame_index=center,
@@ -288,11 +360,26 @@ def run_inference_and_store(session_id: int, video_path: str) -> list[dict]:
             )
         )
 
-    # 5. Bulk insert
-    db.session.bulk_save_objects(predictions)
+    # 6. Bulk insert both
+    db.session.bulk_save_objects(pred_orm_rows)
+    db.session.bulk_save_objects(flow_orm_rows)
     db.session.commit()
 
-    return [
+    predictions = [
         {"frame_index": p.frame_index, "predicted_angle": p.predicted_angle}
-        for p in predictions
+        for p in pred_orm_rows
     ]
+    flow_results = [
+        {
+            "frame_index":   r.frame_index,
+            "zone1_score":   r.zone1_score,
+            "zone2_score":   r.zone2_score,
+            "zone3_score":   r.zone3_score,
+            "zone1_percent": r.zone1_percent,
+            "zone2_percent": r.zone2_percent,
+            "zone3_percent": r.zone3_percent,
+        }
+        for r in flow_orm_rows
+    ]
+
+    return predictions, flow_results
