@@ -1,46 +1,31 @@
 "use client";
 
-import Image from "next/image";
+import Avatar from "@/components/ui/Avatar";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import Card from "@/components/ui/Card";
 import { PiChatCircleDotsBold } from "react-icons/pi";
 
 interface PractitionerCardProps {
   name: string;
-  role: string;
-  initials: string;
+  specialization: string | null;
   image?: string | null;
 }
 
-export default function PractitionerCard({ 
-  name, 
-  role, 
-  initials, 
+export default function PractitionerCard({
+  name,
+  specialization,
   image = null,
 }: PractitionerCardProps) {
   return (
     <Card className="flex flex-col items-center text-center gap-2">
-      
-      {/* Avatar / Image */}
-      {image ? (
-        <div className="relative w-20 h-20 rounded-full overflow-hidden shrink-0 shadow-sm">
-          <Image
-            src={image}
-            alt={name}
-            fill
-            className="object-cover"
-          />
-        </div>
-      ) : (
-        <div className="w-17 h-17 rounded-full bg-[#30C3B1] flex items-center justify-center text-[#FDFDFD] text-2xl font-bold shrink-0 shadow-sm">
-          {initials}
-        </div>
-      )}
 
-      {/* Name + Role */}
+      {/* Avatar */}
+      <Avatar name={name} image={image} size={80} />
+
+      {/* Name + Specialization */}
       <div className="leading-snug">
         <h2 className="text-base font-bold text-[#1C2121] tracking-tight">{name}</h2>
-        <p className="text-sm text-[#455858] font-medium opacity-80">{role}</p>
+        <p className="text-sm text-[#455858] font-medium opacity-80">{specialization}</p>
       </div>
 
       {/* PrimaryButton pinned to bottom */}

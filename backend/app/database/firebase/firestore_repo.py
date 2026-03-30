@@ -87,7 +87,7 @@ def fsdb_session(session):
 
 
 def mark_analysis_complete(session_id, json_filename, total_frames,
-                           min_angle=None, max_angle=None, rom_arc=None):
+                           min_angle=None, max_angle=None, avg_angle=None, rom_arc=None):
 
     fs_db.collection("sessions").document(str(session_id)).update({
         "status": "completed",
@@ -97,6 +97,7 @@ def mark_analysis_complete(session_id, json_filename, total_frames,
         "prediction_count": total_frames,
         "min_angle": min_angle,
         "max_angle": max_angle,
+        "avg_angle": avg_angle,
         "rom_arc": rom_arc
     })
 

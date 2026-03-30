@@ -1,23 +1,23 @@
 "use client";
 
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useSessionData } from "@/hooks/useSessionQueries";
 import WelcomeCard from "@/components/patient/dashboard/WelcomeCard";
 import PractitionerCard from "@/components/patient/dashboard/PractitionerCard";
 import CalendarCard from "@/components/patient/dashboard/CalendarCard";
 import KneeAngleCard from "@/components/patient/dashboard/KneeAngleCard";
 import PatientTaskCard from "@/components/patient/dashboard/PatientTaskCard";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function DashboardPage() {
   const { patient, practitioner, tasks, isLoading } = useDashboardData();
+  const { latestSession } = useSessionData();
+  const lastSessionDate = latestSession
+    ? `Your last recorded session was on ${new Date(latestSession.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}.`
+    : "You haven't recorded a session yet. Start your first one now!";
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-pulse text-[#12606A] font-medium uppercase tracking-widest text-xs">
-          Loading Dashboard...
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
@@ -26,8 +26,7 @@ export default function DashboardPage() {
       {/* Main Insights */}
       <div className="flex flex-col gap-6 flex-1 min-w-0">
         <WelcomeCard
-          name={patient.name}
-          lastSession={patient.lastSession}
+          lastSession={lastSessionDate}
         />
         
         <KneeAngleCard />

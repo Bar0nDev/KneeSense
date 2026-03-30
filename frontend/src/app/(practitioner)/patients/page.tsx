@@ -11,12 +11,7 @@ export default function Page() {
 
   return (
     <div className="flex flex-col h-screen" style={{ backgroundColor: '#EFF1FE' }}>
-      <Topbar
-        profileImgUrl="/images/profile.jpg"
-        username="Dr. Smith"
-        userTitle="Clinician"
-      />
-      
+
       <main className="flex flex-1 overflow-hidden">
         <PList onSelect={setSelected} selectedId={selected?.id} />
         <div className="flex-1 overflow-y-auto bg-white/50 p-6"> 

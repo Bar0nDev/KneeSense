@@ -12,11 +12,11 @@ interface SessionStatCardProps {
 export default function SessionStatCard({
   label,
   value,
-  benchmarkLabel = "vs Benchmark",
+  benchmarkLabel = "last session",
   benchmarkValue,
 }: SessionStatCardProps) {
   return (
-    <Card className="flex-1 flex flex-col justify-center min-w-0 py-4 px-5">
+    <Card className="flex flex-col justify-center min-w-0 w-full py-4 px-5">
       <div className="flex flex-col gap-0.5">
         {/* Main Metric Label */}
         <p className="text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest truncate">

@@ -1,19 +1,43 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useUser } from "@/context/UserContext";
+import { userService } from "@/services/userService";
+import { PatientProfile } from "@/types/patient";
 
 export function useDashboardData() {
-  const [data, setData] = useState({
+  const { userProfile } = useUser();
+
+  const patientProfile =
+    userProfile?.role === "patient" ? (userProfile.profile as PatientProfile) : null;
+  const practitionerId = patientProfile?.practitioner_id ?? null;
+
+  const { data: practitionerData, isLoading: practitionerLoading } = useQuery({
+    queryKey: ["practitioner", practitionerId],
+    queryFn: async () => {
+      const profile = await userService.getPractitionerProfile(practitionerId!);
+      const user = await userService.getUser(profile.user_id);
+      return {
+        name: user.name as string,
+        specialization: (profile.specialization ?? "Practitioner") as string,
+        image: null as string | null,
+      };
+    },
+    enabled: !!practitionerId,
+  });
+
+  const practitioner = practitionerData ?? {
+    name: "—",
+    specialization: "—",
+    image: null,
+  };
+
+  return {
     patient: {
-      name: "Kevin",
-      lastSession: "Feb 28, 2026",
+      name: patientProfile?.name ?? "—",
+      lastSession: "-",
     },
-    practitioner: {
-      name: "Dr. Jane Doe, MD",
-      role: "Physician",
-      initials: "JD",
-      image: null,
-    },
+    practitioner,
     tasks: {
       session: {
         title: "Mar 21, 2026",
@@ -22,18 +46,8 @@ export function useDashboardData() {
       rehab: {
         title: "4-step Anti-frailty",
         subtitle: "Complete your daily exercises",
-      }
+      },
     },
-    isLoading: true
-  });
-
-  useEffect(() => {
-    // Simulate a small delay for a realistic feel
-    const timer = setTimeout(() => {
-      setData(prev => ({ ...prev, isLoading: false }));
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  return data;
+    isLoading: practitionerLoading && !!practitionerId,
+  };
 }

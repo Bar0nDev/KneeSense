@@ -14,20 +14,21 @@ import ErrorStep from "@/components/patient/recording/ErrorStep";
 
 export default function RecordingPage() {
   const router = useRouter();
-  const { 
-    pageState, 
-    videoRef, 
-    recordedUrl, 
-    errorMessage, 
-    instructionSteps, 
-    stream, // <--- Destructure stream
-    actions 
+  const {
+    pageState,
+    processingMessage,
+    videoRef,
+    recordedUrl,
+    errorMessage,
+    instructionSteps,
+    stream,
+    actions,
   } = useRecordingSession();
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <div className="flex items-center justify-between px-6 py-4 bg-[#12606A]">
-        <button onClick={actions.handleExit} className="flex items-center gap-2 text-sm text-white hover:opacity-80">
+        <button onClick={actions.handleExit} className="flex items-center gap-2 text-sm text-white hover:opacity-80 cursor-pointer">
           <BsArrowLeft size={16} /> Back
         </button>
         <h3 className="text-xs font-semibold tracking-widest uppercase text-white">Recording Session</h3>
@@ -38,15 +39,15 @@ export default function RecordingPage() {
         {pageState === "instructions" && (
           <InstructionsStep onContinue={actions.handleRequestCamera} steps={instructionSteps} />
         )}
-        
+
         {pageState === "permission-denied" && (
           <PermissionDeniedStep onRetry={actions.handleRequestCamera} />
         )}
-        
+
         {(pageState === "ready" || pageState === "recording") && (
           <CameraStep
             videoRef={videoRef}
-            stream={stream} // <--- Critical: Pass the stream
+            stream={stream}
             isRecording={pageState === "recording"}
             onStart={actions.handleStart}
             onStop={actions.stopRecording}
@@ -55,16 +56,27 @@ export default function RecordingPage() {
         )}
 
         {pageState === "review" && (
-          <ReviewStep 
-            videoUrl={recordedUrl} 
-            onRetake={actions.handleRetake} 
-            onSubmit={actions.handleSubmit} 
+          <ReviewStep
+            videoUrl={recordedUrl}
+            onRetake={actions.handleRetake}
+            onSubmit={actions.handleSubmit}
           />
         )}
 
-        {pageState === "processing" && <ProcessingStep />}
-        {pageState === "success" && <SuccessStep onRedirect={() => router.push("/progress")} />}
-        {pageState === "error" && <ErrorStep message={errorMessage} onRetry={() => actions.setPageState("instructions")} />}
+        {pageState === "processing" && (
+          <ProcessingStep message={processingMessage} />
+        )}
+
+        {pageState === "success" && (
+          <SuccessStep onRedirect={() => router.push("/progress")} />
+        )}
+
+        {pageState === "error" && (
+          <ErrorStep
+            message={errorMessage}
+            onRetry={() => actions.setPageState("instructions")}
+          />
+        )}
       </div>
     </div>
   );

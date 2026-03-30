@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, json, request, jsonify, current_app
+from flask import Blueprint, json, request, jsonify, current_app, send_from_directory
 from werkzeug.utils import secure_filename
 from app.database.firebase import firestore_repo as fsdb
 from app.database.db import db
