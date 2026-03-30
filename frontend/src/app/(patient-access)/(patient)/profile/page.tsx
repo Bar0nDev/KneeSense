@@ -4,7 +4,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import Avatar from "@/components/ui/Avatar";
 import { FaUserAlt } from "react-icons/fa";
 import { HiOutlineLockClosed, HiOutlineArrowRightOnRectangle } from "react-icons/hi2";
-import { useProfile, Tab } from "@/hooks/useProfile";
+import { useState } from "react";
 import { InputField, ReadField } from "@/components/auth/profile/ProfileFields";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import HeroButton from "@/components/ui/HeroButton";
@@ -14,8 +14,12 @@ import { useQuery } from "@tanstack/react-query";
 import { userService } from "@/services/userService";
 import { PatientProfile } from "@/types/patient";
 
+type Tab = "personal" | "medical" | "logout";
+
 export default function ProfilePage() {
-  const { tab, setTab, profile } = useProfile();
+
+
+  const [tab, setTab] = useState<Tab>("personal");
   const { logout } = useAuth();
   const { userProfile } = useUser();
 
@@ -31,8 +35,9 @@ export default function ProfilePage() {
       const practUser = await userService.getUser(practProfile.user_id);
       return {
         name: practUser.name as string,
-        specialization: practProfile.specialization as string | null,
         clinic_name: practProfile.clinic_name as string | null,
+        specialization: practProfile.specialization as string | null,
+        
       };
     },
     enabled: !!practitionerId,
@@ -41,16 +46,17 @@ export default function ProfilePage() {
   const firstName = nameParts[0] ?? "";
   const lastName = nameParts.slice(1).join(" ") ?? "";
   const email = userProfile?.user?.email ?? "";
-  const displayName = p?.name || profile.name;
+  const displayName = p?.name ?? "";
   const displayRole = userProfile?.role
     ? userProfile.role.charAt(0).toUpperCase() + userProfile.role.slice(1)
-    : profile.role;
+    : "";
 
   const tabs = [
     { key: "personal", label: "Personal Information", icon: FaUserAlt },
     { key: "medical", label: "Medical Information", icon: HiOutlineLockClosed },
     { key: "logout", label: "Log Out", icon: HiOutlineArrowRightOnRectangle },
   ];
+
 
   return (
     <div>
@@ -64,7 +70,6 @@ export default function ProfilePage() {
             <div className="text-center">
               <p className="text-base font-bold text-gray-900">{displayName}</p>
               <p className="text-sm text-[#455858]">{displayRole}</p>
-              <p className="text-xs text-[#9CA3AF] mt-0.5">{profile.location}</p>
             </div>
           </div>
 
@@ -118,13 +123,13 @@ export default function ProfilePage() {
             <div className="animate-in fade-in duration-300">
               <p className="text-base font-bold text-gray-900 mb-6">Medical Information</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <ReadField label="Assigned Practitioner" value={practitionerData?.name ?? profile.medical.practitioner} />
+                <ReadField label="Assigned Practitioner" value={practitionerData?.name ?? "—"} />
                 <ReadField label="Specialization" value={practitionerData?.specialization ?? "—"} />
-                <ReadField label="Clinic / Hospital" value={practitionerData?.clinic_name ?? profile.medical.clinic} />
+                <ReadField label="Clinic / Hospital" value={practitionerData?.clinic_name ?? "—"} />
                 <ReadField label="Joined Date" value={
                   p?.created_at
                     ? new Date(p.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-                    : profile.medical.joinedDate
+                    : "—"
                 } />
               </div>
               <p className="mt-6 text-xs text-[#9CA3AF]">

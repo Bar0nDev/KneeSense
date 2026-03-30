@@ -17,6 +17,10 @@ export interface SessionRecord {
   created_at: string;
   notes?: string;
   status?: string;
+  min_angle?: number;
+  max_angle?: number;
+  avg_angle?: number;
+  rom_arc?: number;
 }
 
 export interface Insight {
@@ -69,18 +73,23 @@ export function useSessionData() {
   const {
     data: predictions,
     isLoading: loadingPredictions,
-    error: errorPredictions,
   } = useQuery({
     queryKey: sessionKeys.predictions(latestSession?.id!),
     queryFn: async () => {
-      const result = await sessionService.getPredictions(latestSession!.id);
-      if (Array.isArray(result)) return result as Prediction[];
-      if (result?.file_name) {
-        return await sessionService.getAnalysisFile(result.file_name) as Prediction[];
+      try {
+        const result = await sessionService.getPredictions(latestSession!.id);
+        if (Array.isArray(result)) return result as Prediction[];
+        if (result?.file_name) {
+          return await sessionService.getAnalysisFile(result.file_name) as Prediction[];
+        }
+        return [] as Prediction[];
+      } catch (e: any) {
+        if (e?.response?.status === 404) return [] as Prediction[];
+        throw e;
       }
-      return [] as Prediction[];
     },
     enabled: !!latestSession,
+    retry: (failureCount, error: any) => error?.response?.status !== 404 && failureCount < 1,
   });
 
   // ── Step 3: Fetch insight for latest session ──
@@ -106,8 +115,7 @@ export function useSessionData() {
 
   const isLoading = loadingSessions || loadingPredictions || loadingInsight;
   const errors = [
-    errorSessions?.message,
-    errorPredictions?.message,
+    (errorSessions as any)?.response?.status !== 404 ? errorSessions?.message : null,
   ].filter(Boolean) as string[];
 
   return {

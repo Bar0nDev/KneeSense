@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { AuthResponse, UserRole } from "@/types/user";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { userService } from "@/services/userService";
 import { useUser, buildUserProfile } from "@/context/UserContext";
 
@@ -23,6 +24,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { setUserProfile, clearUserProfile } = useUser();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   // Rehydrate session on page refresh
   useEffect(() => {
@@ -105,6 +107,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = () => {
     clearSession();
     clearUserProfile();
+    queryClient.clear();
     localStorage.removeItem("kneesense-query-cache");
     router.push("/");
   };

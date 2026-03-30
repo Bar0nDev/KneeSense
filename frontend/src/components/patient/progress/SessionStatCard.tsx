@@ -12,7 +12,7 @@ interface SessionStatCardProps {
 export default function SessionStatCard({
   label,
   value,
-  benchmarkLabel = "vs Benchmark",
+  benchmarkLabel = "last session",
   benchmarkValue,
 }: SessionStatCardProps) {
   return (

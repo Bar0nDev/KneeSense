@@ -14,19 +14,19 @@ interface MetricConfig {
 }
 
 const METRIC_CONFIG: Record<string, MetricConfig> = {
-  rehabConsistency: {
+  metric1: {
     label: "Rehab Consistency",
     icon: LuClipboardCheck,
     iconColor: "#30C3B1",
     iconBg: "#E6F4F4",
   },
-  angleBenchmarkGap: {
+  metric2: {
     label: "Angle Benchmark Gap",
     icon: TbAngle,
     iconColor: "#3543A3",
     iconBg: "#EAECF8",
   },
-  zoneBalanceScore: {
+  metric3: {
     label: "Range of Motion",
     icon: TbArrowsVertical,
     iconColor: "#27AE60",

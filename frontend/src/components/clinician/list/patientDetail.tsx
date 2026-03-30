@@ -153,7 +153,7 @@ export default function PatientDetail({ patient }: Props) {
             {/* Knee Angle Stat */}
             <div>
               <div className="flex justify-between items-end mb-2">
-                <span className="text-sm font-semibold text-gray-500 uppercase">Knee Angle</span>
+                <span className="text-sm font-semibold text-gray-500 uppercase">Max Angle</span>
                 <div className="text-right">
                   <span className="text-2xl font-bold text-gray-900">{sessionData.stats[0]?.value || '67°'}</span>
                   {!isUnassigned && <p className="text-xs text-green-600 font-medium">{sessionData.stats[0]?.benchmark || '+12% above elderly avg'}</p>}
@@ -167,9 +167,9 @@ export default function PatientDetail({ patient }: Props) {
             {/* Force Estimate Stat from Patient Object */}
             <div>
               <div className="flex justify-between items-end mb-2">
-                <span className="text-sm font-semibold text-gray-500 uppercase">Force Estimate Avg</span>
+                <span className="text-sm font-semibold text-gray-500 uppercase">Min Angle</span>
                 <div className="text-right">
-                  <span className="text-2xl font-bold text-gray-900">{patient.forceAvg} N</span>
+                  <span className="text-2xl font-bold text-gray-900">{sessionData.stats[1]?.value || '—'}</span>
                   {!isUnassigned && <p className="text-xs text-green-600 font-medium">{sessionData.stats[1]?.benchmark || '+5% above average'}</p>}
                 </div>
               </div>
@@ -181,11 +181,12 @@ export default function PatientDetail({ patient }: Props) {
 
           {/* The 3 Zones Map */}
           <div className="w-full shrink-0">
-            <ZoneMap 
+            <ZoneMap
               videoSrc={sessionData.video.videoSrc}
-              medialPct={isUnassigned ? "0" : String(sessionData.video.medialPct)} 
-              centralPct={isUnassigned ? "0" : String(sessionData.video.centralPct)} 
-              lateralPct={isUnassigned ? "0" : String(sessionData.video.lateralPct)} 
+              avgAngle={isUnassigned ? undefined : sessionData.video.avgAngle}
+              medialPct={isUnassigned ? "0" : String(sessionData.video.medialPct)}
+              centralPct={isUnassigned ? "0" : String(sessionData.video.centralPct)}
+              lateralPct={isUnassigned ? "0" : String(sessionData.video.lateralPct)}
             />
           </div>
 
