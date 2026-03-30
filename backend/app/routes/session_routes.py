@@ -238,10 +238,13 @@ def analyze_session(session_id):
             if p.get("predicted_angle") is not None
         ]
 
+        avg_angle = sum(angles) / len(angles) if angles else None
+
         # calculate stats for Cloud metadata
         min_angle = min(angles) if angles else None
         max_angle = max(angles) if angles else None
         rom_arc = (max_angle - min_angle) if angles else None
+        avg_angle = sum(angles) / len(angles) if angles else None
 
         json_filename = f"analysis_{session_id}.json"
         analysis_dir = os.path.join(current_app.config["DATA_DIR"], "analysis")
@@ -258,6 +261,7 @@ def analyze_session(session_id):
             total_frames=len(predictions),
             min_angle=min_angle,
             max_angle=max_angle,
+            avg_angle=avg_angle,
             rom_arc=rom_arc
         )
 
@@ -387,20 +391,20 @@ def generate_insight(session_id):
     if not session:
         return jsonify({"error": "Session not found"}), 404
     
-    # try:
-    #     doc_ref = fs_db.collection("sessions").document(str(session_id)).get()
-    #     if not doc_ref.exists:
-    #         return jsonify({"error": "Session not found in Cloud"}), 404
+    try:
+        doc_ref = fs_db.collection("sessions").document(str(session_id)).get()
+        if not doc_ref.exists:
+            return jsonify({"error": "Session not found in Cloud"}), 404
         
-    #     doc_data = doc_ref.to_dict()
-    #     if not doc_data.get("has_analysis"):
-    #         return jsonify({"error": "No analysis found. Call POST /analyze first"}), 400
+        doc_data = doc_ref.to_dict()
+        if not doc_data.get("has_analysis"):
+            return jsonify({"error": "No analysis found. Call POST /analyze first"}), 400
         
-    #     if doc_data.get("has_insight"):
-    #         return jsonify({"error": "Insight already exists for this session in Cloud"}), 409
+        if doc_data.get("has_insight"):
+            return jsonify({"error": "Insight already exists for this session in Cloud"}), 409
             
-    # except Exception as e:
-    #     return jsonify({"error": f"Failed to verify Cloud status: {str(e)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Failed to verify Cloud status: {str(e)}"}), 500
     
     # Don't regenerate if one already exists
     existing = LLMInsight.query.filter_by(session_id=session_id).first()
