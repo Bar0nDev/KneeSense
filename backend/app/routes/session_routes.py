@@ -3,7 +3,7 @@ from flask import Blueprint, json, request, jsonify, current_app, send_from_dire
 from werkzeug.utils import secure_filename
 from app.database.firebase import firestore_repo as fsdb
 from app.database.db import db
-from app.database.models import Session, FramePrediction, LLMInsight
+from app.database.models import OpticalFlowResult, Session, FramePrediction, LLMInsight
 from app.services.video_service import run_inference_and_store
 from app.services.insight_service import generate_and_store_insight
 
@@ -193,6 +193,21 @@ def analyze_session(session_id):
         max_angle = max(angles) if angles else None
         rom_arc   = (max_angle - min_angle) if angles else None
 
+        if flow_results:
+            z1 = [r["zone1_percent"] for r in flow_results]
+            z2 = [r["zone2_percent"] for r in flow_results]
+            z3 = [r["zone3_percent"] for r in flow_results]
+
+            zone1_avg = sum(z1) / len(z1)
+            zone2_avg = sum(z2) / len(z2)
+            zone3_avg = sum(z3) / len(z3)
+
+            dominant_zone = ["zone1", "zone2", "zone3"][[zone1_avg, zone2_avg, zone3_avg].index(max(zone1_avg, zone2_avg, zone3_avg))]
+        
+        else:
+            zone1_avg = zone2_avg = zone3_avg = None
+            dominant_zone = None
+
         json_filename = f"analysis_{session_id}.json"
         analysis_dir  = os.path.join(current_app.config["DATA_DIR"], "analysis")
         os.makedirs(analysis_dir, exist_ok=True)
@@ -202,14 +217,19 @@ def analyze_session(session_id):
         with open(final_json_path, "w") as f:
             json.dump({"predictions": predictions, "flow_results": flow_results}, f)
 
+            
         fsdb.mark_analysis_complete(
             session_id=session_id,
             json_filename=json_filename,
             total_frames=len(predictions),
             min_angle=min_angle,
-            max_angle=max_angle,
+            max_angle=max_angle, 
             avg_angle=avg_angle,
-            rom_arc=rom_arc
+            rom_arc=rom_arc,
+            zone1_avg=zone1_avg,
+            zone2_avg=zone2_avg,
+            zone3_avg=zone3_avg,
+            dominant_zone=dominant_zone
         )
 
         return jsonify({
@@ -254,23 +274,26 @@ def get_predictions(session_id):
         doc = fs_db.collection("sessions").document(str(session_id)).get()
         if doc.exists:
             data = doc.to_dict()
-            json_name = data.get("analysis_json_name")
+            json_filename = data.get("analysis_json_name")
             
-            #FIX
-            if json_name:
+            if json_filename:
               analysis_dir = os.path.join(current_app.config["DATA_DIR"], "analysis")
-              json_path = os.path.join(analysis_dir, json_name)
+              json_path = os.path.join(analysis_dir, json_filename)
 
               if os.path.exists(json_path):
-                  with open(json_path, "r") as f:
-                      predictions = json.load(f)
+                with open(json_path, "r") as f:
+                    data = json.load(f)
 
-                  return jsonify({
-                      "session_id": session_id,
-                      "source": "json_file",
-                      "total_frames": len(predictions),
-                      "predictions": predictions
-                  }), 200
+                predictions = data.get("predictions", [])
+                flow_results = data.get("flow_results", [])
+
+                return jsonify({
+                    "session_id": session_id,
+                    "source": "json_file",
+                    "total_frames": len(predictions),
+                    "predictions": predictions,
+                    "flow_results": flow_results
+                }), 200
             
     except Exception as e:
         print(f"Cloud check failed: {e}")
@@ -279,14 +302,30 @@ def get_predictions(session_id):
     predictions = FramePrediction.query.filter_by(session_id=session_id)\
         .order_by(FramePrediction.frame_index).all()
     
+    flow_rows = OpticalFlowResult.query.filter_by(session_id=session_id)\
+      .order_by(OpticalFlowResult.frame_index).all()
+    
+    flow_results = [
+    {
+        "frame_index": r.frame_index,
+        "zone1_percent": r.zone1_percent,
+        "zone2_percent": r.zone2_percent,
+        "zone3_percent": r.zone3_percent,
+    }
+    for r in flow_rows
+    ]
+    
     if predictions:
-      return jsonify([
-          {
-              "frame_index": p.frame_index,
-              "predicted_angle": p.predicted_angle,
-          }
-          for p in predictions
-      ])
+      return jsonify({
+          "predictions": [
+            {
+                "frame_index": p.frame_index,
+                "predicted_angle": p.predicted_angle,
+            }
+            for p in predictions
+        ],
+        "flow_results": flow_results
+    })
 
     return jsonify({"error": "No predictions found for this session"}), 404
 
@@ -513,7 +552,7 @@ def add_llm_insight(session_id):
     try:
         db.session.commit()
 
-        fs_db.mark_insight_complete(
+        fsdb.mark_insight_complete(
             session_id=session_id,
             insight_text=data["insight_text"],
             model_used=model_used
