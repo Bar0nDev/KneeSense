@@ -1,4 +1,5 @@
-import PatientSideNav from "@/components/patient/PatientSideNav";
+"use client";
+import ProtectedRoute from "@/providers/ProtectedRoute";
 
 export default function AuthLayout({
   children,
@@ -6,12 +7,12 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex justify-center ">
-      <div className="flex w-full min-h-screen ">
-        <main className="flex-1">
-          {children}
-        </main>
+    <ProtectedRoute publicOnly>
+      <div className="min-h-screen flex justify-center">
+        <div className="flex w-full min-h-screen">
+          <main className="flex-1">{children}</main>
+        </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }

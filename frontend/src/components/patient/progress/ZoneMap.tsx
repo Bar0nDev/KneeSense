@@ -5,6 +5,7 @@ import { BsPlayFill } from "react-icons/bs";
 
 interface ZoneMapProps {
   videoSrc?: string;
+  avgAngle?: string;
   medialPct?: string;
   centralPct?: string;
   lateralPct?: string;
@@ -12,9 +13,10 @@ interface ZoneMapProps {
 
 export default function ZoneMap({
   videoSrc,
-  medialPct = "0%",
-  centralPct = "0%",
-  lateralPct = "0%",
+  avgAngle,
+  medialPct,
+  centralPct,
+  lateralPct,
 }: ZoneMapProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -57,6 +59,14 @@ export default function ZoneMap({
         />
       ) : (
         <div className="w-full aspect-video bg-gradient-to-br from-[#12606A] to-[#30C3B1] opacity-80" />
+      )}
+
+      {/* Avg Angle — top left */}
+      {avgAngle && (
+        <div className="absolute top-4 left-4 z-10">
+          <p className="text-white text-[9px] font-bold tracking-[0.2em] uppercase drop-shadow-sm mt-1 opacity-90">Avg Angle</p>
+          <p className="text-white text-2xl font-black drop-shadow-md leading-none">{avgAngle}</p>
+        </div>
       )}
 
       {/* Zone Overlay */}

@@ -3,7 +3,7 @@
 import { IconType } from "react-icons";
 import { LuClipboardCheck } from "react-icons/lu";
 import { TbAngle } from "react-icons/tb";
-import { MdOutlineRadar } from "react-icons/md";
+import { TbArrowsVertical } from "react-icons/tb";
 import Card from "@/components/ui/Card";
 
 interface MetricConfig {
@@ -14,21 +14,21 @@ interface MetricConfig {
 }
 
 const METRIC_CONFIG: Record<string, MetricConfig> = {
-  rehabConsistency: {
+  metric1: {
     label: "Rehab Consistency",
     icon: LuClipboardCheck,
     iconColor: "#30C3B1",
     iconBg: "#E6F4F4",
   },
-  angleBenchmarkGap: {
+  metric2: {
     label: "Angle Benchmark Gap",
     icon: TbAngle,
     iconColor: "#3543A3",
     iconBg: "#EAECF8",
   },
-  zoneBalanceScore: {
-    label: "Zone Balance Score",
-    icon: MdOutlineRadar,
+  metric3: {
+    label: "Range of Motion",
+    icon: TbArrowsVertical,
     iconColor: "#27AE60",
     iconBg: "#E8F8EF",
   },
