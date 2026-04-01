@@ -6,6 +6,15 @@ import { useSessionData } from "@/hooks/useSessionQueries";
 
 type InsightStatus = "improving" | "stable" | "declining";
 
+function formatDominantZone(zone?: string): string {
+  const map: Record<string, string> = {
+    zone1: "Medial",
+    zone2: "Central",
+    zone3: "Lateral",
+  };
+  return zone ? (map[zone] ?? zone) : "—";
+}
+
 function formatDate(iso: string): string {
   try {
     return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -22,9 +31,9 @@ export function useProgress() {
   const insightStatus = useMemo<InsightStatus>(() => "stable", []);
 
   const metrics = useMemo(() => [
-    { type: "metric1",  value: "—" },
-    { type: "metric2", value: "—" },
-    { type: "metric3",  value: latestSession?.rom_arc != null ? `${Math.round(latestSession.rom_arc)}°` : "—" },
+    { type: "metric1",  value: latestSession?.avg_angle != null ? `${latestSession.avg_angle.toFixed(2)}°` : "—" },
+    { type: "metric2", value: formatDominantZone(latestSession?.dominant_zone) },
+    { type: "metric3",  value: latestSession?.rom_arc != null ? `${latestSession.rom_arc.toFixed(2)}°` : "—" },
   ], [latestSession]);
 
   const sessionData = useMemo(() => ({
@@ -32,19 +41,19 @@ export function useProgress() {
     video: {
       videoSrc: "/assets/kneesense_mag_corrected_web.mp4",
       avgAngle: latestSession?.avg_angle != null ? `${Math.round(latestSession.avg_angle)}°` : "—",
-      medialPct: "—",
-      centralPct: "—",
-      lateralPct: "—",
+      medialPct: latestSession?.zone1_avg != null ? `${latestSession.zone1_avg.toFixed(2)}%` : "—",
+      centralPct: latestSession?.zone2_avg != null ? `${latestSession.zone2_avg.toFixed(2)}%` : "—",
+      lateralPct: latestSession?.zone3_avg != null ? `${latestSession.zone3_avg.toFixed(2)}%` : "—",
     },
     stats: [
       {
         label: "Max Angle",
-        value: latestSession?.max_angle != null ? `${Math.round(latestSession.max_angle)}°` : "—",
+        value: latestSession?.max_angle != null ? `${latestSession.max_angle.toFixed(2)}°` : "—",
         benchmark: "max flexion recorded",
       },
       {
         label: "Min Angle",
-        value: latestSession?.min_angle != null ? `${Math.round(latestSession.min_angle)}°` : "—",
+        value: latestSession?.min_angle != null ? `${latestSession.min_angle.toFixed(2)}°` : "—",
         benchmark: "min flexion recorded",
       },
     ],

@@ -58,7 +58,7 @@ export function useRecordingSession() {
   }, [pageState, stopRecording, stopStream]);
 
   const handleSubmit = useCallback(async () => {
-    // if (!recordedBlob) return;
+    if (!recordedBlob) return;
 
     if (userProfile?.role !== "patient") {
       setErrorMessage("Only patients can submit recordings.");
@@ -87,12 +87,12 @@ export function useRecordingSession() {
       // Step 1 — Upload video and create session
       setProcessingMessage("Uploading your recording...");
 
-      const devVideoResponse = await fetch("/video/knee-vid.mp4");
-      const devBlob = await devVideoResponse.blob();
+      // const devVideoResponse = await fetch("/video/knee-vid.mp4");
+      // const devBlob = await devVideoResponse.blob();
 
       const formData = new FormData();
-      // formData.append("video", recordedBlob, "recording.webm");
-      formData.append("video", devBlob, "recording.mp4");
+      formData.append("video", recordedBlob, "recording.webm");
+      // formData.append("video", devBlob, "recording.mp4");
       formData.append("patient_id", String(patientProfileId));
       formData.append("practitioner_id", String(practitionerId));
       const { session_id } = await sessionService.uploadSession(formData);
@@ -106,7 +106,7 @@ export function useRecordingSession() {
       await sessionService.getPredictions(session_id);
 
       // Step 4 — Generate Claude clinical insight from predictions
-      setProcessingMessage("Generating clinical insights...");
+      setProcessingMessage("Generating AI insights...");
       await sessionService.generateInsight(session_id);
 
       refresh();
@@ -125,10 +125,10 @@ export function useRecordingSession() {
   }, [clearRecording, handleRequestCamera]);
 
   const instructionSteps = useMemo(() => [
-    { title: "1. Attach Device", description: "Strap the sensor firmly to your knee." },
-    { title: "2. Position", description: "Sit with your knee at a 90° angle." },
-    { title: "3. Baseline", description: "Stay still for 3 seconds after pressing record." },
-    { title: "4. Movement", description: "Slowly straighten your leg, then return." },
+    { title: "Step 1: Sit & Position", description: "Step 1 description placeholder." },
+    { title: "Step 2: Secure the Fit", description: "Step 2 description placeholder." },
+    { title: "Step 3: Gentle Movement", description: "Step 3 description placeholder." },
+    { title: "Step 4 Title", description: "Step 4 description placeholder." },
   ], []);
 
   return {

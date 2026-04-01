@@ -4,6 +4,7 @@ import { IconType } from "react-icons";
 import { LuClipboardCheck } from "react-icons/lu";
 import { TbAngle } from "react-icons/tb";
 import { TbArrowsVertical } from "react-icons/tb";
+import { RiFocus2Fill } from "react-icons/ri";
 import Card from "@/components/ui/Card";
 
 interface MetricConfig {
@@ -15,14 +16,14 @@ interface MetricConfig {
 
 const METRIC_CONFIG: Record<string, MetricConfig> = {
   metric1: {
-    label: "Rehab Consistency",
-    icon: LuClipboardCheck,
+    label: "Average Angle",
+    icon: TbAngle,
     iconColor: "#30C3B1",
     iconBg: "#E6F4F4",
   },
   metric2: {
-    label: "Angle Benchmark Gap",
-    icon: TbAngle,
+    label: "Dominant Zone",
+    icon: RiFocus2Fill,
     iconColor: "#3543A3",
     iconBg: "#EAECF8",
   },

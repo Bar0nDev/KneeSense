@@ -9,7 +9,7 @@ import MetricCard from "@/components/patient/progress/MetricCard";
 import ZoneMap from "@/components/patient/progress/ZoneMap";
 import SessionStatCard from "@/components/patient/progress/SessionStatCard";
 import AIInsightCard from "@/components/patient/progress/AiInsightCard";
-import MuscleSmoothnessCard from "@/components/patient/progress/MuscleSmoothnessCard";
+// import MuscleSmoothnessCard from "@/components/patient/progress/MuscleSmoothnessCard";
 import BenchmarkComparisonCard from "@/components/patient/progress/BenchmarkComparisonCard";
 
 import { useProgress } from "@/hooks/useProgress";
@@ -88,11 +88,12 @@ export default function ProgressPage() {
           <AIInsightCard
             status={isLoading ? "stable" : insights.status}
             summary={isLoading ? "Loading insight…" : insights.summary}
+            className="flex-1"
           />
-          <MuscleSmoothnessCard
+          {/* <MuscleSmoothnessCard
             data={sessionData.smoothnessData}
             benchmark={0.6}
-          />
+          /> */}
         </div>
 
       </div>

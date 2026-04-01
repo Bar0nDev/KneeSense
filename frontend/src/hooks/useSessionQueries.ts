@@ -21,6 +21,10 @@ export interface SessionRecord {
   max_angle?: number;
   avg_angle?: number;
   rom_arc?: number;
+  zone1_avg?: number;
+  zone2_avg?: number;
+  zone3_avg?: number;
+  dominant_zone?: string;
 }
 
 export interface Insight {

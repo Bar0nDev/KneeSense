@@ -10,7 +10,7 @@ from app.services.insight_service import generate_and_store_insight
 session_bp = Blueprint("sessions", __name__)
 fs_db = fsdb.get_fs_db()
 
-ALLOWED_EXTENSIONS = {"mp4", "mov", "avi", "mkv"}
+ALLOWED_EXTENSIONS = {"mp4", "mov", "avi", "mkv", "webm"}
 
 def allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS

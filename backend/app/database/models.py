@@ -255,5 +255,3 @@ class OpticalFlowResult(db.Model):
     zone3_percent = db.Column(db.Float, nullable=False)
 
     created_at = db.Column(db.DateTime, default=datetime.now(UTC))
-
-    session = db.relationship("Session", backref=db.backref("optical_flow_results", lazy=True))

@@ -62,12 +62,12 @@ export default function ZoneMap({
       )}
 
       {/* Avg Angle — top left */}
-      {avgAngle && (
+      {/* {avgAngle && (
         <div className="absolute top-4 left-4 z-10">
           <p className="text-white text-[9px] font-bold tracking-[0.2em] uppercase drop-shadow-sm mt-1 opacity-90">Avg Angle</p>
           <p className="text-white text-2xl font-black drop-shadow-md leading-none">{avgAngle}</p>
         </div>
-      )}
+      )} */}
 
       {/* Zone Overlay */}
       <div className="absolute inset-0 flex bg-black/10 transition-opacity group-hover:bg-black/20">
