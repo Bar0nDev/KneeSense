@@ -44,7 +44,7 @@ export default function ZoneMap({
 
   return (
     <div
-      className="relative w-full rounded-3xl bg-gray-900 cursor-pointer overflow-hidden group shadow-lg"
+      className="relative w-full h-full min-h-[200px] rounded-3xl bg-gray-900 cursor-pointer overflow-hidden group shadow-lg"
       onClick={togglePlay}
     >
       {/* Video Layer */}
@@ -52,13 +52,13 @@ export default function ZoneMap({
         <video
           ref={videoRef}
           src={videoSrc}
-          className="w-full h-auto block transform transition-transform duration-700 group-hover:scale-[1.02]"
+          className="absolute inset-0 w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.02]"
           loop
           playsInline
           muted
         />
       ) : (
-        <div className="w-full aspect-video bg-gradient-to-br from-[#12606A] to-[#30C3B1] opacity-80" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#12606A] to-[#30C3B1] opacity-80" />
       )}
 
       {/* Avg Angle — top left */}

@@ -125,10 +125,10 @@ export function useRecordingSession() {
   }, [clearRecording, handleRequestCamera]);
 
   const instructionSteps = useMemo(() => [
-    { title: "Step 1: Sit & Position", description: "Step 1 description placeholder." },
-    { title: "Step 2: Secure the Fit", description: "Step 2 description placeholder." },
-    { title: "Step 3: Gentle Movement", description: "Step 3 description placeholder." },
-    { title: "Step 4 Title", description: "Step 4 description placeholder." },
+    { title: "Sit in a sturdy chair & prepare the KneeSense Device.", description: "Place the device on your leg, just above the knee.", image: "/assets/instructions/step1.gif" },
+    { title: "Secure your KneeSense using the Velcro straps.", description: "The strap should be secure enough to stay in place.", image: "/assets/instructions/step2.gif" },
+    { title: "Start Recording: Slowly perform 15 Leg Extensions & Flexions.", description: "Keep your movements steady and controlled.", image: "/assets/instructions/step3.gif" },
+    // { title: "Review & Submit Recording", description: "This will process the analysis and generate your results.", image: "/assets/instructions/step4.gif"  },
   ], []);
 
   return {

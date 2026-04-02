@@ -563,3 +563,14 @@ def add_llm_insight(session_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to save insight: {str(e)}"}), 500
+
+
+# =========================
+# SERVE VIDEO FILE
+# =========================
+
+@session_bp.route("/data/videos/<path:filename>", methods=["GET"])
+def serve_video(filename):
+    # current_app.root_path is backend/app/ — go up one level to reach backend/data/videos/
+    videos_dir = os.path.abspath(os.path.join(current_app.root_path, "..", current_app.config["DATA_DIR"], "videos"))
+    return send_from_directory(videos_dir, filename)

@@ -1,27 +1,19 @@
 "use client";
 
 import Card from "@/components/ui/Card";
-import KneeAngleChart from "@/components/charts/KneeAngleChart";
+import KneeAngleChart, { type KneeAngleDataPoint } from "@/components/charts/KneeAngleChart";
 
-// Moving mock data out of the component body
-const MOCK_KNEE_DATA = [
-  { date: "Dec 5", angle: 58 },
-  { date: "Dec 27", angle: 58 },
-  { date: "Jan 10", angle: 61 },
-  { date: "Jan 17", angle: 63 },
-  { date: "Jan 28", angle: 67 },
-  { date: "Feb 7", angle: 72 },
-  { date: "Feb 16", angle: 75 },
-  { date: "Feb 28", angle: 78 },
-  { date: "Mar 10", angle: 80 },
-];
+interface KneeAngleCardProps {
+  data?: KneeAngleDataPoint[];
+  benchmark?: number;
+}
 
-const BENCHMARK = 72;
+export default function KneeAngleCard({ data, benchmark = 0 }: KneeAngleCardProps) {
+  const hasData = data && data.length > 0;
 
-export default function KneeAngleCard (){
   return (
     <Card className="flex flex-col gap-2">
-      
+
       {/* Header & Legend Container */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
         <div>
@@ -43,15 +35,21 @@ export default function KneeAngleCard (){
               <span className="h-1 w-1.5 rounded-full bg-[#EF4444]" />
               <span className="h-1 w-1.5 rounded-full bg-[#EF4444]" />
             </div>
-            Benchmark ({BENCHMARK}°)
+            Benchmark ({benchmark}°)
           </div>
         </div>
       </div>
 
-      {/* Chart Container */}
-      <div className="w-full">
-        <KneeAngleChart data={MOCK_KNEE_DATA} benchmark={BENCHMARK} />
-      </div>
+      {/* Chart or Empty State */}
+      {hasData ? (
+        <div className="w-full">
+          <KneeAngleChart data={data!} benchmark={benchmark} />
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center text-center" style={{ minHeight: "200px" }}>
+          <p className="text-sm font-medium text-gray-400">No sessions recorded yet.</p>
+        </div>
+      )}
 
     </Card>
   );
