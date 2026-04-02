@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import PrimaryButton from "@/components/clinician/buttons/PrimaryButton";
-import Dropdown from "@/components/ui/dropDown";
+import Dropdown from "@/components/ui/Dropdown";
 import { FiTrash2, FiSettings } from "react-icons/fi";
 import { SelectField, Field } from "@/components/ui/FormFields";
 

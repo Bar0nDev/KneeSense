@@ -172,6 +172,52 @@ def get_patient_sessions(patient_id):
 
 @session_bp.route("/sessions/<int:session_id>/analyze", methods=["POST"])
 def analyze_session(session_id):
+    """
+    Trigger AI inference on session video
+    ---
+    tags:
+      - AI Analysis
+    parameters:
+      - name: session_id
+        in: path
+        type: integer
+        required: true
+
+    responses:
+      200:
+        description: Analysis complete
+        schema:
+          type: object
+          properties:
+            session_id:
+              type: integer
+            total_frames_analyzed:
+              type: integer
+            predictions:
+              type: array
+              items:
+                $ref: '#/definitions/Prediction'
+
+      400:
+        description: Bad request
+        schema:
+          $ref: '#/definitions/Error'
+
+      404:
+        description: Session not found
+        schema:
+          $ref: '#/definitions/Error'
+
+      409:
+        description: Already analyzed
+        schema:
+          $ref: '#/definitions/Error'
+
+      500:
+        description: Inference failure
+        schema:
+          $ref: '#/definitions/Error'
+    """
     session = db.session.get(Session, session_id)
 
     if not session:

@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
-import Topbar from '@/components/clinician/headers/topbar';
-import PList, { patients } from '@/components/clinician/list/patientList';
-import PatientDetail from '@/components/clinician/list/patientDetail';
+import Topbar from '@/components/clinician/headers/TopBar';
+import PList, { patients } from '@/components/clinician/list/PatientList';
+import PatientDetail from '@/components/clinician/list/PatientDetail';
 
 type Patient = typeof patients[0];
 

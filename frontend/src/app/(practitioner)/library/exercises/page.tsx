@@ -1,9 +1,9 @@
 "use client";
 import { useState } from "react";
 
-import LibSubheader from "@/components/clinician/headers/libSubheader";
-import SearchBar from "@/components/ui/searchBar";
-import Dropdown from "@/components/ui/dropDown";
+import LibSubheader from "@/components/clinician/headers/LibSubheader";
+import SearchBar from "@/components/ui/SearchBar";
+import Dropdown from "@/components/ui/Dropdown";
 import AddExerciseModal from "@/components/clinician/modals/AddExerciseModal";
 import ExerciseItemCard from "@/components/clinician/modals/ExerciseItemCard";
 
@@ -13,7 +13,6 @@ export default function Exercises() {
   const [filterBy, setFilterBy] = useState("all");
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [editingExercise, setEditingExercise] = useState<any>(null);
 
   const sortOptions = [
@@ -59,7 +58,12 @@ export default function Exercises() {
 
   return (
     <>
-      <main className="min-h-screen pt-12 pb-12" style={{ backgroundColor: '#EFF1FE' }}>
+      <LibSubheader 
+        onAddClick={() => setIsAddModalOpen(true)} 
+        addButtonLabel="Add Exercise" 
+      />
+
+      <main className="min-h-screen" style={{ backgroundColor: '#EFF1FE' }}>
         <div className="px-8 py-4 flex flex-wrap items-center gap-4 w-full justify-start">
           <div className="w-[400px]">
             <SearchBar 

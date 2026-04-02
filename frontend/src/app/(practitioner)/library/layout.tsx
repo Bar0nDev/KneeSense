@@ -1,6 +1,6 @@
-import Topbar from '@/components/clinician/headers/topbar';
-import LibSubheader from '@/components/clinician/headers/libSubheader';
-import LinkButton from '@/components/clinician/buttons/linkbutton';
+import Topbar from '@/components/clinician/headers/Topbar';
+import LibSubheader from '@/components/clinician/headers/LibSubheader';
+import LinkButton from '@/components/clinician/buttons/LinkButton';
 import React from "react";
 
 export default function Layout({
@@ -10,8 +10,7 @@ export default function Layout({
 }) {
   return (
     <div className="flex flex-col min-h-screen">
-      <LibSubheader/>
-      <div className='px-1 py-4'>
+      <div className='px-1'>
       {children}
       </div>
     </div>

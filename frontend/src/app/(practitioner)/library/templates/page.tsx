@@ -1,9 +1,9 @@
 "use client";
 import { useState } from "react";
 
-import LibSubheader from "@/components/clinician/headers/libSubheader"
-import SearchBar from "@/components/ui/searchBar";
-import Dropdown from "@/components/ui/dropDown";
+import LibSubheader from "@/components/clinician/headers/LibSubheader";
+import SearchBar from "@/components/ui/SearchBar";
+import Dropdown from "@/components/ui/Dropdown";
 import TemplateItemCard from "@/components/clinician/modals/TemplateItemCard";
 import AddTemplateModal from "@/components/clinician/modals/AddTemplateModal";
 
@@ -66,75 +66,81 @@ export default function Templates() {
 
   return (
     <>
-         <main className="min-h-screen" style={{ backgroundColor: '#EFF1FE' }}>
-            <div className="px-8 py-4 flex flex-wrap items-center gap-4 w-full justify-start">
-              <div className="w-[400px]">
-                <SearchBar 
-                  placeholder="Search Templates..." 
-                  value={search}
-                  onChange={setSearch}
-                />
-              </div>
-              <div className="w-48">
-                <Dropdown 
-                  label="Sort by" 
-                  options={sortOptions} 
-                  selectedKey={sortBy}
-                  onSelect={setSortBy} 
-                />
-              </div>
-              <div className="w-48">
-                <Dropdown 
-                  label="Filter" 
-                  options={filterOptions} 
-                  selectedKey={filterBy}
-                  onSelect={setFilterBy} 
-                />
-              </div>
-              {selectedIds.length > 0 && (
-                <div className="ml-auto">
-                  <button 
-                    onClick={handleBulkDelete}
-                    className="px-4 py-2 bg-red-50 text-red-600 rounded-xl font-bold border border-red-200 hover:bg-red-100 transition-colors shadow-sm"
-                  >
-                    Delete Selected ({selectedIds.length})
-                  </button>
-                </div>
-              )}
-            </div>
+      <LibSubheader 
+        onAddClick={() => setIsAddModalOpen(true)} 
+        addButtonLabel="Add Template" 
+      />
 
-            {/* Templates Grid */}
-            <div className="px-8 mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 w-full">
-              {templatesList.map((template) => (
-                <TemplateItemCard 
-                  key={template.id} 
-                  title={template.title} 
-                  subLabel={template.subLabel}
-                  exercises={template.exercises}
-                  isFavorite={template.isFavorite} 
-                  selected={selectedIds.includes(template.id)}
-                  onSelect={(isSelected) => toggleSelect(template.id, isSelected)}
-                  onEdit={() => setEditingTemplate(template)}
-                />
-              ))}
-            </div>
-         </main>
+      <main className="min-h-screen" style={{ backgroundColor: '#EFF1FE' }}>
+        <div className="px-8 py-4 flex flex-wrap items-center gap-4 w-full justify-start">
+          <div className="w-[400px]">
+            <SearchBar 
+              placeholder="Search Templates..." 
+              value={search}
+              onChange={setSearch}
+            />
+          </div>
+          <div className="w-48">
+            <Dropdown 
+              label="Sort by" 
+              options={sortOptions} 
+              selectedKey={sortBy}
+              onSelect={setSortBy} 
+            />
+          </div>
+          <div className="w-48">
+            <Dropdown 
+              label="Filter" 
+              options={filterOptions} 
+              selectedKey={filterBy}
+              onSelect={setFilterBy} 
+            />
+          </div>
 
-         <AddTemplateModal 
-           key={isAddModalOpen ? "add" : (editingTemplate?.id || "none")}
-           isOpen={isAddModalOpen || !!editingTemplate} 
-           initialData={editingTemplate}
-           onClose={() => {
-             setIsAddModalOpen(false);
-             setEditingTemplate(null);
-           }}
-           onSave={(data) => {
-             console.log(editingTemplate ? "Edited template:" : "Saved template:", data);
-             setIsAddModalOpen(false);
-             setEditingTemplate(null);
-           }}
-           onDelete={editingTemplate ? () => handleDelete(editingTemplate.id) : undefined}
-         />
-       </>
+          {selectedIds.length > 0 && (
+            <div className="ml-auto">
+              <button 
+                onClick={handleBulkDelete}
+                className="px-4 py-2 bg-red-50 text-red-600 rounded-xl font-bold border border-red-200 hover:bg-red-100 transition-colors shadow-sm"
+              >
+                Delete Selected ({selectedIds.length})
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Templates Grid - Consistent with Exercise tab grid spacing */}
+        <div className="px-8 mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 w-full pb-12">
+          {templatesList.map((template) => (
+            <TemplateItemCard 
+              key={template.id} 
+              title={template.title} 
+              subLabel={template.subLabel}
+              exercises={template.exercises}
+              isFavorite={template.isFavorite} 
+              selected={selectedIds.includes(template.id)}
+              onSelect={(isSelected) => toggleSelect(template.id, isSelected)}
+              onEdit={() => setEditingTemplate(template)}
+            />
+          ))}
+        </div>
+      </main>
+
+      <AddTemplateModal 
+        key={isAddModalOpen ? "add" : (editingTemplate?.id || "none")}
+        isOpen={isAddModalOpen || !!editingTemplate} 
+        initialData={editingTemplate}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingTemplate(null);
+        }}
+        onSave={(data) => {
+          console.log(editingTemplate ? "Edited template:" : "Saved template:", data);
+          setIsAddModalOpen(false);
+          setEditingTemplate(null);
+        }}
+        onDelete={editingTemplate ? () => handleDelete(editingTemplate.id) : undefined}
+      />
+    </>
   );
 }
