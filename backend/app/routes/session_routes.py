@@ -10,7 +10,7 @@ from app.services.insight_service import generate_and_store_insight
 session_bp = Blueprint("sessions", __name__)
 fs_db = fsdb.get_fs_db()
 
-ALLOWED_EXTENSIONS = {"mp4", "mov", "avi", "mkv"}
+ALLOWED_EXTENSIONS = {"mp4", "mov", "avi", "mkv", "webm"}
 
 def allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -609,3 +609,14 @@ def add_llm_insight(session_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to save insight: {str(e)}"}), 500
+
+
+# =========================
+# VIDEO FILE (temporary to display session-uploaded videos on frontend)
+# =========================
+
+@session_bp.route("/data/videos/<path:filename>", methods=["GET"])
+def serve_video(filename):
+    # current_app.root_path is backend/app/ — go up one level to reach backend/data/videos/
+    videos_dir = os.path.abspath(os.path.join(current_app.root_path, "..", current_app.config["DATA_DIR"], "videos"))
+    return send_from_directory(videos_dir, filename)

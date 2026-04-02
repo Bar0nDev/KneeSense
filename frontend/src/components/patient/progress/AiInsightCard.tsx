@@ -9,6 +9,7 @@ type InsightStatus = "improving" | "stable" | "declining";
 interface AIInsightCardProps {
   status: InsightStatus;
   summary: string;
+  className?: string;
 }
 
 const STATUS_CONFIG: Record<
@@ -43,41 +44,33 @@ function parseSections(text: string) {
   }));
 }
 
-export default function AIInsightCard({ status, summary }: AIInsightCardProps) {
+export default function AIInsightCard({ status, summary, className = "" }: AIInsightCardProps) {
   const { label, color, bg, icon } = STATUS_CONFIG[status];
   const sections = parseSections(summary);
 
   return (
-    <Card padding="none" shadow="sm" className="overflow-hidden">
-      <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "16px", height: "235px" }}>
+    <Card padding="none" shadow="sm" className={`overflow-hidden flex flex-col ${className}`}>
+      <div className="flex flex-col gap-4 flex-1 p-5">
         {/* Header */}
-        <div className="flex items-center justify-between" style={{ flexShrink: 0 }}>
+        <div className="flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#12606A]/10">
               <BsStars size={14} className="text-[#12606A]" />
             </div>
             <h2 className="text-sm font-bold text-gray-900">AI Insight</h2>
           </div>
-          <span className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${bg} ${color}`}>
+          {/* Status Badge - Commented for now*/}
+          {/* <span className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${bg} ${color}`}>
             {icon}
             {label}
-          </span>
+          </span> */}
         </div>
 
         {/* Body */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-            overflowY: "auto",
-            paddingRight: "4px",
-            flex: 1,
-          }}
-        >
+        <div className="flex flex-col gap-3 overflow-y-auto pr-1 flex-1">
           {sections.length === 0 ? (
-            <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center" }}>
-              <p style={{ fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>
+            <div className="flex h-full items-center justify-center">
+              <p className="text-[13px] text-gray-400 italic">
                 No insight available for this session.
               </p>
             </div>
@@ -94,7 +87,6 @@ export default function AIInsightCard({ status, summary }: AIInsightCardProps) {
             ))
           )}
         </div>
-
       </div>
     </Card>
   );
