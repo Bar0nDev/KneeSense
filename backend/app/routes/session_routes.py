@@ -566,7 +566,7 @@ def add_llm_insight(session_id):
 
 
 # =========================
-# SERVE VIDEO FILE
+# VIDEO FILE (temporary to display session-uploaded videos on frontend)
 # =========================
 
 @session_bp.route("/data/videos/<path:filename>", methods=["GET"])
