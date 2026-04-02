@@ -11,7 +11,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-interface KneeAngleDataPoint {
+export interface KneeAngleDataPoint {
+  index: number;
   date: string;
   angle: number;
 }
@@ -22,8 +23,16 @@ interface KneeAngleChartProps {
 }
 
 export default function KneeAngleChart({ data, benchmark }: KneeAngleChartProps) {
+  const angles = data.map((d) => d.angle);
+  const rawMin = Math.min(...angles, benchmark);
+  const rawMax = Math.max(...angles, benchmark);
+  const domainMin = Math.floor((rawMin - 10) / 10) * 10;
+  const domainMax = Math.ceil((rawMax + 10) / 10) * 10;
+  const ticks: number[] = [];
+  for (let t = domainMin; t <= domainMax; t += 10) ticks.push(t);
+
   return (
-    <ResponsiveContainer width="100%" height={190}>
+    <ResponsiveContainer width="100%" height={200}>
       {/* Fixed Margins: 
         left: 0 and width: 35 on YAxis creates a dedicated lane for labels.
         bottom: 10 ensures XAxis dates don't clip.
@@ -39,19 +48,20 @@ export default function KneeAngleChart({ data, benchmark }: KneeAngleChartProps)
         <CartesianGrid strokeDasharray="4 4" stroke="#E5E7EB" vertical={false} />
 
         <XAxis
-          dataKey="date"
+          type="number"
+          dataKey="index"
+          domain={[0, data.length - 1]}
+          ticks={data.map((_, i) => i)}
+          tickFormatter={(i) => data[i]?.date ?? ""}
           tick={{ fontSize: 11, fill: "#9CA3AF" }}
           axisLine={false}
           tickLine={false}
-          // Pushes labels down away from the axis line
           dy={10}
         />
 
         <YAxis
-          // Fixed: Domain now matches ticks exactly for perfect symmetry
-          domain={[50, 90]}
-          // Fixed: 5 ticks create 4 equal 10-degree gaps
-          ticks={[50, 60, 70, 80, 90]}
+          domain={[domainMin, domainMax]}
+          ticks={ticks}
           tickFormatter={(v) => `${v}°`}
           tick={{ fontSize: 11, fill: "#9CA3AF" }}
           axisLine={false}
@@ -61,6 +71,7 @@ export default function KneeAngleChart({ data, benchmark }: KneeAngleChartProps)
         />
 
         <Tooltip
+          labelFormatter={(i) => data[i as number]?.date ?? ""}
           formatter={(value) => [`${value as number}°`, "Knee Angle"]}
           contentStyle={{
             borderRadius: "12px",

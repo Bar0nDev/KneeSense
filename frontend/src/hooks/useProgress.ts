@@ -39,7 +39,7 @@ export function useProgress() {
   const sessionData = useMemo(() => ({
     date: latestSession ? formatDate(latestSession.created_at) : "—",
     video: {
-      videoSrc: "/assets/kneesense_mag_corrected_web.mp4",
+      videoSrc: latestSession?.video_url,
       avgAngle: latestSession?.avg_angle != null ? `${Math.round(latestSession.avg_angle)}°` : "—",
       medialPct: latestSession?.zone1_avg != null ? `${latestSession.zone1_avg.toFixed(2)}%` : "—",
       centralPct: latestSession?.zone2_avg != null ? `${latestSession.zone2_avg.toFixed(2)}%` : "—",
@@ -58,11 +58,11 @@ export function useProgress() {
       },
     ],
     benchmarkData: [
-      { label: "Force",      you: 2,      benchmark: 3  },
-      { label: "Knee Angle", you: 60,     benchmark: 50 },
-      { label: "Central",    you: 43,     benchmark: 40 },
-      { label: "Medial",     you: 33,     benchmark: 32 },
-      { label: "Lateral",    you: 19,     benchmark: 24 },
+      // { label: "Force", you: 1, benchmark: 1 },
+      { label: "Knee Angle", you: latestSession?.avg_angle  ?? 1, benchmark: 1 },
+      { label: "Central",    you: latestSession?.zone2_avg  ?? 1, benchmark: 1 },
+      { label: "Medial",     you: latestSession?.zone1_avg  ?? 1, benchmark: 1 },
+      { label: "Lateral",    you: latestSession?.zone3_avg  ?? 1, benchmark: 1 },
     ],
     smoothnessData: [
       { t: 0, value: 0.10 }, { t: 1, value: 0.46 }, { t: 2, value: 0.74 },

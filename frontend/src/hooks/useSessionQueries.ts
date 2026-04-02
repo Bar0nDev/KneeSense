@@ -25,6 +25,8 @@ export interface SessionRecord {
   zone2_avg?: number;
   zone3_avg?: number;
   dominant_zone?: string;
+  video_path?: string;
+  video_url?: string;
 }
 
 export interface Insight {
@@ -63,9 +65,15 @@ export function useSessionData() {
     queryKey: sessionKeys.all(patientId!),
     queryFn: async () => {
       const sessions: SessionRecord[] = await sessionService.getPatientSessions(patientId!);
-      return [...sessions].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      return [...sessions]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .map((s) => {
+          const filename = s.video_path?.split(/[\\/]/).pop();
+          const video_url = filename ? `${apiBase}/data/videos/${filename}` : undefined;
+          console.log("[useSessionQueries] video_path:", s.video_path, "→ video_url:", video_url);
+          return { ...s, video_url };
+        });
     },
     enabled: !!patientId,
   });
