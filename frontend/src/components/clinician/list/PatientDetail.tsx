@@ -11,35 +11,46 @@ import { useProgress } from "@/hooks/useProgress";
 import { FiEdit2, FiActivity } from "react-icons/fi";
 import EditProgramModal from "@/components/clinician/modals/EditProgramModal";
 import { useState } from "react";
+import { patientService, PatientListItem } from "@/services/patientService";
+import { getStatusConfig } from "@/lib/patientStatus";
+import { useUser } from "@/context/UserContext";
 
-// Type extracted from patientList.tsx
-export type Patient = {
-  id: string;
-  name: string;
-  daysIn: number;
-  status: string;
-  compliance: number;
-  forceAvg: number;
-  nextSession: string;
-};
-
-const STATUS_COLORS: Record<string, { bg: string; text: string; icon: string }> = {
-  improving:  { bg: "#E6FAF5", text: "#00AC8F", icon: "↑" },
-  stable:     { bg: "#FFF7E6", text: "#FF8C00", icon: "→" },
-  declining:  { bg: "#FFF0F3", text: "#FF2D55", icon: "↓" },
-};
-
-// Default static fallback values if full session details omit props
 type Props = {
-  patient: Patient;
+  patient: PatientListItem;
+  onAssigned?: () => void;
 };
 
-export default function PatientDetail({ patient }: Props) {
+function calculateAge(birthday: string | null): string {
+  if (!birthday) return "—";
+  const birth = new Date(birthday);
+  const today = new Date();
+  const age = today.getFullYear() - birth.getFullYear() -
+    (today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate()) ? 1 : 0);
+  return `${age} yrs`;
+}
+
+export default function PatientDetail({ patient, onAssigned }: Props) {
   const { sessionData, metrics: hookMetrics } = useProgress();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  
+  const [isAssigning, setIsAssigning] = useState(false);
+  const { userProfile } = useUser();
+
   const isUnassigned = patient.status === "unassigned";
-  const s = isUnassigned ? { bg: "#FFFBF2", text: "#FF8C00", icon: "?" } : (STATUS_COLORS[patient.status] || STATUS_COLORS.stable);
+  const s = getStatusConfig(patient.status);
+
+  async function handleAddPatient() {
+    const practitionerId = userProfile?.profile_id;
+    if (!practitionerId) return;
+    setIsAssigning(true);
+    try {
+      await patientService.assignPatient(patient.id, practitionerId);
+      onAssigned?.();
+    } catch (err) {
+      console.error("Failed to assign patient", err);
+    } finally {
+      setIsAssigning(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -52,7 +63,7 @@ export default function PatientDetail({ patient }: Props) {
               <div className="flex flex-col justify-center">
                 <span className="text-sm font-semibold text-gray-900 leading-tight">{patient.name}</span>
                 <span className="text-xs text-gray-500 leading-tight">
-                  {`65 yrs${!isUnassigned ? ` • Week ${Math.ceil(patient.daysIn / 7)}` : ""}`}
+                  {`${calculateAge(patient.birthday)}${!isUnassigned ? ` • Week ${Math.ceil(patient.daysIn / 7)}` : ""}`}
                 </span>
               </div>
             </div>
@@ -64,9 +75,10 @@ export default function PatientDetail({ patient }: Props) {
         
         <div className="flex flex-wrap gap-3">
           <PrimaryButton
-            onClick={() => console.log(isUnassigned ? "Add Patient" : "View Patient Details")}
+            onClick={isUnassigned ? handleAddPatient : () => console.log("View Patient Details")}
+            disabled={isAssigning}
           >
-            {isUnassigned ? "Add Patient" : "View Patient Details"}
+            {isUnassigned ? (isAssigning ? "Adding..." : "Add Patient") : "View Patient Details"}
           </PrimaryButton>
         </div>
       </div>
