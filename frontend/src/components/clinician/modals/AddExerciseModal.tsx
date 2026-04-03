@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PrimaryButton from "@/components/clinician/buttons/PrimaryButton";
 import { FiSettings } from "react-icons/fi";
 
@@ -25,16 +25,27 @@ export default function AddExerciseModal({ isOpen, onClose, onSave, onDelete, in
   const [sets, setSets] = useState(initialData?.sets || 3);
   const [defaultReps, setDefaultReps] = useState(isCustomReps ? 10 : (initialData?.reps?.default || 10));
   const [customizeReps, setCustomizeReps] = useState(isCustomReps);
-  const [showSettings, setShowSettings] = useState(false);
   const [minReps, setMinReps] = useState(initRepsMin || 8);
   const [maxReps, setMaxReps] = useState(initRepsMax || 12);
 
-  // File states (mocking uploads)
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(initialData?.thumbnailUrl || null);
+  // Unified Media States
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  // Support either mediaUrl or thumbnailUrl from older data shapes
+  const [existingMediaUrl, setExistingMediaUrl] = useState<string | null>(initialData?.mediaUrl || initialData?.thumbnailUrl || null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(existingMediaUrl);
   
   const [patientFeatured, setPatientFeatured] = useState(initialData?.patientFeatured || false);
+
+  // Automatically generate a preview URL when a new file is selected
+  useEffect(() => {
+    if (mediaFile) {
+      const objectUrl = URL.createObjectURL(mediaFile);
+      setPreviewUrl(objectUrl);
+      return () => URL.revokeObjectURL(objectUrl); // Clean up memory
+    } else {
+      setPreviewUrl(existingMediaUrl);
+    }
+  }, [mediaFile, existingMediaUrl]);
 
   if (!isOpen) return null;
 
@@ -51,12 +62,20 @@ export default function AddExerciseModal({ isOpen, onClose, onSave, onDelete, in
       sets,
       reps: customizeReps ? { min: minReps, max: maxReps } : { default: defaultReps },
       patientFeatured,
-      imageFile,
-      videoFile,
-      thumbnailUrl: existingImageUrl
+      mediaFile,             // Send the unified file
+      mediaUrl: existingMediaUrl // Send existing URL if no new file
     };
     if (onSave) onSave(payload);
     onClose();
+  };
+
+  // Helper function to check if the current preview is a video
+  const isVideo = (fileOrUrl: File | string | null) => {
+    if (!fileOrUrl) return false;
+    if (fileOrUrl instanceof File) {
+      return fileOrUrl.type.startsWith("video/");
+    }
+    return fileOrUrl.match(/\.(mp4|webm|ogg)$/i) !== null;
   };
 
   return (
@@ -76,67 +95,73 @@ export default function AddExerciseModal({ isOpen, onClose, onSave, onDelete, in
         </div>
 
         <div className="space-y-6">
-          {/* Media Uploads */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Image Upload */}
-            <div className="border-2 border-dashed border-[#12606A]/30 rounded-xl p-6 flex flex-col items-center justify-center bg-[#f0fafa] relative">
-              {imageFile || existingImageUrl ? (
-                <div className="flex flex-col items-center">
-                  {existingImageUrl && !imageFile && (
-                    <img src={existingImageUrl} alt="Current" className="w-16 h-16 object-cover rounded mb-2" />
+          
+          {/* Unified Media Upload */}
+          <div className="border-2 border-dashed border-[#12606A]/30 rounded-xl p-6 flex flex-col items-center justify-center bg-[#f0fafa] relative w-full h-56">
+            {previewUrl ? (
+              <div className="flex flex-col items-center justify-center w-full h-full relative group">
+                {/* Media Preview */}
+                <div className="w-full h-32 flex justify-center mb-3 rounded-lg overflow-hidden">
+                  {isVideo(mediaFile || previewUrl) ? (
+                    <video 
+                      src={previewUrl} 
+                      autoPlay 
+                      loop 
+                      muted 
+                      playsInline 
+                      className="h-full object-contain" 
+                    />
+                  ) : (
+                    <img 
+                      src={previewUrl} 
+                      alt="Exercise Preview" 
+                      className="h-full object-contain" 
+                    />
                   )}
-                  {imageFile && <span className="text-sm font-medium mb-2">{imageFile.name}</span>}
-                  <div className="flex gap-2">
-                    <button onClick={() => { setImageFile(null); setExistingImageUrl(null); }} className="text-xs text-red-500 hover:underline">Remove</button>
-                    <label className="text-xs text-[#12606A] font-bold cursor-pointer hover:underline">
-                      Edit
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
-                    </label>
-                  </div>
                 </div>
-              ) : (
-                <>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#12606A" strokeWidth="1.5" className="mb-2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                    <polyline points="21 15 16 10 5 21"></polyline>
-                  </svg>
-                  <label className="text-sm font-bold text-[#12606A] cursor-pointer hover:underline">
-                    Upload Image
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
+                
+                {mediaFile && <span className="text-sm font-medium mb-2 truncate max-w-xs">{mediaFile.name}</span>}
+                
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => { setMediaFile(null); setExistingMediaUrl(null); }} 
+                    className="text-xs font-semibold text-red-500 hover:text-red-700 transition"
+                  >
+                    Remove File
+                  </button>
+                  <label className="text-xs font-semibold text-[#12606A] cursor-pointer hover:underline transition">
+                    Change File
+                    {/* Accepts images, gifs, and standard web video formats */}
+                    <input 
+                      type="file" 
+                      accept="image/*, video/mp4, video/webm" 
+                      className="hidden" 
+                      onChange={(e) => setMediaFile(e.target.files?.[0] || null)} 
+                    />
                   </label>
-                  <p className="text-xs text-gray-500 mt-1">Thumbnail for the exercise</p>
-                </>
-              )}
-            </div>
-
-            {/* Video Upload */}
-            <div className="border-2 border-dashed border-[#12606A]/30 rounded-xl p-6 flex flex-col items-center justify-center bg-[#f0fafa] relative">
-              {videoFile ? (
-                <div className="flex flex-col items-center">
-                  <span className="text-sm font-medium mb-2">{videoFile.name}</span>
-                  <div className="flex gap-2">
-                    <button onClick={() => setVideoFile(null)} className="text-xs text-red-500 hover:underline">Remove</button>
-                    <label className="text-xs text-[#12606A] font-bold cursor-pointer hover:underline">
-                      Edit
-                      <input type="file" accept="image/gif" className="hidden" onChange={(e) => setVideoFile(e.target.files?.[0] || null)} />
-                    </label>
-                  </div>
                 </div>
-              ) : (
-                <>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#12606A" strokeWidth="1.5" className="mb-2">
-                    <polygon points="23 7 16 12 23 17 23 7"></polygon>
-                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-                  </svg>
-                  <label className="text-sm font-bold text-[#12606A] cursor-pointer hover:underline">
-                    Upload GIF
-                    <input type="file" accept="image/gif" className="hidden" onChange={(e) => setVideoFile(e.target.files?.[0] || null)} />
-                  </label>
-                  <p className="text-xs text-gray-500 mt-1">Instruction steps GIF</p>
-                </>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center text-center">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#12606A" strokeWidth="1.5" className="mb-3">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <label className="text-sm font-bold text-[#12606A] cursor-pointer hover:underline text-lg">
+                  Upload Image, GIF, or Video
+                  <input 
+                    type="file" 
+                    accept="image/*, video/mp4, video/webm" 
+                    className="hidden" 
+                    onChange={(e) => setMediaFile(e.target.files?.[0] || null)} 
+                  />
+                </label>
+                <p className="text-xs text-gray-500 mt-2 max-w-xs">
+                  Supported formats: PNG, JPG, GIF, MP4, WebM. Ideal ratio is 1:1 or 16:9.
+                </p>
+              </div>
+            )}
           </div>
 
           <label className="flex items-center gap-2 cursor-pointer w-fit">

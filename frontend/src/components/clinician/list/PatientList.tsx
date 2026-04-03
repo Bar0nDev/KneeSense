@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import SearchBar from "@/components/ui/searchBar";
+import SearchBar from "@/components/ui/SearchBar";
 
 const BRAND = "#12606A";
 

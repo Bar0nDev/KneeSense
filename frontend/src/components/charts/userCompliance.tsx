@@ -40,7 +40,7 @@ const renderCustomLabel = ({
   );
 };
 
-export default function Compliance() {
+export default function UserCompliance() {
   return (
     <div style={{ display: "flex", gap: "14px", alignItems: "stretch", width: "100%", height: "100%", fontFamily: "'DM Sans', sans-serif" }}>
       
@@ -68,8 +68,8 @@ export default function Compliance() {
         })}
       </div>
 
-      {/* Right Card */}
-      <div style={{ background: "white", borderRadius: "16px", padding: "14px 18px", flex: 1, boxShadow: '0 3px 5px 0 rgb(158, 158, 158)', display: "flex", flexDirection: "column" }}>
+     {/* Right Card */}
+      <div style={{ background: "white", borderRadius: "16px", padding: "14px 18px", flex: 1, boxShadow: '0 3px 5px 0 rgb(158, 158, 158)', display: "flex", flexDirection: "column", overflow: "hidden" }}>
         
         <div style={{ display: "flex", alignItems: "baseline", marginBottom: "8px" }}>
           <span style={{ fontSize: "13px", fontWeight: 800, color: BRAND, textTransform: "uppercase", letterSpacing: "0.03em" }}>
@@ -77,10 +77,12 @@ export default function Compliance() {
           </span>
         </div>
         
-        {/* Adjusted justifyContent to 'center' and tight 'gap' to pull legend closer to donut */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "24px", flex: 1, minHeight: 0 }}>
+        {/* Main content area - Matches Radar flex logic */}
+        <div style={{ display: "flex", alignItems: "center", gap: "24px", flex: 1, minHeight: 0 }}>
           
-          <div style={{ position: "relative", flexShrink: 0, width: "260px", height: "260px" }}>
+          {/* FLUID CHART WRAPPER: Matches the Radar Chart perfectly */}
+          {/* Removed width/height/flexShrink completely. Replaced with flex: 1 and height: 100% */}
+          <div style={{ flex: 1, height: "100%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                 <Pie data={data} cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" paddingAngle={3} dataKey="value" label={renderCustomLabel}>
@@ -88,13 +90,16 @@ export default function Compliance() {
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
+            
+            {/* Center text stays perfectly centered relative to the fluid container */}
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center" }}>
               <div style={{ fontSize: "38px", fontWeight: 800, color: BRAND, lineHeight: 1 }}>{avgCompliance}%</div>
               <div style={{ fontSize: "13px", color: BRAND, opacity: 0.6, fontWeight: 700 }}>AVG</div>
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", width: "115px" }}>
+          {/* LEGEND WRAPPER: Stays fixed width, just like the Filter Pills in the Radar chart */}
+          <div style={{ display: "flex", flexDirection: "column", width: "115px", flexShrink: 0 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 {data.map((item) => (
                 <div key={item.name} style={{ display: "flex", flexDirection: "column", background: "#F9FAFB", borderRadius: "8px", padding: "6px 10px", border: `1px solid ${item.stroke}15` }}>
@@ -106,7 +111,7 @@ export default function Compliance() {
                 </div>
                 ))}
             </div>
-            {/* Added margin-top to separate button from the legend blocks */}
+            
             <div style={{ marginTop: "50px" }}>
               <PrimaryButton variant="link" href="/patients" className="w-full" style={{ height: '36px', fontSize: '20px' }}>
                 View Patients →

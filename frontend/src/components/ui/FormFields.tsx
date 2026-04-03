@@ -19,7 +19,7 @@ export function Field({ label, type, placeholder, error, className = "", ...prop
         {...props}
         className={`w-full rounded-xl border ${
           error ? "border-red-500 bg-red-50/30" : "border-[#C7C7C7] bg-[#f0fafa]"
-        } px-4 py-2.5 text-sm outline-none transition-all placeholder:text-[#455858]/50 focus:border-[#30C3B1] focus:ring-2 focus:ring-[#30C3B1]/20 ${className}`}
+        } px-4 py-2.5 text-sm text-gray-900 outline-none transition-all placeholder:text-[#455858]/50 focus:border-[#30C3B1] focus:ring-2 focus:ring-[#30C3B1]/20 autofill:shadow-[inset_0_0_0px_1000px_#f0fafa] ${className}`}
       />
       {error && <p className="mt-1 text-[10px] font-medium text-red-500 animate-pulse">{error}</p>}
     </div>
@@ -46,7 +46,7 @@ export function SelectField({ label, placeholder, options, error, className = ""
           {...props}
           className={`w-full appearance-none rounded-xl border ${
             error ? "border-red-500 bg-red-50/30" : "border-[#C7C7C7] bg-[#f0fafa]"
-          } px-4 py-2.5 text-sm outline-none transition-all focus:border-[#30C3B1] focus:ring-2 focus:ring-[#30C3B1]/20 ${className}`}
+          } px-4 py-2.5 text-sm text-gray-900 outline-none transition-all focus:border-[#30C3B1] focus:ring-2 focus:ring-[#30C3B1]/20 ${className}`}
         >
           {placeholder && <option value="" disabled>{placeholder}</option>}
           {options.map((o) => (

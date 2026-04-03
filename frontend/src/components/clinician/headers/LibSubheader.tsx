@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import LinkButton from "../buttons/linkbutton";
+import LinkButton from "../buttons/LinkButton";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 
 interface LibSubheaderProps {

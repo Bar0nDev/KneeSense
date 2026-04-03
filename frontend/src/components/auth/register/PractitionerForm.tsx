@@ -80,7 +80,7 @@ export default function PractitionerForm() {
                 placeholder="min 8 characters"
                 value={formData.password}
                 onChange={(e) => updateField("password", e.target.value)}
-                className={`w-full rounded-xl border ${errors.password ? "border-red-500 bg-red-50/30" : "border-[#C7C7C7] bg-[#f0fafa]"} px-4 py-2.5 pr-10 text-sm outline-none transition-all placeholder:text-[#455858]/50 focus:border-[#30C3B1] focus:ring-2 focus:ring-[#30C3B1]/20`}
+                className={`w-full rounded-xl border ${errors.password ? "border-red-500 bg-red-50/30" : "border-[#C7C7C7] bg-[#f0fafa]"} px-4 py-2.5 pr-10 text-sm text-gray-900 outline-none transition-all placeholder:text-[#455858]/50 focus:border-[#30C3B1] focus:ring-2 focus:ring-[#30C3B1]/20`}
               />
               <button
                 type="button"
