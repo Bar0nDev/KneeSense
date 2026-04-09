@@ -1,33 +1,36 @@
 "use client";
-import { useState } from "react";
+import Link from "next/link";
 import FilterPills from "../clinician/buttons/FilterPills";
+import { useState } from "react";
+import { useAlerts, PatientAlert } from "@/hooks/useAlerts";
+import { complianceColor } from "@/lib/patientStatus";
 
 const BRAND = "#12606A";
 
 const ALERT_TYPES = [
   { key: "all",        label: "All Alerts" },
-  { key: "benchmark",  label: "Below Benchmark" },
-  { key: "deficit",    label: "High Deficit" },
+  { key: "declining",  label: "Declining" },
   { key: "compliance", label: "Low Compliance" },
-  { key: "days",       label: "Days in Program" },
 ];
 
-const alerts = [
-  { id: "p1", patient: "Sofia Reyes",     age: 13, rom: "-- °", benchmark: "-- °", deficit: "-- °", compliance: "--%", daysIn: "-- days", alertType: "benchmark" },
-  { id: "p2", patient: "Emma Lewis",      age: 44, rom: "-- °", benchmark: "-- °", deficit: "-- °", compliance: "--%", daysIn: "-- days", alertType: "compliance" },
-  { id: "p3", patient: "Charlotte Young", age: 58, rom: "-- °", benchmark: "-- °", deficit: "-- °", compliance: "--%", daysIn: "-- days", alertType: "deficit" },
-  { id: "p4", patient: "Amelia Adams",    age: 71, rom: "-- °", benchmark: "-- °", deficit: "-- °", compliance: "--%", daysIn: "-- days", alertType: "days" },
-  { id: "p5", patient: "Benjamin Wright", age: 78, rom: "-- °", benchmark: "-- °", deficit: "-- °", compliance: "--%", daysIn: "-- days", alertType: "benchmark" },
-];
+const HEADERS = ["Patient", "Days In", "Compliance", "Force Avg", "Alert", "Action"];
 
-const HEADERS = ["Patient", "Age", "ROM", "Benchmark", "Deficit", "Compliance", "Days In", "Action"];
+function alertLabel(alert: PatientAlert) {
+  if (alert.type === "declining_rom") return { label: "Declining", color: "#FF2D55" };
+  return { label: "Low Compliance", color: "#FF8C00" };
+}
 
 export default function AlertTable() {
   const [activeFilter, setActiveFilter] = useState("all");
+  const { alerts, isLoading } = useAlerts();
 
   const filtered = activeFilter === "all"
     ? alerts
-    : alerts.filter((a) => a.alertType === activeFilter);
+    : alerts.filter((a) =>
+        activeFilter === "declining"  ? a.type === "declining_rom"   :
+        activeFilter === "compliance" ? a.type === "low_compliance"  :
+        true
+      );
 
   return (
     <div style={{
@@ -40,13 +43,8 @@ export default function AlertTable() {
       overflow: "hidden",
       width: "100%",
     }}>
-
       <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
-                <FilterPills
-          options={ALERT_TYPES}
-          activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
-        />
+        <FilterPills options={ALERT_TYPES} activeFilter={activeFilter} onFilterChange={setActiveFilter} />
         <span style={{ fontSize: "11px", color: "#9CA3AF" }}>
           Showing {filtered.length} of {alerts.length} alerts
         </span>
@@ -57,70 +55,48 @@ export default function AlertTable() {
           <thead>
             <tr>
               {HEADERS.map((h) => (
-                <th
-                  key={h}
-                  style={{
-                    height: "100%",
-                    textAlign: "left",
-                    padding: "10px 16px",
-                    fontSize: "10px",
-                    fontWeight: 700,
-                    color: "white",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    background: BRAND,
-                    whiteSpace: "nowrap",
-                  }}
-                >
+                <th key={h} style={{ textAlign: "left", padding: "10px 16px", fontSize: "10px", fontWeight: 700, color: "white", textTransform: "uppercase", letterSpacing: "0.06em", background: BRAND, whiteSpace: "nowrap" }}>
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {isLoading ? (
               <tr>
-                <td colSpan={8} style={{ textAlign: "center", padding: "32px", color: "#9CA3AF", fontSize: "12px" }}>
-                  No alerts for this filter
-                </td>
+                <td colSpan={6} style={{ textAlign: "center", padding: "32px", color: "#9CA3AF", fontSize: "12px" }}>Loading...</td>
               </tr>
-            ) : (
-              filtered.map((row, i) => (
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ textAlign: "center", padding: "32px", color: "#9CA3AF", fontSize: "12px" }}>No alerts for this filter</td>
+              </tr>
+            ) : filtered.map((row, i) => {
+              const { label, color } = alertLabel(row);
+              return (
                 <tr
-                  key={row.id}
+                  key={row.patientId}
                   style={{ background: i % 2 === 0 ? "white" : "#FAFAFA", transition: "background 0.1s" }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = `${BRAND}08`)}
                   onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 0 ? "white" : "#FAFAFA")}
                 >
-                  <td style={{ padding: "12px 16px", fontWeight: 600, color: BRAND, whiteSpace: "nowrap" }}>{row.patient}</td>
-                  <td style={{ padding: "12px 16px", color: "#374151" }}>{row.age}</td>
-                  <td style={{ padding: "12px 16px", color: "#374151" }}><span title="backend: patient.currentRom">{row.rom}</span></td>
-                  <td style={{ padding: "12px 16px", color: "#374151" }}><span title="backend: benchmarkForAgeGroup">{row.benchmark}</span></td>
-                  <td style={{ padding: "12px 16px", color: "#FF2D55", fontWeight: 600 }}><span title="backend: deficit = benchmark - rom">{row.deficit}</span></td>
-                  <td style={{ padding: "12px 16px", color: "#374151" }}><span title="backend: patient.complianceScore">{row.compliance}</span></td>
-                  <td style={{ padding: "12px 16px", color: "#374151" }}><span title="backend: daysSinceEnrollment">{row.daysIn}</span></td>
+                  <td style={{ padding: "12px 16px", fontWeight: 600, color: BRAND, whiteSpace: "nowrap" }}>{row.patientName}</td>
+                  <td style={{ padding: "12px 16px", color: "#374151" }}>{row.daysIn != null ? `${row.daysIn} days` : "—"}</td>
+                  <td style={{ padding: "12px 16px", fontWeight: 600, color: complianceColor(row.compliance ?? row.value) }}>
+                    {row.compliance != null ? `${row.compliance}%` : "—"}
+                  </td>
+                  <td style={{ padding: "12px 16px", color: "#374151" }}>{row.forceAvg != null ? `${row.forceAvg} N` : "—"}</td>
+                  <td style={{ padding: "12px 16px", fontWeight: 600, color, whiteSpace: "nowrap" }}>{label}</td>
                   <td style={{ padding: "12px 16px" }}>
-                    <a
-                      href={`/patients/${row.id}`}
-                      style={{
-                        display: "inline-block",
-                        padding: "4px 12px",
-                        borderRadius: "8px",
-                        border: `1.5px solid ${BRAND}`,
-                        color: BRAND,
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        textDecoration: "none",
-                        whiteSpace: "nowrap",
-                        fontFamily: "'DM Sans', sans-serif",
-                      }}
+                    <Link
+                      href={`/patients?select=${row.patientId}`}
+                      style={{ display: "inline-block", padding: "4px 12px", borderRadius: "8px", border: `1.5px solid ${BRAND}`, color: BRAND, fontSize: "11px", fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap", fontFamily: "'DM Sans', sans-serif" }}
                     >
                       View →
-                    </a>
+                    </Link>
                   </td>
                 </tr>
-              ))
-            )}
+              );
+            })}
           </tbody>
         </table>
       </div>

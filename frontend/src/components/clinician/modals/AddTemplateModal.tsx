@@ -1,33 +1,34 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import PrimaryButton from "@/components/clinician/buttons/PrimaryButton";
+import { libraryService, Exercise } from "@/services/libraryService";
 
 interface AddTemplateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave?: (data: any) => void;
   onDelete?: () => void;
-  initialData?: any; // To differentiate between Add/Edit if needed
+  initialData?: any;
+  practitionerId?: number;
 }
 
 type TemplateExercise = {
   id: string;
+  exercise_id: number;
   name: string;
-  thumbnailUrl?: string; // Added image display support
+  thumbnailUrl?: string;
   sets: number;
   reps: number;
 };
 
-// Mock library of all available exercises
-const AVAILABLE_EXERCISES = [
-  { id: "e1", name: "Dorsi Flexion", defaultSets: 3, defaultReps: 10, thumbnailUrl: "/assets/exercises/dorsi_flexion.png" },
-  { id: "e2", name: "Plantar Flexion", defaultSets: 3, defaultReps: 12, thumbnailUrl: "/assets/exercises/plantar_flexion.png" },
-  { id: "e3", name: "Seated Knee Flexion and Extension", defaultSets: 2, defaultReps: 15, thumbnailUrl: "/assets/exercises/seatedknee_flexion_and_extension.png" },
-  { id: "e4", name: "Squat", defaultSets: 3, defaultReps: 10, thumbnailUrl: "/assets/exercises/squat.png" },
-];
-
-export default function AddTemplateModal({ isOpen, onClose, onSave, onDelete, initialData }: AddTemplateModalProps) {
+export default function AddTemplateModal({ isOpen, onClose, onSave, onDelete, initialData, practitionerId }: AddTemplateModalProps) {
+  const { data: availableExercises = [] } = useQuery<Exercise[]>({
+    queryKey: ["exercises", practitionerId],
+    queryFn: () => libraryService.getExercises(practitionerId!),
+    enabled: isOpen && !!practitionerId,
+  });
   const [templateName, setTemplateName] = useState(initialData?.title || "");
   const [subLabel, setSubLabel] = useState(initialData?.subLabel || "");
   const [exercises, setExercises] = useState<TemplateExercise[]>(initialData?.exercises || []);
@@ -39,20 +40,20 @@ export default function AddTemplateModal({ isOpen, onClose, onSave, onDelete, in
 
   const handleAddExercise = () => {
     if (!selectedExId) return;
-    const ex = AVAILABLE_EXERCISES.find(e => e.id === selectedExId);
+    const ex = availableExercises.find(e => String(e.id) === selectedExId);
     if (!ex) return;
 
-    // Prevent duplicate adds of the same exact ID unless we generate fresh temp IDs, but let's allow it as separate items
     const newItem: TemplateExercise = {
       id: `${ex.id}-${Date.now()}`,
+      exercise_id: ex.id,
       name: ex.name,
-      thumbnailUrl: ex.thumbnailUrl,
-      sets: ex.defaultSets,
-      reps: ex.defaultReps,
+      thumbnailUrl: ex.media_url ?? undefined,
+      sets: ex.default_sets,
+      reps: ex.default_reps,
     };
-    
+
     setExercises([...exercises, newItem]);
-    setSelectedExId(""); // reset dropdown
+    setSelectedExId("");
   };
 
   const handleRemoveExercise = (id: string) => {
@@ -71,9 +72,13 @@ export default function AddTemplateModal({ isOpen, onClose, onSave, onDelete, in
     }
     if (onSave) {
       onSave({
-        title: templateName,
-        subLabel,
-        exercises
+        name: templateName,
+        sub_label: subLabel,
+        exercises: exercises.map((ex) => ({
+          exercise_id: ex.exercise_id,
+          sets_override: ex.sets,
+          reps_override: ex.reps,
+        })),
       });
     }
     onClose();
@@ -137,8 +142,11 @@ export default function AddTemplateModal({ isOpen, onClose, onSave, onDelete, in
                 className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#12606A]/20 focus:border-[#12606A]"
               >
                 <option value="" disabled>-- Select an exercise from Library --</option>
-                {AVAILABLE_EXERCISES.map(ex => (
-                  <option key={ex.id} value={ex.id}>{ex.name}</option>
+                {availableExercises.length === 0 && (
+                  <option disabled>No exercises in library yet</option>
+                )}
+                {availableExercises.map(ex => (
+                  <option key={ex.id} value={String(ex.id)}>{ex.name}</option>
                 ))}
               </select>
               <PrimaryButton onClick={handleAddExercise} disabled={!selectedExId} className="whitespace-nowrap">

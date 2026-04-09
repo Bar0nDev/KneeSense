@@ -180,6 +180,102 @@ class Session(db.Model):
 
 
 # =========================
+# EXERCISE LIBRARY
+# =========================
+
+class Exercise(db.Model):
+    __tablename__ = "exercises"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    practitioner_id = db.Column(
+        db.Integer,
+        db.ForeignKey("practitioners.id"),
+        nullable=False
+    )
+
+    name = db.Column(db.String(200), nullable=False)
+
+    instructions = db.Column(db.Text)
+
+    difficulty = db.Column(db.String(20))  # Beginner, Intermediate, Advanced
+
+    default_sets = db.Column(db.Integer, default=3)
+
+    default_reps = db.Column(db.Integer, default=10)
+
+    reps_min = db.Column(db.Integer)
+
+    reps_max = db.Column(db.Integer)
+
+    media_url = db.Column(db.String(500))
+
+    patient_featured = db.Column(db.Boolean, default=False)
+
+    is_favorite = db.Column(db.Boolean, default=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.now(UTC))
+
+
+# =========================
+# TEMPLATE LIBRARY
+# =========================
+
+class Template(db.Model):
+    __tablename__ = "templates"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    practitioner_id = db.Column(
+        db.Integer,
+        db.ForeignKey("practitioners.id"),
+        nullable=False
+    )
+
+    name = db.Column(db.String(200), nullable=False)
+
+    sub_label = db.Column(db.String(200))
+
+    is_favorite = db.Column(db.Boolean, default=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.now(UTC))
+
+    exercises = db.relationship(
+        "TemplateExercise",
+        backref="template",
+        lazy=True,
+        cascade="all, delete-orphan",
+        order_by="TemplateExercise.position"
+    )
+
+
+class TemplateExercise(db.Model):
+    __tablename__ = "template_exercises"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    template_id = db.Column(
+        db.Integer,
+        db.ForeignKey("templates.id"),
+        nullable=False
+    )
+
+    exercise_id = db.Column(
+        db.Integer,
+        db.ForeignKey("exercises.id"),
+        nullable=False
+    )
+
+    position = db.Column(db.Integer, default=0)
+
+    sets_override = db.Column(db.Integer)
+
+    reps_override = db.Column(db.Integer)
+
+    exercise_ref = db.relationship("Exercise", lazy="joined")
+
+
+# =========================
 # FRAME PREDICTIONS
 # =========================
 

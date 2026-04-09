@@ -118,3 +118,55 @@ def mark_insight_complete(session_id, insight_text, model_used):
         "model": model_used,
         "has_insight": True
     })
+
+
+# =========================
+# EXERCISES
+# =========================
+
+def fsdb_exercise(exercise):
+    fs_db.collection("exercises").document(str(exercise.id)).set({
+        "practitioner_id": exercise.practitioner_id,
+        "name": exercise.name,
+        "instructions": exercise.instructions,
+        "difficulty": exercise.difficulty,
+        "default_sets": exercise.default_sets,
+        "default_reps": exercise.default_reps,
+        "reps_min": exercise.reps_min,
+        "reps_max": exercise.reps_max,
+        "media_url": exercise.media_url,
+        "patient_featured": exercise.patient_featured,
+        "is_favorite": exercise.is_favorite,
+        "created_at": exercise.created_at,
+    })
+
+
+def delete_fsdb_exercise(exercise_id):
+    fs_db.collection("exercises").document(str(exercise_id)).delete()
+
+
+# =========================
+# TEMPLATES
+# =========================
+
+def fsdb_template(template, exercises):
+    fs_db.collection("templates").document(str(template.id)).set({
+        "practitioner_id": template.practitioner_id,
+        "name": template.name,
+        "sub_label": template.sub_label,
+        "is_favorite": template.is_favorite,
+        "created_at": template.created_at,
+        "exercises": [
+            {
+                "exercise_id": te.exercise_id,
+                "position": te.position,
+                "sets_override": te.sets_override,
+                "reps_override": te.reps_override,
+            }
+            for te in exercises
+        ],
+    })
+
+
+def delete_fsdb_template(template_id):
+    fs_db.collection("templates").document(str(template_id)).delete()

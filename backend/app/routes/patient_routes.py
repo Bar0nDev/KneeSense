@@ -482,6 +482,86 @@ def purge_patient(patient_id):
 
 
 # =========================
+# ASSIGN PROGRAM TO PATIENT
+# =========================
+
+@patient_bp.route("/patients/<patient_id>/program", methods=["PUT"])
+def assign_program(patient_id):
+    """Assign a template-based program to a patient (stored in Firestore)."""
+    data = request.json or {}
+    update = {}
+
+    if "template_id" in data:
+        update["template_id"] = data["template_id"]
+    if "frequency" in data:
+        update["program_frequency"] = data["frequency"]
+    if "duration_weeks" in data:
+        update["program_duration_weeks"] = data["duration_weeks"]
+    if "start_date" in data:
+        update["program_start_date"] = data["start_date"]
+
+    if not update:
+        return jsonify({"message": "No changes"}), 200
+
+    try:
+        doc_ref = fs_db.collection("patients").document(str(patient_id))
+        doc_ref.set(update, merge=True)
+        return jsonify({"message": "Program assigned"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# =========================
+# CLINIC ANALYTICS
+# =========================
+
+@patient_bp.route("/analytics/clinic", methods=["GET"])
+def get_clinic_analytics():
+    try:
+        patient_docs = list(fs_db.collection("patients").stream())
+        session_docs = list(fs_db.collection("sessions").where("status", "==", "completed").stream())
+
+        from collections import defaultdict
+        sessions_by_patient = defaultdict(list)
+        for doc in session_docs:
+            d = doc.to_dict()
+            pid = str(d.get("patient_id", ""))
+            if pid:
+                sessions_by_patient[pid].append(d)
+
+        result = []
+        for doc in patient_docs:
+            d = doc.to_dict()
+            if not d.get("is_active", True):
+                continue
+            pid = doc.id
+            sessions = sessions_by_patient.get(pid, [])
+            sessions_sorted = sorted(sessions, key=lambda s: s.get("created_at") or 0, reverse=True)
+            latest = sessions_sorted[0] if sessions_sorted else {}
+            compliance = min(len(sessions) * 10, 100)
+
+            result.append({
+                "id": pid,
+                "name": d.get("name", ""),
+                "birthday": d.get("birthday"),
+                "practitioner_id": d.get("practitioner_id"),
+                "compliance": compliance,
+                "session_count": len(sessions),
+                "rom_arc": latest.get("rom_arc"),
+                "avg_angle": latest.get("avg_angle"),
+                "zone1_avg": latest.get("zone1_avg"),
+                "zone2_avg": latest.get("zone2_avg"),
+                "zone3_avg": latest.get("zone3_avg"),
+            })
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        print(f"Analytics error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# =========================
 # HELPER
 # =========================
 
