@@ -1,7 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
+import Link from "next/link";
 import FilterPills from "../clinician/buttons/FilterPills";
-import { patientService, PatientListItem } from "@/services/patientService";
+import { useState } from "react";
+import { useAlerts, PatientAlert } from "@/hooks/useAlerts";
 import { complianceColor } from "@/lib/patientStatus";
 
 const BRAND = "#12606A";
@@ -10,39 +11,26 @@ const ALERT_TYPES = [
   { key: "all",        label: "All Alerts" },
   { key: "declining",  label: "Declining" },
   { key: "compliance", label: "Low Compliance" },
-  { key: "days",       label: "Days in Program" },
 ];
 
-function getAlertType(p: PatientListItem): string {
-  if (p.compliance < 40) return "compliance";
-  if (p.status === "declining") return "declining";
-  if (p.daysIn > 60) return "days";
-  return "compliance";
-}
+const HEADERS = ["Patient", "Days In", "Compliance", "Force Avg", "Alert", "Action"];
 
-const HEADERS = ["Patient", "Days In", "Compliance", "Force Avg", "Status", "Action"];
+function alertLabel(alert: PatientAlert) {
+  if (alert.type === "declining_rom") return { label: "Declining", color: "#FF2D55" };
+  return { label: "Low Compliance", color: "#FF8C00" };
+}
 
 export default function AlertTable() {
   const [activeFilter, setActiveFilter] = useState("all");
-  const [allPatients, setAllPatients] = useState<PatientListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    patientService.getAllPatients()
-      .then((patients) => {
-        // Only show patients that need attention (declining or low compliance)
-        const alerts = patients.filter(
-          (p) => p.practitioner_id !== null && (p.status === "declining" || p.compliance < 40 || p.daysIn > 60)
-        );
-        setAllPatients(alerts);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+  const { alerts, isLoading } = useAlerts();
 
   const filtered = activeFilter === "all"
-    ? allPatients
-    : allPatients.filter((p) => getAlertType(p) === activeFilter);
+    ? alerts
+    : alerts.filter((a) =>
+        activeFilter === "declining"  ? a.type === "declining_rom"   :
+        activeFilter === "compliance" ? a.type === "low_compliance"  :
+        true
+      );
 
   return (
     <div style={{
@@ -58,7 +46,7 @@ export default function AlertTable() {
       <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
         <FilterPills options={ALERT_TYPES} activeFilter={activeFilter} onFilterChange={setActiveFilter} />
         <span style={{ fontSize: "11px", color: "#9CA3AF" }}>
-          Showing {filtered.length} of {allPatients.length} alerts
+          Showing {filtered.length} of {alerts.length} alerts
         </span>
       </div>
 
@@ -74,7 +62,7 @@ export default function AlertTable() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {isLoading ? (
               <tr>
                 <td colSpan={6} style={{ textAlign: "center", padding: "32px", color: "#9CA3AF", fontSize: "12px" }}>Loading...</td>
               </tr>
@@ -82,28 +70,33 @@ export default function AlertTable() {
               <tr>
                 <td colSpan={6} style={{ textAlign: "center", padding: "32px", color: "#9CA3AF", fontSize: "12px" }}>No alerts for this filter</td>
               </tr>
-            ) : filtered.map((row, i) => (
-              <tr
-                key={row.id}
-                style={{ background: i % 2 === 0 ? "white" : "#FAFAFA", transition: "background 0.1s" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = `${BRAND}08`)}
-                onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 0 ? "white" : "#FAFAFA")}
-              >
-                <td style={{ padding: "12px 16px", fontWeight: 600, color: BRAND, whiteSpace: "nowrap" }}>{row.name}</td>
-                <td style={{ padding: "12px 16px", color: "#374151" }}>{row.daysIn} days</td>
-                <td style={{ padding: "12px 16px", fontWeight: 600, color: complianceColor(row.compliance) }}>{row.compliance}%</td>
-                <td style={{ padding: "12px 16px", color: "#374151" }}>{row.forceAvg} N</td>
-                <td style={{ padding: "12px 16px", color: row.status === "declining" ? "#FF2D55" : "#FF8C00", fontWeight: 600, textTransform: "capitalize" }}>{row.status}</td>
-                <td style={{ padding: "12px 16px" }}>
-                  <a
-                    href="/patients"
-                    style={{ display: "inline-block", padding: "4px 12px", borderRadius: "8px", border: `1.5px solid ${BRAND}`, color: BRAND, fontSize: "11px", fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap", fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    View →
-                  </a>
-                </td>
-              </tr>
-            ))}
+            ) : filtered.map((row, i) => {
+              const { label, color } = alertLabel(row);
+              return (
+                <tr
+                  key={row.patientId}
+                  style={{ background: i % 2 === 0 ? "white" : "#FAFAFA", transition: "background 0.1s" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = `${BRAND}08`)}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 0 ? "white" : "#FAFAFA")}
+                >
+                  <td style={{ padding: "12px 16px", fontWeight: 600, color: BRAND, whiteSpace: "nowrap" }}>{row.patientName}</td>
+                  <td style={{ padding: "12px 16px", color: "#374151" }}>{row.daysIn != null ? `${row.daysIn} days` : "—"}</td>
+                  <td style={{ padding: "12px 16px", fontWeight: 600, color: complianceColor(row.compliance ?? row.value) }}>
+                    {row.compliance != null ? `${row.compliance}%` : "—"}
+                  </td>
+                  <td style={{ padding: "12px 16px", color: "#374151" }}>{row.forceAvg != null ? `${row.forceAvg} N` : "—"}</td>
+                  <td style={{ padding: "12px 16px", fontWeight: 600, color, whiteSpace: "nowrap" }}>{label}</td>
+                  <td style={{ padding: "12px 16px" }}>
+                    <Link
+                      href={`/patients?select=${row.patientId}`}
+                      style={{ display: "inline-block", padding: "4px 12px", borderRadius: "8px", border: `1.5px solid ${BRAND}`, color: BRAND, fontSize: "11px", fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap", fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      View →
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

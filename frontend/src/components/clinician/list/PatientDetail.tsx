@@ -7,13 +7,19 @@ import MuscleSmoothnessCard from "@/components/patient/progress/MuscleSmoothness
 import BenchmarkComparisonCard from "@/components/patient/progress/BenchmarkComparisonCard";
 import MetricCard from "@/components/patient/progress/MetricCard";
 import Avatar from "@/components/ui/Avatar";
-import { useProgress } from "@/hooks/useProgress";
 import { FiEdit2, FiActivity } from "react-icons/fi";
 import EditProgramModal from "@/components/clinician/modals/EditProgramModal";
+import PatientInfoModal from "@/components/clinician/modals/PatientInfoModal";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { patientService, PatientListItem } from "@/services/patientService";
+import { sessionService } from "@/services/sessionService";
+import { SessionRecord } from "@/hooks/useSessionQueries";
 import { getStatusConfig } from "@/lib/patientStatus";
 import { useUser } from "@/context/UserContext";
+import { getAgeGroup } from "@/lib/ageGroups";
+import { KNEE_BENCHMARKS } from "@/lib/benchmarks";
+import { libraryService, Template } from "@/services/libraryService";
 
 type Props = {
   patient: PatientListItem;
@@ -30,13 +36,66 @@ function calculateAge(birthday: string | null): string {
 }
 
 export default function PatientDetail({ patient, onAssigned }: Props) {
-  const { sessionData, metrics: hookMetrics } = useProgress();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
   const { userProfile } = useUser();
 
+  const patientId = parseInt(patient.id);
+  const practitionerId = userProfile?.profile_id ?? null;
+
+  const { data: templates = [] } = useQuery<Template[]>({
+    queryKey: ["templates", practitionerId],
+    queryFn: () => libraryService.getTemplates(practitionerId!),
+    enabled: !!practitionerId,
+  });
+
+  const { data: sessions } = useQuery<SessionRecord[]>({
+    queryKey: ["sessions", patientId],
+    queryFn: () => sessionService.getPatientSessions(patientId),
+    enabled: !!patientId,
+  });
+
+  const latestSession = sessions
+    ? [...sessions].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] ?? null
+    : null;
+
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  const videoFilename = latestSession?.video_path?.split(/[\\/]/).pop();
+  const videoSrc = videoFilename ? `${apiBase}/data/videos/${videoFilename}` : undefined;
+
+  const dominantZoneLabel = latestSession?.dominant_zone
+    ? ({ zone1: "Medial", zone2: "Central", zone3: "Lateral" }[latestSession.dominant_zone] ?? latestSession.dominant_zone)
+    : "—";
+
+  const metrics = [
+    { type: "metric1", value: latestSession?.avg_angle != null ? `${latestSession.avg_angle.toFixed(2)}°` : "—" },
+    { type: "metric2", value: dominantZoneLabel },
+    { type: "metric3", value: latestSession?.rom_arc != null ? `${latestSession.rom_arc.toFixed(2)}°` : "—" },
+  ];
+
   const isUnassigned = patient.status === "unassigned";
+
+  const assignedTemplate = patient.template_id
+    ? templates.find(t => t.id === patient.template_id) ?? null
+    : null;
+
+  const programStartDate = patient.program_start_date ? new Date(patient.program_start_date) : null;
+  const programEndDate = programStartDate && patient.program_duration_weeks
+    ? new Date(programStartDate.getTime() + patient.program_duration_weeks * 7 * 24 * 60 * 60 * 1000)
+    : null;
+  const formatProgramDate = (d: Date) =>
+    d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   const s = getStatusConfig(patient.status);
+
+  const ageGroup = getAgeGroup(patient.birthday);
+  const bm = ageGroup ? KNEE_BENCHMARKS[ageGroup] : null;
+  const benchmarkData = [
+    { label: "Knee Angle", you: latestSession?.avg_angle ?? 0, benchmark: bm?.avg_angle ?? 0 },
+    { label: "Central",    you: latestSession?.zone2_avg ?? 0, benchmark: bm?.zone2 ?? 0 },
+    { label: "Medial",     you: latestSession?.zone1_avg ?? 0, benchmark: bm?.zone1 ?? 0 },
+    { label: "Lateral",    you: latestSession?.zone3_avg ?? 0, benchmark: bm?.zone3 ?? 0 },
+  ];
 
   async function handleAddPatient() {
     const practitionerId = userProfile?.profile_id;
@@ -74,12 +133,20 @@ export default function PatientDetail({ patient, onAssigned }: Props) {
         </div>
         
         <div className="flex flex-wrap gap-3">
-          <PrimaryButton
-            onClick={isUnassigned ? handleAddPatient : () => console.log("View Patient Details")}
-            disabled={isAssigning}
-          >
-            {isUnassigned ? (isAssigning ? "Adding..." : "Add Patient") : "View Patient Details"}
-          </PrimaryButton>
+          {isUnassigned ? (
+            <>
+              <PrimaryButton onClick={() => setIsInfoModalOpen(true)}>
+                View Patient Details
+              </PrimaryButton>
+              <PrimaryButton onClick={handleAddPatient} disabled={isAssigning}>
+                {isAssigning ? "Adding..." : "Add Patient"}
+              </PrimaryButton>
+            </>
+          ) : (
+            <PrimaryButton onClick={() => setIsInfoModalOpen(true)}>
+              View Patient Details
+            </PrimaryButton>
+          )}
         </div>
       </div>
 
@@ -90,29 +157,24 @@ export default function PatientDetail({ patient, onAssigned }: Props) {
         <div className="flex flex-col gap-4 flex-1 min-w-0">
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <MetricCard 
-              type="rehabConsistency" 
-              value={isUnassigned ? "—" : `${patient.compliance}%`} 
-            />
-            <MetricCard 
-              type="angleBenchmarkGap" 
-              value={isUnassigned ? "—" : (hookMetrics.find(m => m.type === 'angleBenchmarkGap')?.value || '-15°')} 
-            />
-            <MetricCard 
-              type="zoneBalanceScore" 
-              value={isUnassigned ? "—" : (hookMetrics.find(m => m.type === 'zoneBalanceScore')?.value || 'Stable')} 
-            />
+            {metrics.map((metric) => (
+              <MetricCard
+                key={metric.type}
+                type={metric.type as any}
+                value={metric.value}
+              />
+            ))}
           </div>
 
-          <BenchmarkComparisonCard 
-            data={isUnassigned ? [] : sessionData.benchmarkData} 
+          <BenchmarkComparisonCard
+            data={benchmarkData}
             userName={patient.name}
-            ageGroup="Elderly Benchmark"
+            ageGroup={`${ageGroup ?? "General"} Benchmark`}
           />
 
-          <MuscleSmoothnessCard 
-            data={isUnassigned ? [] : sessionData.smoothnessData} 
-            benchmark={0.6} 
+          <MuscleSmoothnessCard
+            data={[]}
+            benchmark={0.6}
           />
         </div>
 
@@ -129,23 +191,31 @@ export default function PatientDetail({ patient, onAssigned }: Props) {
                 <h3 className="text-sm font-bold text-gray-900">Current Program</h3>
               </div>
               {!isUnassigned && (
-                <button 
+                <button
                   className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
                   onClick={() => setIsEditModalOpen(true)}
+                  title={assignedTemplate ? "Edit Program" : "Add Program"}
                 >
                   <FiEdit2 size={16} color="#12606A" />
                 </button>
               )}
             </div>
-            {isUnassigned ? (
+            {isUnassigned || !assignedTemplate ? (
               <div className="flex items-center justify-center p-6 bg-gray-50 rounded-lg">
                 <p className="text-sm font-medium text-gray-500">No active program.</p>
               </div>
             ) : (
               <>
                 <div>
-                  <p className="text-sm font-semibold text-gray-800">Post-Op Knee Replacement</p>
-                  <p className="text-xs text-gray-500 mt-1">Week 3 of 6 • 5x per week</p>
+                  <p className="text-sm font-semibold text-gray-800">{assignedTemplate.name}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {programStartDate && programEndDate
+                      ? `${formatProgramDate(programStartDate)} – ${formatProgramDate(programEndDate)}`
+                      : programStartDate
+                      ? `From ${formatProgramDate(programStartDate)}`
+                      : "—"}
+                    {patient.program_frequency ? ` • ${patient.program_frequency}x per week` : ""}
+                  </p>
                 </div>
                 <div className="mt-1">
                   <div className="flex items-center justify-between text-[11px] font-bold mb-1.5" style={{ color: '#12606A' }}>
@@ -167,26 +237,24 @@ export default function PatientDetail({ patient, onAssigned }: Props) {
               <div className="flex justify-between items-end mb-2">
                 <span className="text-sm font-semibold text-gray-500 uppercase">Max Angle</span>
                 <div className="text-right">
-                  <span className="text-2xl font-bold text-gray-900">{sessionData.stats[0]?.value || '67°'}</span>
-                  {!isUnassigned && <p className="text-xs text-green-600 font-medium">{sessionData.stats[0]?.benchmark || '+12% above elderly avg'}</p>}
+                  <span className="text-2xl font-bold text-gray-900">{latestSession?.max_angle != null ? `${latestSession.max_angle.toFixed(1)}°` : '—'}</span>
                 </div>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(parseInt(sessionData.stats[0]?.value) || 67) / 120 * 100}%` }}></div>
+                <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${Math.min(((latestSession?.max_angle ?? 0) / 180) * 100, 100)}%` }}></div>
               </div>
             </div>
 
-            {/* Force Estimate Stat from Patient Object */}
+            {/* Force */}
             <div>
               <div className="flex justify-between items-end mb-2">
-                <span className="text-sm font-semibold text-gray-500 uppercase">Min Angle</span>
+                <span className="text-sm font-semibold text-gray-500 uppercase">Force</span>
                 <div className="text-right">
-                  <span className="text-2xl font-bold text-gray-900">{sessionData.stats[1]?.value || '—'}</span>
-                  {!isUnassigned && <p className="text-xs text-green-600 font-medium">{sessionData.stats[1]?.benchmark || '+5% above average'}</p>}
+                  <span className="text-2xl font-bold text-gray-900">{patient.forceAvg > 0 ? `${patient.forceAvg} N` : '—'}</span>
                 </div>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${(patient.forceAvg / 100) * 100}%` }}></div>
+                <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${Math.min((patient.forceAvg / 200) * 100, 100)}%` }}></div>
               </div>
             </div>
           </Card>
@@ -194,11 +262,11 @@ export default function PatientDetail({ patient, onAssigned }: Props) {
           {/* The 3 Zones Map */}
           <div className="w-full shrink-0">
             <ZoneMap
-              videoSrc={sessionData.video.videoSrc}
-              avgAngle={isUnassigned ? undefined : sessionData.video.avgAngle}
-              medialPct={isUnassigned ? "0" : String(sessionData.video.medialPct)}
-              centralPct={isUnassigned ? "0" : String(sessionData.video.centralPct)}
-              lateralPct={isUnassigned ? "0" : String(sessionData.video.lateralPct)}
+              videoSrc={videoSrc}
+              avgAngle={latestSession?.avg_angle != null ? `${Math.round(latestSession.avg_angle)}°` : "—"}
+              medialPct={latestSession?.zone1_avg != null ? `${latestSession.zone1_avg.toFixed(2)}%` : "0"}
+              centralPct={latestSession?.zone2_avg != null ? `${latestSession.zone2_avg.toFixed(2)}%` : "0"}
+              lateralPct={latestSession?.zone3_avg != null ? `${latestSession.zone3_avg.toFixed(2)}%` : "0"}
             />
           </div>
 
@@ -206,9 +274,17 @@ export default function PatientDetail({ patient, onAssigned }: Props) {
 
       </div>
 
-      <EditProgramModal 
-        isOpen={isEditModalOpen} 
-        onClose={() => setIsEditModalOpen(false)} 
+      <EditProgramModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        patientId={patient.id}
+        practitionerId={userProfile?.profile_id ?? null}
+        existingTemplateId={patient.template_id}
+      />
+      <PatientInfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+        patientId={patient.id}
       />
     </div>
   );

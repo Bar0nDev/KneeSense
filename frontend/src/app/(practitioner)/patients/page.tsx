@@ -1,12 +1,24 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import PatientList from '@/components/clinician/list/PatientList';
 import PatientDetail from '@/components/clinician/list/PatientDetail';
-import { PatientListItem } from "@/services/patientService";
+import { PatientListItem, patientService } from "@/services/patientService";
 
 export default function Page() {
   const [selected, setSelected] = useState<PatientListItem | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const searchParams = useSearchParams();
+  const selectId = searchParams.get("select");
+
+  // Auto-select patient from ?select=<id> (e.g. coming from alert table)
+  useEffect(() => {
+    if (!selectId) return;
+    patientService.getAllPatients().then((patients) => {
+      const match = patients.find((p) => p.id === selectId);
+      if (match) setSelected(match);
+    });
+  }, [selectId]);
 
   function handleAssigned() {
     setSelected(null);

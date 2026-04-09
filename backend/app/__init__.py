@@ -9,6 +9,9 @@ from app.routes.user_routes import user_bp
 from app.routes.test_route import test_bp # test FE-BE connection and CORS
 from app.routes.practitioner_routes import practitioner_bp
 from app.routes.patient_routes import patient_bp
+from app.routes.exercise_routes import exercise_bp
+from app.routes.template_routes import template_bp
+from app.routes.upload_routes import upload_bp
 
 def create_app():
     app = Flask(__name__)
@@ -144,6 +147,9 @@ def create_app():
     app.register_blueprint(test_bp, url_prefix="/api")
     app.register_blueprint(practitioner_bp, url_prefix="/api")
     app.register_blueprint(patient_bp, url_prefix="/api")
+    app.register_blueprint(exercise_bp, url_prefix="/api")
+    app.register_blueprint(template_bp, url_prefix="/api")
+    app.register_blueprint(upload_bp, url_prefix="/api")
 
     @app.cli.command("init-db")
     def init_db():

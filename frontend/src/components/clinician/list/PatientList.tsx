@@ -34,7 +34,8 @@ export default function PatientList({ onSelect, selectedId, refreshKey }: Props)
     fetchPatients();
   }, [refreshKey]);
 
-  const assigned = allPatients.filter((p) => p.practitioner_id !== null);
+  const myId = userProfile?.profile_id ?? null;
+  const assigned = allPatients.filter((p) => myId !== null && p.practitioner_id === myId);
   const unassigned = allPatients.filter((p) => p.practitioner_id === null);
 
   const filtered = (() => {
