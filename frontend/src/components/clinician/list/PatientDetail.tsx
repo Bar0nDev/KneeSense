@@ -245,16 +245,16 @@ export default function PatientDetail({ patient, onAssigned }: Props) {
               </div>
             </div>
 
-            {/* Force */}
+            {/* Min Angle */}
             <div>
               <div className="flex justify-between items-end mb-2">
-                <span className="text-sm font-semibold text-gray-500 uppercase">Force</span>
+                <span className="text-sm font-semibold text-gray-500 uppercase">Min Angle</span>
                 <div className="text-right">
-                  <span className="text-2xl font-bold text-gray-900">{patient.forceAvg > 0 ? `${patient.forceAvg} N` : '—'}</span>
+                  <span className="text-2xl font-bold text-gray-900">{latestSession?.min_angle != null ? `${latestSession.min_angle.toFixed(1)}°` : '—'}</span>
                 </div>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${Math.min((patient.forceAvg / 200) * 100, 100)}%` }}></div>
+                <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${Math.min(((latestSession?.min_angle ?? 0) / 180) * 100, 100)}%` }}></div>
               </div>
             </div>
           </Card>
