@@ -23,46 +23,50 @@ function formatDate(iso: string): string {
   }
 }
 
+export function formatSessionLabel(id: number | string, created_at: string): string {
+  return `${formatDate(created_at)} — Session ${Number(id)}`;
+}
+
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
-export function useProgress() {
-  const { latestSession, predictions, insight, earliestDate, isLoading, errors } = useSessionData();
+export function useProgress(selectedSessionId?: number | null) {
+  const { latestSession, activeSession, allSessions, predictions, insight, earliestDate, isLoading, errors } =
+    useSessionData(selectedSessionId);
 
   const insightStatus = useMemo<InsightStatus>(() => "stable", []);
 
   const metrics = useMemo(() => [
-    { type: "metric1",  value: latestSession?.avg_angle != null ? `${latestSession.avg_angle.toFixed(2)}°` : "—" },
-    { type: "metric2", value: formatDominantZone(latestSession?.dominant_zone) },
-    { type: "metric3",  value: latestSession?.rom_arc != null ? `${latestSession.rom_arc.toFixed(2)}°` : "—" },
-  ], [latestSession]);
+    { type: "metric1", value: activeSession?.avg_angle != null ? `${activeSession.avg_angle.toFixed(2)}°` : "—" },
+    { type: "metric2", value: formatDominantZone(activeSession?.dominant_zone) },
+    { type: "metric3", value: activeSession?.rom_arc != null ? `${activeSession.rom_arc.toFixed(2)}°` : "—" },
+  ], [activeSession]);
 
   const sessionData = useMemo(() => ({
-    date: latestSession ? formatDate(latestSession.created_at) : "—",
+    date: activeSession ? formatDate(activeSession.created_at) : "—",
     video: {
-      videoSrc: latestSession?.video_url,
-      avgAngle: latestSession?.avg_angle != null ? `${Math.round(latestSession.avg_angle)}°` : "—",
-      medialPct: latestSession?.zone1_avg != null ? `${latestSession.zone1_avg.toFixed(2)}%` : "—",
-      centralPct: latestSession?.zone2_avg != null ? `${latestSession.zone2_avg.toFixed(2)}%` : "—",
-      lateralPct: latestSession?.zone3_avg != null ? `${latestSession.zone3_avg.toFixed(2)}%` : "—",
+      videoSrc: activeSession?.video_url,
+      avgAngle: activeSession?.avg_angle != null ? `${Math.round(activeSession.avg_angle)}°` : "—",
+      medialPct: activeSession?.zone1_avg != null ? `${activeSession.zone1_avg.toFixed(2)}%` : "—",
+      centralPct: activeSession?.zone2_avg != null ? `${activeSession.zone2_avg.toFixed(2)}%` : "—",
+      lateralPct: activeSession?.zone3_avg != null ? `${activeSession.zone3_avg.toFixed(2)}%` : "—",
     },
     stats: [
       {
         label: "Max Angle",
-        value: latestSession?.max_angle != null ? `${latestSession.max_angle.toFixed(2)}°` : "—",
+        value: activeSession?.max_angle != null ? `${activeSession.max_angle.toFixed(2)}°` : "—",
         benchmark: "max flexion recorded",
       },
       {
         label: "Min Angle",
-        value: latestSession?.min_angle != null ? `${latestSession.min_angle.toFixed(2)}°` : "—",
+        value: activeSession?.min_angle != null ? `${activeSession.min_angle.toFixed(2)}°` : "—",
         benchmark: "min flexion recorded",
       },
     ],
     benchmarkData: [
-      // { label: "Force", you: 1, benchmark: 1 },
-      { label: "Knee Angle", you: latestSession?.avg_angle  ?? 1, benchmark: 1 },
-      { label: "Central",    you: latestSession?.zone2_avg  ?? 1, benchmark: 1 },
-      { label: "Medial",     you: latestSession?.zone1_avg  ?? 1, benchmark: 1 },
-      { label: "Lateral",    you: latestSession?.zone3_avg  ?? 1, benchmark: 1 },
+      { label: "Knee Angle", you: activeSession?.avg_angle  ?? 1, benchmark: 1 },
+      { label: "Central",    you: activeSession?.zone2_avg  ?? 1, benchmark: 1 },
+      { label: "Medial",     you: activeSession?.zone1_avg  ?? 1, benchmark: 1 },
+      { label: "Lateral",    you: activeSession?.zone3_avg  ?? 1, benchmark: 1 },
     ],
     smoothnessData: [
       { t: 0, value: 0.10 }, { t: 1, value: 0.46 }, { t: 2, value: 0.74 },
@@ -70,7 +74,7 @@ export function useProgress() {
       { t: 6, value: 0.42 }, { t: 7, value: 0.46 }, { t: 8, value: 0.77 },
       { t: 9, value: 0.25 },
     ],
-  }), [latestSession]);
+  }), [activeSession]);
 
   const insights = useMemo(() => ({
     status: insightStatus,
@@ -82,5 +86,17 @@ export function useProgress() {
     nextSession: "—",
   }), [earliestDate]);
 
-  return { metrics, sessionData, insights, pageMeta, isLoading, errors, latestSession, predictions, insight };
+  return {
+    metrics,
+    sessionData,
+    insights,
+    pageMeta,
+    isLoading,
+    errors,
+    latestSession,
+    activeSession,
+    allSessions,
+    predictions,
+    insight,
+  };
 }

@@ -116,7 +116,7 @@ export function useRecordingSession() {
       setErrorMessage(err.response?.data?.error || "Something went wrong. Please try again.");
       setPageState("error");
     }
-  }, [recordedBlob, userProfile]);
+  }, [recordedBlob, userProfile, refresh]);
 
 
   const handleRetake = useCallback(() => {
@@ -125,9 +125,9 @@ export function useRecordingSession() {
   }, [clearRecording, handleRequestCamera]);
 
   const instructionSteps = useMemo(() => [
-    { title: "Sit in a sturdy chair & prepare the KneeSense Device.", description: "Place the device on your leg, just above the knee.", image: "/assets/instructions/step1.gif" },
-    { title: "Secure your KneeSense using the Velcro straps.", description: "The strap should be secure enough to stay in place.", image: "/assets/instructions/step2.gif" },
-    { title: "Start Recording: Slowly perform 15 Leg Extensions & Flexions.", description: "Keep your movements steady and controlled.", image: "/assets/instructions/step3.gif" },
+    { title: "1. Sit in a sturdy chair & prepare the KneeSense Device.", description: "Place the device on your leg, just above the knee.", image: "/assets/instructions/step1.gif" },
+    { title: "2. Secure your KneeSense using the Velcro straps.", description: "The strap should be secure enough to stay in place.", image: "/assets/instructions/step2.gif" },
+    { title: "3. Start Recording: Slowly perform 15 Leg Extensions & Flexions.", description: "Keep your movements steady and controlled.", image: "/assets/instructions/step3.gif" },
     // { title: "Review & Submit Recording", description: "This will process the analysis and generate your results.", image: "/assets/instructions/step4.gif"  },
   ], []);
 
