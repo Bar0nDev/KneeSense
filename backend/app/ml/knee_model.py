@@ -3,7 +3,7 @@ import torch.nn as nn
 import torchvision.models as models
 from app.config import Config
 
-SEQUENCE_LENGTH = 9
+SEQUENCE_LENGTH = 15
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 _model_instance = None
@@ -14,45 +14,61 @@ def get_model():
         _model_instance = KneeAngleModel(Config.MODEL_PATH)
     return _model_instance
 
-class CNNRegressor(nn.Module):
-    def __init__(self):
+
+class TemporalCNNRegressor(nn.Module):
+    def __init__(self, seq_len: int = SEQUENCE_LENGTH):
         super().__init__()
-        self.backbone = models.resnet18(
-            weights=models.ResNet18_Weights.IMAGENET1K_V1
+        self.seq_len = seq_len
+
+        backbone = models.shufflenet_v2_x1_0(weights=None)
+        self.frame_encoder = nn.Sequential(*list(backbone.children())[:-1])
+        self.spatial_pool = nn.AdaptiveAvgPool2d(1)
+
+        self.temporal = nn.Sequential(
+            nn.Conv1d(1024, 256, kernel_size=5, padding=2),
+            nn.BatchNorm1d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv1d(256, 128, kernel_size=3, padding=1),
+            nn.BatchNorm1d(128),
+            nn.ReLU(inplace=True),
         )
-        old_conv = self.backbone.conv1
-        self.backbone.conv1 = nn.Conv2d(
-            in_channels=3 * SEQUENCE_LENGTH,
-            out_channels=old_conv.out_channels,
-            kernel_size=old_conv.kernel_size,
-            stride=old_conv.stride,
-            padding=old_conv.padding,
-            bias=False
+
+        self.head = nn.Sequential(
+            nn.Linear(128, 64),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.3),
+            nn.Linear(64, 1),
         )
-        with torch.no_grad():
-            for i in range(SEQUENCE_LENGTH):
-                self.backbone.conv1.weight[:, 3*i:3*(i+1), :, :] = (
-                    old_conv.weight / SEQUENCE_LENGTH
-                )
-        self.backbone.fc = nn.Linear(self.backbone.fc.in_features, 1)
 
     def forward(self, x):
-        return self.backbone(x).squeeze(1)
+        # x: (B, T, 3, H, W)
+        B, T, C, H, W = x.shape
+        frames      = x.view(B * T, C, H, W)
+        features    = self.frame_encoder(frames)
+        embeddings  = self.spatial_pool(features).squeeze(-1).squeeze(-1)
+        embeddings  = embeddings.view(B, T, 1024).permute(0, 2, 1)   # (B, 1024, T)
+        temporal_out = self.temporal(embeddings)                       # (B, 128, T)
+        pooled       = temporal_out.mean(dim=-1)                       # (B, 128)
+        return self.head(pooled).squeeze(1)                            # (B,)
 
 
 class KneeAngleModel:
     def __init__(self, model_path):
         self.device = DEVICE
-        self.model = CNNRegressor().to(self.device)
+        self.model = TemporalCNNRegressor(seq_len=SEQUENCE_LENGTH).to(self.device)
         self.model.load_state_dict(
             torch.load(model_path, map_location=self.device)
         )
         self.model.eval()
 
-    def predict(self, input_tensor):
+    def predict(self, input_tensor: torch.Tensor) -> float:
+        """
+        Args:
+            input_tensor: (1, SEQUENCE_LENGTH, 3, H, W) — preprocessed & normalized
+        Returns:
+            Predicted knee angle in degrees
+        """
         input_tensor = input_tensor.to(self.device)
         with torch.no_grad():
             output = self.model(input_tensor)
-        # output is in [0,1] normalized — convert back to degrees
         return float(output.item() * 180.0)
-    
