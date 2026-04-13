@@ -85,12 +85,12 @@ export default function AddTemplateModal({ isOpen, onClose, onSave, onDelete, in
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl flex flex-col max-h-[90vh] text-[#12606A] font-['DM_Sans']">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 sm:p-6 overflow-hidden">
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl flex flex-col max-h-[100%] overflow-hidden text-[#12606A] font-['DM_Sans']">
         
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-100 flex-shrink-0">
-          <h2 className="text-2xl font-bold text-[#12606A]">
+        <div className="flex justify-between items-center p-4 md:p-6 border-b border-gray-100 flex-shrink-0 bg-white z-10 w-full">
+          <h2 className="text-xl md:text-2xl font-bold text-[#12606A]">
             {initialData ? "Edit Template" : "Add Template"}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition">
@@ -102,7 +102,7 @@ export default function AddTemplateModal({ isOpen, onClose, onSave, onDelete, in
         </div>
 
         {/* Scrollable Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1">
+        <div className="p-4 md:p-6 overflow-y-auto min-h-0 space-y-6 flex-1">
           
           <div className="space-y-4">
             <div>
@@ -230,7 +230,7 @@ export default function AddTemplateModal({ isOpen, onClose, onSave, onDelete, in
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-100 flex justify-between items-center flex-shrink-0 bg-gray-50 rounded-b-2xl">
+        <div className="p-4 md:p-6 border-t border-gray-100 flex justify-between items-center flex-shrink-0 bg-gray-50 z-10 w-full">
           <div>
             {onDelete && (
               <button 

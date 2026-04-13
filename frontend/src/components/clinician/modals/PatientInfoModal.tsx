@@ -50,16 +50,20 @@ export default function PatientInfoModal({ isOpen, onClose, patientId }: Props) 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 sm:p-6 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col max-h-[100%] overflow-hidden relative">
 
         {/* Header */}
-        <h2 className="text-2xl font-extrabold text-center text-[#12606A] tracking-tight">
-          Patient Info
-        </h2>
-        <div className="h-1 w-full bg-[#12606A] mt-4 mb-6 rounded-full" />
+        <div className="flex-shrink-0 p-4 md:p-6 border-b border-gray-100 bg-white z-10 w-full relative">
+          <h2 className="text-xl md:text-2xl font-extrabold text-center text-[#12606A] tracking-tight">
+            Patient Info
+          </h2>
+        </div>
+        <div className="h-1 w-full bg-[#12606A]" />
 
-        {isLoading ? (
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0">
+          {isLoading ? (
           <div className="flex items-center justify-center py-10 text-sm text-gray-400">Loading...</div>
         ) : patient ? (
           <div className="flex flex-col gap-5">
@@ -84,8 +88,10 @@ export default function PatientInfoModal({ isOpen, onClose, patientId }: Props) 
         ) : (
           <div className="text-center text-sm text-gray-400 py-10">Could not load patient data.</div>
         )}
+        </div>
 
-        <div className="mt-8 flex justify-end">
+        {/* Footer */}
+        <div className="flex-shrink-0 p-4 md:p-6 border-t border-gray-100 flex justify-end bg-gray-50 z-10 w-full relative">
           <button
             onClick={onClose}
             className="px-6 py-2.5 rounded-xl border border-[#12606A] text-[#12606A] text-sm font-bold hover:bg-[#12606A] hover:text-white transition-colors"
