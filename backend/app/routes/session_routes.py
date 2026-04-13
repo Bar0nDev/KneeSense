@@ -44,7 +44,8 @@ def create_session():
       - name: practitioner_id
         in: formData
         type: integer
-        required: true
+        required: false
+        description: Practitioner ID (omit for self-registered / practitioner-free sessions)
 
       - name: notes
         in: formData
@@ -67,11 +68,11 @@ def create_session():
           $ref: '#/definitions/Error'
     """
     patient_id = request.form.get("patient_id")
-    practitioner_id = request.form.get("practitioner_id")
+    practitioner_id = request.form.get("practitioner_id")  # optional — self-registered patients have no practitioner
     notes = request.form.get("notes")
 
-    if not patient_id or not practitioner_id:
-        return jsonify({"error": "patient_id and practitioner_id are required"}), 400
+    if not patient_id:
+        return jsonify({"error": "patient_id is required"}), 400
 
     video_path = None
     cloud_url = None
@@ -93,7 +94,7 @@ def create_session():
     try:
       session = Session(
           patient_id=int(patient_id),
-          practitioner_id=int(practitioner_id),
+          practitioner_id=int(practitioner_id) if practitioner_id else None,
           video_path=video_path,
           notes=notes,
       )

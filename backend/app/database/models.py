@@ -316,6 +316,7 @@ class LLMInsight(db.Model):
     )
 
     insight_text = db.Column(db.Text)
+    summary_text = db.Column(db.Text)
 
     model_used = db.Column(db.String(100))
 

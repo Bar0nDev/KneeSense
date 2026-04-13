@@ -112,9 +112,10 @@ def mark_analysis_failed(session_id):
     })
 
 
-def mark_insight_complete(session_id, insight_text, model_used):
+def mark_insight_complete(session_id, insight_text, model_used, summary_text=None):
     fs_db.collection("sessions").document(str(session_id)).update({
         "insight_text": insight_text,
+        "summary_text": summary_text,
         "model": model_used,
         "has_insight": True
     })
