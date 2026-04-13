@@ -28,7 +28,7 @@ from app.ml.knee_model import get_model
 # CONSTANTS
 # ──────────────────────────────────────────────────────────────────────────────
 
-SEQUENCE_LENGTH = 9
+SEQUENCE_LENGTH = 15
 HALF            = SEQUENCE_LENGTH // 2
 
 # Fisheye / crop / scale
@@ -294,18 +294,14 @@ def _compute_optical_flow(
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _window_to_tensor(window: list[np.ndarray]) -> torch.Tensor:
-    """
-    window: list of 9 BGR uint8 numpy frames
-    Returns: (1, 27, 224, 224) float tensor ready for CNNRegressor
-    """
     imgs = []
     for frame in window:
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(rgb)
-        imgs.append(_TRANSFORM(img))   # (3, 224, 224)
+        imgs.append(_TRANSFORM(img))          # (3, 224, 224)
 
-    stacked = torch.cat(imgs, dim=0)   # (27, 224, 224)
-    return stacked.unsqueeze(0)        # (1, 27, 224, 224)
+    stacked = torch.stack(imgs, dim=0)        # (T, 3, 224, 224)  ← stack not cat
+    return stacked.unsqueeze(0)               # (1, T, 3, 224, 224)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
