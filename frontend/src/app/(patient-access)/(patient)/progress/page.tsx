@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import PageHeader from "@/components/ui/PageHeader";
@@ -12,11 +13,14 @@ import AIInsightCard from "@/components/patient/progress/AiInsightCard";
 // import MuscleSmoothnessCard from "@/components/patient/progress/MuscleSmoothnessCard";
 import BenchmarkComparisonCard from "@/components/patient/progress/BenchmarkComparisonCard";
 
-import { useProgress } from "@/hooks/useProgress";
+import { useProgress, formatSessionLabel } from "@/hooks/useProgress";
 
 export default function ProgressPage() {
   const router = useRouter();
-  const { metrics, sessionData, insights, pageMeta, isLoading, errors, latestSession } = useProgress();
+  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
+
+  const { metrics, sessionData, insights, pageMeta, isLoading, errors, latestSession, allSessions } =
+    useProgress(selectedSessionId);
 
   if (!isLoading && !latestSession) {
     return (
@@ -35,7 +39,6 @@ export default function ProgressPage() {
       <PageHeader
         title="My Progress"
         subtitle={`Your Start Date: ${pageMeta.since}`}
-        //  · Next Session: ${pageMeta.nextSession}
         action={
           <PrimaryButton color="#27AE60" onClick={() => router.push("/recording")}>
             Begin Session
@@ -68,9 +71,27 @@ export default function ProgressPage() {
         <div className="flex flex-col gap-4 flex-1 min-w-0 overflow-hidden">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-bold text-gray-900">Session Metrics</h2>
-            <span className="text-sm font-medium text-[#455858] bg-white border border-gray-200 px-3 py-0.5 rounded-full shadow-sm">
-              {isLoading ? "Loading…" : sessionData.date}
-            </span>
+
+            {/* Session selector — defaults to most recent (value="") */}
+            {isLoading ? (
+              <span className="text-sm font-medium text-[#455858] bg-white border border-gray-200 px-3 py-0.5 rounded-full shadow-sm">
+                Loading…
+              </span>
+            ) : (
+              <select
+                value={selectedSessionId ?? ""}
+                onChange={(e) =>
+                  setSelectedSessionId(e.target.value === "" ? null : Number(e.target.value))
+                }
+                className="text-sm font-medium text-[#455858] bg-white border border-gray-200 px-3 py-0.5 rounded-full shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#12606A]/30 transition-shadow"
+              >
+                {allSessions.map((s) => (
+                  <option key={s.id} value={Number(s.id)}>
+                    {formatSessionLabel(s.id, s.created_at)}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="flex flex-col lg:flex-row gap-4 items-stretch">
@@ -89,7 +110,7 @@ export default function ProgressPage() {
             </div>
           </div>
 
-          <BenchmarkComparisonCard data={sessionData.benchmarkData} />
+          <BenchmarkComparisonCard data={sessionData.benchmarkData} className="flex-1" />
         </div>
 
         <div className="flex flex-col gap-4 w-full lg:w-96 lg:shrink-0">

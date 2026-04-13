@@ -29,7 +29,7 @@ export default function ProfilePage() {
   const practitionerId = p?.practitioner_id ?? null;
 
   const { data: practitionerData } = useQuery({
-    queryKey: ["practitioner", practitionerId],
+    queryKey: ["practitioner-profile", practitionerId],
     queryFn: async () => {
       const practProfile = await userService.getPractitionerProfile(practitionerId!);
       const practUser = await userService.getUser(practProfile.user_id);

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BsCheck2Circle, BsArrowRight } from "react-icons/bs";
+import { FaRegCircleCheck } from "react-icons/fa6";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import { LuMoveRight } from "react-icons/lu";
 
@@ -26,7 +27,7 @@ export default function SuccessStep({ onRedirect }: SuccessStepProps) {
       
       {/* Success Icon */}
       <div className="w-24 h-24 rounded-full bg-green-50 flex items-center justify-center border border-green-100 shadow-sm">
-        <BsCheck2Circle size={44} className="text-[#27AE60]" />
+        <FaRegCircleCheck size={44} className="text-[#27AE60]" />
       </div>
 
       {/* Message */}

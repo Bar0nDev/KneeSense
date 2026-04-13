@@ -37,10 +37,10 @@ export default function InstructionsStep({ onContinue, steps }: InstructionsStep
             </div>
 
             <div className="px-1">
-              <h2 className="text-sm font-bold text-gray-900 leading-tight">
+              <h2 className="text-md font-bold text-gray-900 leading-tight">
                 {title}
               </h2>
-              <p className="text-xs mt-2 leading-relaxed text-[#455858] font-medium">
+              <p className="text-sm mt-2 leading-relaxed text-[#455858] font-medium">
                 {description}
               </p>
             </div>

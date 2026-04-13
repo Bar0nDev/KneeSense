@@ -16,7 +16,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 items-stretch pb-10">
+    <div className="flex flex-col lg:flex-row gap-6 items-stretch">
 
       {/* Main Insights */}
       <div className="flex flex-col gap-6 flex-1 min-w-0">
