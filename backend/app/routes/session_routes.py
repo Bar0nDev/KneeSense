@@ -378,6 +378,97 @@ def get_predictions(session_id):
 
 
 # =========================
+# GET OPTICAL FLOW FOR SESSION
+# =========================
+
+@session_bp.route("/sessions/<int:session_id>/flow", methods=["GET"])
+def get_optical_flow(session_id):
+    """
+    Get per-frame optical flow zone data for a session
+    ---
+    tags:
+      - Sessions
+    parameters:
+      - name: session_id
+        in: path
+        type: integer
+        required: true
+
+    responses:
+      200:
+        description: List of optical flow results (every 10th frame)
+        schema:
+          type: object
+          properties:
+            session_id:
+              type: integer
+            total_frames:
+              type: integer
+            flow_results:
+              type: array
+              items:
+                $ref: '#/definitions/OpticalFlowResult'
+
+      404:
+        description: No flow data found for this session
+        schema:
+          $ref: '#/definitions/Error'
+    """
+    # JSON file first (matches /predictions pattern)
+    try:
+        doc = fs_db.collection("sessions").document(str(session_id)).get()
+        if doc.exists:
+            data = doc.to_dict()
+            json_filename = data.get("analysis_json_name")
+
+            if json_filename:
+                analysis_dir = os.path.join(current_app.config["DATA_DIR"], "analysis")
+                json_path = os.path.join(analysis_dir, json_filename)
+
+                if os.path.exists(json_path):
+                    with open(json_path, "r") as f:
+                        saved = json.load(f)
+
+                    flow_results = saved.get("flow_results", [])
+                    return jsonify({
+                        "session_id":   session_id,
+                        "source":       "json_file",
+                        "total_frames": len(flow_results),
+                        "flow_results": flow_results,
+                    }), 200
+
+    except Exception as e:
+        print(f"Cloud/JSON check failed for flow: {e}")
+
+    # SQL fallback
+    flow_rows = OpticalFlowResult.query.filter_by(session_id=session_id) \
+        .order_by(OpticalFlowResult.frame_index).all()
+
+    if not flow_rows:
+        return jsonify({"error": "No optical flow data found for this session"}), 404
+
+    flow_results = [
+        {
+            "frame_index":   r.frame_index,
+            "zone1_score":   r.zone1_score,
+            "zone2_score":   r.zone2_score,
+            "zone3_score":   r.zone3_score,
+            "zone1_percent": r.zone1_percent,
+            "zone2_percent": r.zone2_percent,
+            "zone3_percent": r.zone3_percent,
+        }
+        for r in flow_rows
+    ]
+
+    return jsonify({
+        "session_id":   session_id,
+        "source":       "database",
+        "total_frames": len(flow_results),
+        "flow_results": flow_results,
+    }), 200
+
+
+# =========================
 # GENERATE LLM INSIGHT (auto, calls Claude)
 # =========================
 
