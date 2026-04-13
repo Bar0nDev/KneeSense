@@ -24,7 +24,7 @@ function formatDate(iso: string): string {
 }
 
 export function formatSessionLabel(id: number | string, created_at: string): string {
-  return `${formatDate(created_at)} — Session ${Number(id)}`;
+  return `${formatDate(created_at)} - Session ID: #${Number(id)}`;
 }
 
 // ─── Hook ────────────────────────────────────────────────────────────────────

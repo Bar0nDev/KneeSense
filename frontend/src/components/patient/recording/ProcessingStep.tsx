@@ -1,6 +1,7 @@
 "use client";
 
 import { FaCheck } from "react-icons/fa6";
+import { FaLongArrowAltRight } from "react-icons/fa";
 
 interface ProcessingStepProps {
   message?: string;
@@ -37,15 +38,15 @@ export default function ProcessingStep({ message = STEPS[0].trigger }: Processin
     <div className="flex flex-col items-center gap-10 w-full max-w-lg py-8 px-4">
 
       <div className="text-center">
-        <h2 className="text-xl font-bold text-gray-900">Processing your session</h2>
-        <p className="text-xs text-[#455858] mt-1 font-medium">Please keep this page open.</p>
+        <h2 className="text-2xl font-bold text-gray-900">Processing your session</h2>
+        <p className="text-sm text-[#455858] mt-1 font-medium">Please keep this page open.</p>
       </div>
 
       {/* Horizontal stepper */}
       <div className="w-full">
 
         {/* Circles row */}
-        <div className="flex items-center justify-between w-full">
+        <div className="flex items-center justify-center w-full">
           {STEPS.map((step, i) => {
             const isDone    = i < activeIndex;
             const isActive  = i === activeIndex;
@@ -84,15 +85,19 @@ export default function ProcessingStep({ message = STEPS[0].trigger }: Processin
 
                 {/* Connector line between steps */}
                 {!isLast && (
-                  <div className="flex-1 min-w-0 h-px mx-3 relative rounded-full bg-gray-200 overflow-hidden">
-                    <div
-                      className={[
-                        "absolute inset-0 rounded-full transition-all duration-500",
-                        isDone   ? "bg-[#12606A]"       : "",
-                        isActive ? "bg-[#12606A]/30"    : "",
-                      ].join(" ")}
-                    />
-                  </div>
+                  // <div className="flex-1 min-w-0 h-px mx-3 relative rounded-full bg-gray-200 overflow-hidden">
+                  //   <div
+                  //     className={[
+                  //       "absolute inset-0 rounded-full transition-all duration-500",
+                  //       isDone   ? "bg-[#12606A]"       : "",
+                  //       isActive ? "bg-[#12606A]/30"    : "",
+                  //     ].join(" ")}
+                  //   />
+                  // </div>
+                  // <hr className="w-24 border-[#12606A] mt-[22px] mx-3 shrink-0 rounded-full" />
+                  <div className="w-16 flex flex-row justify-center mb-5">
+                    <FaLongArrowAltRight size={18} className="text-[#12606A] mt-[22px] mx-3 shrink-0" />
+                  </div>                
                 )}
               </div>
             );

@@ -9,12 +9,13 @@ interface BenchmarkComparisonCardProps {
   data: BenchmarkDataPoint[];
   userName?: string;
   ageGroup?: string;
+  className?: string;
 }
 
-export default function BenchmarkComparisonCard({ data, userName = "You", ageGroup = "Elderly Benchmark" }: BenchmarkComparisonCardProps) {
+export default function BenchmarkComparisonCard({ data, userName = "You", ageGroup = "Elderly Benchmark", className = "" }: BenchmarkComparisonCardProps) {
   return (
-    <Card className="w-full">
-      <div className="flex flex-col gap-6">
+    <Card className={`w-full ${className}`}>
+      <div className="flex flex-col gap-6 h-full">
         {/* Header + Legend */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
@@ -34,8 +35,8 @@ export default function BenchmarkComparisonCard({ data, userName = "You", ageGro
           </div>
         </div>
 
-        {/* Chart Component */}
-        <div className="w-full">
+        {/* Chart Component — flex-1 fills remaining card height; min-h ensures the base size */}
+        <div className="w-full flex-1 min-h-[180px]">
           <BenchmarkComparisonChart data={data} />
         </div>
       </div>

@@ -110,7 +110,7 @@ export default function ProgressPage() {
             </div>
           </div>
 
-          <BenchmarkComparisonCard data={sessionData.benchmarkData} />
+          <BenchmarkComparisonCard data={sessionData.benchmarkData} className="flex-1" />
         </div>
 
         <div className="flex flex-col gap-4 w-full lg:w-96 lg:shrink-0">
