@@ -79,11 +79,11 @@ export default function AddExerciseModal({ isOpen, onClose, onSave, onDelete, in
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-y-auto max-h-[90vh] p-6 text-[#12606A] font-['DM_Sans']">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 sm:p-6 overflow-hidden">
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl flex flex-col max-h-[100%] overflow-hidden text-[#12606A] font-['DM_Sans']">
         
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-[#12606A]">
+        <div className="flex justify-between items-center p-4 md:p-6 border-b border-gray-100 flex-shrink-0 bg-white z-10 w-full mb-0">
+          <h2 className="text-xl md:text-2xl font-bold text-[#12606A]">
             {initialData ? "Edit Exercise" : "Add Exercise"}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition">
@@ -94,7 +94,7 @@ export default function AddExerciseModal({ isOpen, onClose, onSave, onDelete, in
           </button>
         </div>
 
-        <div className="space-y-6">
+        <div className="p-4 md:p-6 overflow-y-auto min-h-0 space-y-6 flex-1">
           
           {/* Unified Media Upload */}
           <div className="border-2 border-dashed border-[#12606A]/30 rounded-xl p-6 flex flex-col items-center justify-center bg-[#f0fafa] relative w-full h-56">
@@ -280,7 +280,7 @@ export default function AddExerciseModal({ isOpen, onClose, onSave, onDelete, in
         </div>
 
         {/* Footer actions */}
-        <div className="flex justify-between items-center mt-8 pt-4 border-t border-gray-100">
+        <div className="flex justify-between items-center p-4 md:p-6 border-t border-gray-100 flex-shrink-0 bg-gray-50 z-10 w-full">
           <div>
             {onDelete && (
               <button 
