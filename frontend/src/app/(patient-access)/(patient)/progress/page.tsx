@@ -115,8 +115,8 @@ export default function ProgressPage() {
 
         <div className="flex flex-col gap-4 w-full lg:w-96 lg:shrink-0">
           <AIInsightCard
-            status={isLoading ? "stable" : insights.status}
-            summary={isLoading ? "Loading insight…" : insights.summary}
+            summary={isLoading ? null : insights.summary}
+            detail={isLoading ? null : insights.detail}
             className="flex-1"
           />
           {/* <MuscleSmoothnessCard

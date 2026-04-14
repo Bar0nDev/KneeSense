@@ -32,6 +32,7 @@ export interface SessionRecord {
 export interface Insight {
   session_id: number;
   insight_text: string;
+  summary_text?: string;
   model: string;
   created_at: string;
 }

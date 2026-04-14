@@ -78,7 +78,8 @@ export function useProgress(selectedSessionId?: number | null) {
 
   const insights = useMemo(() => ({
     status: insightStatus,
-    summary: insight?.insight_text ?? "No insight available yet. Run an analysis to generate one.",
+    summary: insight?.summary_text ?? null,
+    detail: insight?.insight_text ?? null,
   }), [insight, insightStatus]);
 
   const pageMeta = useMemo(() => ({
