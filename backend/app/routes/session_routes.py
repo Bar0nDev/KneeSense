@@ -539,11 +539,13 @@ def generate_insight(session_id):
         fps = session.fps or 30
         result = generate_and_store_insight(session_id, fps=fps)
         i_text = result.get("insight_text")
+        i_summary = result.get("insight_summary")
         i_model = result.get("model_used")
 
         fsdb.mark_insight_complete(
             session_id=session_id, 
             insight_text=i_text, 
+            summary_text=i_summary,
             model_used=i_model
         )
 
@@ -558,36 +560,8 @@ def generate_insight(session_id):
 # =========================
 # GET INSIGHT FOR SESSION
 # =========================
-
 @session_bp.route("/sessions/<int:session_id>/insight", methods=["GET"])
 def get_insight(session_id):
-    """
-    Get the stored LLM insight for a session
-    ---
-    tags:
-      - AI Analysis
-    parameters:
-      - name: session_id
-        in: path
-        type: integer
-        required: true
-
-    responses:
-      200:
-        description: Insight found
-        schema:
-          $ref: '#/definitions/Insight'
-
-      404:
-        description: No insight found — generate one first
-        schema:
-          $ref: '#/definitions/Error'
-    """
-    insight = LLMInsight.query.filter_by(session_id=session_id)\
-        .order_by(LLMInsight.id.desc()).first()
-
-    if not insight:
-        return jsonify({"error": "No insight found. Call POST /generate-insight first."}), 404
     
     try:
         doc_ref = fs_db.collection("sessions").document(str(session_id))
@@ -595,20 +569,84 @@ def get_insight(session_id):
         
         if doc.exists:
             data = doc.to_dict()
-            fsdb.mark_insight_complete(
-                session_id=session_id,
-                insight_text=insight.insight_text,
-                model_used=insight.model_used
-            )
+            if data.get("insight_text"):
+                return jsonify({
+                    "session_id": session_id,
+                    "insight_text": data.get("insight_text"),
+                    "summary_text": data.get("summary_text"),
+                    "model": data.get("model_used", "cloud-sync"),
+                    "source": "firestore"
+                }), 200
     except Exception as e:
-        print(f"Failed to retrieve insight {insight.id}: {e}")
+        print(f"Cloud retrieval failed: {e}")
 
-    return jsonify({
-        "session_id": session_id,
-        "insight_text": insight.insight_text,
-        "model": insight.model_used,
-        "created_at": insight.created_at.isoformat(),
-    })
+    insight = LLMInsight.query.filter_by(session_id=session_id)\
+        .order_by(LLMInsight.id.desc()).first()
+
+    if insight:
+        return jsonify({
+            "session_id": session_id,
+            "insight_text": insight.insight_text,
+            "summary_text": insight.summary_text,
+            "model": insight.model_used,
+            "created_at": insight.created_at.isoformat(),
+            "source": "sql_fallback"
+        }), 200
+
+    return jsonify({"error": "No insight found in Cloud or Local DB."}), 404
+
+# @session_bp.route("/sessions/<int:session_id>/insight", methods=["GET"])
+# def get_insight(session_id):
+#     """
+#     Get the stored LLM insight for a session
+#     ---
+#     tags:
+#       - AI Analysis
+#     parameters:
+#       - name: session_id
+#         in: path
+#         type: integer
+#         required: true
+
+#     responses:
+#       200:
+#         description: Insight found
+#         schema:
+#           $ref: '#/definitions/Insight'
+
+#       404:
+#         description: No insight found — generate one first
+#         schema:
+#           $ref: '#/definitions/Error'
+#     """
+#     insight = LLMInsight.query.filter_by(session_id=session_id)\
+#         .order_by(LLMInsight.id.desc()).first()
+
+#     if not insight:
+#         return jsonify({"error": "No insight found. Call POST /generate-insight first."}), 404
+    
+#     try:
+#         doc_ref = fs_db.collection("sessions").document(str(session_id))
+#         doc = doc_ref.get()
+        
+#         if doc.exists:
+#             data = doc.to_dict()
+#             fsdb.mark_insight_complete(
+#                 session_id=session_id,
+#                 insight_text=insight.insight_text,
+#                 summary_text=insight.summary_text,
+#                 model_used=insight.model_used
+#             )
+#     except Exception as e:
+#         print(f"Failed to retrieve insight {insight.id}: {e}")
+
+#     return jsonify({
+#         "session_id": session_id,
+#         "insight_text": insight.insight_text,
+#         "summary_text": insight.summary_text,
+#         "model": insight.model_used,
+#         "created_at": insight.created_at.isoformat(),
+#     })
 
 
 # =========================
