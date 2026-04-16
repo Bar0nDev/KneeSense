@@ -7,16 +7,17 @@ fs_db = get_fs_db()
 # USERS & AUTHENTICATION
 # =========================
 
-def create_fsdb_user(user):
-    fs_db.collection("user").document(str(user.id)).set({
-        "name": user.name,
-        "username": user.username,
-        "email": user.email,
-        "password_hash": user.password_hash,
-        "role": user.role,
-        "is_active": user.is_active,
-        "created_at": user.created_at
+def create_fsdb_user(name, username, email, password_hash, role, is_active, created_at) -> str:
+    _, doc_ref = fs_db.collection("user").add({
+        "name": name,
+        "username": username,
+        "email": email,
+        "password_hash": password_hash,
+        "role": role,
+        "is_active": is_active,
+        "created_at": created_at,
     })
+    return doc_ref.id
 
 
 def get_user_firestore(user_id):
@@ -41,28 +42,33 @@ def delete_fsdb_doc(collection_name, doc_id):
 # PRACTITIONERS & PATIENTS
 # =========================
 
-def fsdb_practitioner(practitioner):
-    fs_db.collection("practitioners").document(str(practitioner.id)).set({
-        "user_id": practitioner.user_id,
-        "clinic_name": practitioner.clinic_name,
-        "specialization": practitioner.specialization,
-        "created_at": practitioner.created_at
+def create_fsdb_practitioner(user_id, clinic_name, specialization, created_at) -> str:
+
+    _, doc_ref = fs_db.collection("practitioners").add({
+        "user_id": user_id,
+        "clinic_name": clinic_name,
+        "specialization": specialization,
+        "created_at": created_at,
     })
+    return doc_ref.id
 
 
-def fsdb_patient(patient):
-    fs_db.collection("patients").document(str(patient.id)).set({
-        "user_id": patient.user_id,
-        "practitioner_id": patient.practitioner_id,
-        "name": patient.name,
-        "birthday": patient.birthday.isoformat() if patient.birthday else None,
-        "sex": patient.sex,
-        "height_cm": patient.height_cm,
-        "weight_kg": patient.weight_kg,
-        "notes": patient.notes,
-        "is_active": patient.is_active,
-        "created_at": patient.created_at
+def create_fsdb_patient(user_id, practitioner_id, name, birthday, sex, height_cm, weight_kg, notes, is_active, created_at) -> str:
+
+    _, doc_ref = fs_db.collection("patients").add({
+        "user_id": user_id,
+        "practitioner_id": practitioner_id,
+        "name": name,
+        "birthday": birthday.isoformat() if birthday else None,
+        "sex": sex,
+        "height_cm": height_cm,
+        "weight_kg": weight_kg,
+        "notes": notes,
+        "is_active": is_active,
+        "created_at": created_at,
     })
+    return doc_ref.id
+
 
 
 # =========================

@@ -60,7 +60,7 @@ def get_all_patients():
 # GET PATIENT BY ID
 # =========================
 
-@patient_bp.route("/patients/<int:patient_id>", methods=["GET"])
+@patient_bp.route("/patients/<string:patient_id>", methods=["GET"])
 def get_patient(patient_id):
     """
     Get a patient by ID
@@ -70,7 +70,7 @@ def get_patient(patient_id):
     parameters:
       - name: patient_id
         in: path
-        type: integer
+        type: string
         required: true
     responses:
         200:
@@ -104,7 +104,7 @@ def get_patient(patient_id):
 # Used by a logged-in patient to fetch their own profile
 # =========================
 
-@patient_bp.route("/users/<int:user_id>/patient", methods=["GET"])
+@patient_bp.route("/users/<string:user_id>/patient", methods=["GET"])
 def get_patient_by_user(user_id):
     """
     Get a patient profile by their User ID
@@ -114,7 +114,7 @@ def get_patient_by_user(user_id):
     parameters:
       - name: user_id
         in: path
-        type: integer
+        type: string
         required: true
     responses:
         200:
@@ -164,7 +164,7 @@ def create_patient():
         schema:
           properties:
             practitioner_id:
-              type: integer
+              type: string
             name:
               type: string
               example: Jane Doe
@@ -190,7 +190,7 @@ def create_patient():
                     message:
                         type: string
                     patient_id:
-                        type: integer
+                        type: string
 
         400:
             schema:
@@ -244,7 +244,7 @@ def update_patient(patient_id):
     parameters:
       - name: patient_id
         in: path
-        type: integer
+        type: string
         required: true
       - in: body
         name: body
@@ -264,7 +264,7 @@ def update_patient(patient_id):
             notes:
               type: string
             practitioner_id:
-              type: integer
+              type: string
             is_active:
               type: boolean
     responses:
@@ -333,7 +333,7 @@ def assign_practitioner(patient_id):
     parameters:
       - name: patient_id
         in: path
-        type: integer
+        type: string
         required: true
       - in: body
         name: body
@@ -341,7 +341,7 @@ def assign_practitioner(patient_id):
         schema:
           properties:
             practitioner_id:
-              type: integer
+              type: string
     responses:
         200:
             description: Practitioner assigned
@@ -404,7 +404,7 @@ def delete_patient(patient_id):
     parameters:
       - name: patient_id
         in: path
-        type: integer
+        type: string
         required: true
     responses:
         200:
@@ -450,7 +450,7 @@ def purge_patient(patient_id):
     parameters:
       - name: patient_id
         in: path
-        type: integer
+        type: string
         required: true
     responses:
         200:

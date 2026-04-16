@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.database.firebase import firestore_repo as fsdb
@@ -50,7 +52,7 @@ def register_user():
             message:
               type: string
             user_id:
-              type: integer
+              type: string
 
       400:
         description: Validation error
@@ -64,46 +66,100 @@ def register_user():
     email = data.get("email")
     password = data.get("password")
     role = data.get("role", "practitioner")
+    birthday = data.get("birthday")
+    sex = data.get("sex")
+    height_cm = data.get("height_cm"),
+    weight_kg = data.get("weight_kg"),
+    notes = data.get("notes")
 
-    if not name or not username or not password:
-        return jsonify({"error": "name, username, and password are required"}), 400
+    error = check_existing_user_data(username, email)
+    if error:
+        return jsonify({"error": error}), 400
+    
+    password_hash = generate_password_hash(password)
+    created_at    = datetime.now(UTC)
 
-    if User.query.filter_by(username=username).first():
-        return jsonify({"error": "Username already exists"}), 400
-
-    if email and User.query.filter_by(email=email).first():
-        return jsonify({"error": "Email already in use"}), 400
-
-    user = User(
-        name=name,
-        username=username,
-        email=email,
-        password_hash=generate_password_hash(password),
-        role=role,
-    )
-    db.session.add(user)
-    db.session.commit()
-
+    # cloud-first architecture
     try:
-        fsdb.create_fsdb_user(user)
-
-        if role == "practitioner":
-            practitioner = Practitioner(user_id=user.id)
-            db.session.add(practitioner)
-            db.session.commit()
-            fsdb.fsdb_practitioner(practitioner)
-
-        elif role == "patient":
-            patient = Patient(user_id=user.id, name=user.name)
-            db.session.add(patient)
-            db.session.commit()
-            fsdb.fsdb_patient(patient)
+        user_id = fsdb.create_fsdb_user(
+            name=name,
+            username=username,
+            email=email,
+            password_hash=password_hash,
+            role=role,
+            is_active=True,
+            created_at=created_at,
+        )
+    except Exception as e:
+        return jsonify({"error": "Failed to create user in cloud", "details": str(e)}), 500
+    
+    # sql fallback
+    try:
+        user = User(
+            id=user_id,
+            name=name,
+            username=username,
+            email=email,
+            password_hash=password_hash,
+            role=role,
+            is_active=True,
+            created_at=created_at,
+        )
+        db.session.add(user)
+        db.session.commit()
 
     except Exception as e:
-        print(f"Cloud Sync Failed: {e}")
+        db.session.rollback()
+        fsdb.delete_fsdb_doc("user", user_id)
+        return jsonify({"error": "Failed to create user locally", "details": str(e)}), 500
+    
+    if role == "practitioner":
+        try:
+            practitioner_id = fsdb.create_fsdb_practitioner(
+                user_id=user_id,
+                clinic_name=None,
+                specialization=None,
+                created_at=created_at,
+            )
+            practitioner = Practitioner(
+                id=practitioner_id,
+                user_id=user_id,
+                created_at=created_at,
+            )
+            db.session.add(practitioner)
+            db.session.commit()
 
-    return jsonify({"message": "User created", "user_id": user.id}), 201
+        except Exception as e:
+            print(f"Practitioner profile creation failed: {e}")
+            
+    elif role == "patient":
+        try:
+            patient_id = fsdb.create_fsdb_patient(
+                user_id=user_id,
+                practitioner_id=None,
+                name=name,
+                birthday=birthday,
+                sex=sex,
+                height_cm=height_cm,
+                weight_kg=weight_kg,
+                notes=None,
+                is_active=True,
+                created_at=created_at,
+            )
+            patient = Patient(
+                id=patient_id,
+                user_id=user_id,
+                name=name,
+                is_active=True,
+                created_at=created_at,
+            )
+            db.session.add(patient)
+            db.session.commit()
 
+        except Exception as e:
+            print(f"Patient profile creation failed: {e}")
+
+    return jsonify({"message": "User created", "user_id": user_id}), 201
 
 # =========================
 # LOGIN
@@ -139,13 +195,13 @@ def login():
             message:
               type: string
             user_id:
-              type: integer
+              type: string
             username:
               type: string
             role:
               type: string
             profile_id:
-              type: integer
+              type: string
               nullable: true
 
       401:
@@ -247,7 +303,7 @@ def get_all_users():
 # =========================
 # GET USER BY ID
 # =========================
-@user_bp.route("/users/<int:user_id>", methods=["GET"])
+@user_bp.route("/users/<string:user_id>", methods=["GET"])
 def get_user(user_id):
     """
     Get a user by ID
@@ -257,7 +313,7 @@ def get_user(user_id):
     parameters:
       - name: user_id
         in: path
-        type: integer
+        type: string
         required: true
 
     responses:
@@ -292,7 +348,7 @@ def get_user(user_id):
 # =========================
 # UPDATE USER
 # =========================
-@user_bp.route("/users/<int:user_id>", methods=["PUT"])
+@user_bp.route("/users/<string:user_id>", methods=["PUT"])
 def update_user(user_id):
     """
     Update a user
@@ -302,7 +358,7 @@ def update_user(user_id):
     parameters:
       - name: user_id
         in: path
-        type: integer
+        type: string
         required: true
 
       - in: body
@@ -385,7 +441,7 @@ def update_user(user_id):
 # =========================
 # DELETE USER
 # =========================
-@user_bp.route("/users/<int:user_id>", methods=["DELETE"])
+@user_bp.route("/users/<string:user_id>", methods=["DELETE"])
 def delete_user(user_id):
     """
     Delete a user
@@ -395,7 +451,7 @@ def delete_user(user_id):
     parameters:
       - name: user_id
         in: path
-        type: integer
+        type: string
         required: true
 
     responses:
@@ -443,3 +499,28 @@ def _serialize_user(u: User) -> dict:
         "is_active": u.is_active,
         "created_at": u.created_at.isoformat(),
     }
+
+def check_existing_user_data(username, email=None):
+    
+    # local db validation
+    if User.query.filter_by(username=username).first():
+        return "Username already exists"
+
+    if email and User.query.filter_by(email=email).first():
+        return "Email already in use"
+    
+    # firestore data validation 
+    try:
+        user_query = fs_db.collection("user").where("username", "==", username).limit(1).get()
+        if user_query:
+            return "Username already exists"
+
+        if email:
+            email_query = fs_db.collection("user").where("email", "==", email).limit(1).get()
+            if email_query:
+                return "Email already in use"
+
+    except Exception as e:
+        print(f"Cloud uniqueness check skipped: {e}")
+
+    return None

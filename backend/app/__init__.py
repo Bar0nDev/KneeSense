@@ -33,7 +33,7 @@ def create_app():
             "User": {
                 "type": "object",
                 "properties": {
-                    "id": {"type": "integer"},
+                    "id": {"type": "string"},
                     "name": {"type": "string"},
                     "username": {"type": "string"},
                     "email": {"type": "string"},
@@ -57,8 +57,8 @@ def create_app():
             "Practitioner": {
                 "type": "object",
                 "properties": {
-                    "id": {"type": "integer"},
-                    "user_id": {"type": "integer"},
+                    "id": {"type": "string"},
+                    "user_id": {"type": "string"},
                     "clinic_name": {"type": "string"},
                     "specialization": {"type": "string"},
                     "created_at": {
@@ -72,9 +72,9 @@ def create_app():
             "Patient": {
                 "type": "object",
                 "properties": {
-                    "id": {"type": "integer"},
-                    "user_id": {"type": "integer"},
-                    "practitioner_id": {"type": "integer"},
+                    "id": {"type": "string"},
+                    "user_id": {"type": "string"},
+                    "practitioner_id": {"type": "string"},
                     "name": {"type": "string"},
                     "birthday": {
                         "type": "string",
@@ -107,9 +107,9 @@ def create_app():
             "Session": {
                 "type": "object",
                 "properties": {
-                    "id": {"type": "integer"},
-                    "patient_id": {"type": "integer"},
-                    "practitioner_id": {"type": "integer"},
+                    "id": {"type": "string"},
+                    "patient_id": {"type": "string"},
+                    "practitioner_id": {"type": "string"},
                     "video_path": {"type": "string"},
                     "notes": {"type": "string"},
                     "created_at": {

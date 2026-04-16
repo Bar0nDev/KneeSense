@@ -9,7 +9,8 @@ from .db import db
 class User(db.Model):
     __tablename__ = "users"
 
-    id = db.Column(db.Integer, primary_key=True)
+    # for firebase uuid
+    id = db.Column(db.String(64), primary_key=True)
 
     name = db.Column(db.String(120), nullable=False)
 
@@ -53,10 +54,10 @@ class User(db.Model):
 class Practitioner(db.Model):
     __tablename__ = "practitioners"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)
 
     user_id = db.Column(
-        db.Integer,
+        db.String(64),
         db.ForeignKey("users.id"),
         nullable=False
     )
@@ -84,11 +85,11 @@ class Practitioner(db.Model):
 class Patient(db.Model):
     __tablename__ = "patients"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)
 
     # Set when patient self-registered; null when practitioner created them manually
     user_id = db.Column(
-        db.Integer,
+        db.String(64),
         db.ForeignKey("users.id"),
         nullable=True,
         unique=True
@@ -96,7 +97,7 @@ class Patient(db.Model):
 
     # Null until a practitioner assigns/claims them
     practitioner_id = db.Column(
-        db.Integer,
+        db.String(64),
         db.ForeignKey("practitioners.id"),
         nullable=True
     )
