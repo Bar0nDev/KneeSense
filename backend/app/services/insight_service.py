@@ -131,43 +131,45 @@ def _build_prompt(
         ]
 
         flow_section = f"""
-OPTICAL FLOW — ZONE LOAD DISTRIBUTION (% of total motion per zone, averaged across session):
-- Zone 1 (left):   {avg_z1}%
-- Zone 2 (center): {avg_z2}%
-- Zone 3 (right):  {avg_z3}%
-- Dominant motion zone: {dominant_zone}
-"""
+            OPTICAL FLOW — ZONE LOAD DISTRIBUTION (% of total motion per zone, averaged across session):
+            - Zone 1 (left):   {avg_z1}%
+            - Zone 2 (center): {avg_z2}%
+            - Zone 3 (right):  {avg_z3}%
+            - Dominant motion zone: {dominant_zone}
+            """
 
     patient_section = _build_patient_section(patient_ctx)
 
     return f"""You are a physical therapy assistant analyzing knee motion data from a video session.
 
-{patient_section}
-SESSION STATS:
-- Duration: {duration_sec}s ({len(frames)} frames at {fps} fps)
-- Range of Motion (ROM): {rom}°  (min {min_angle}° → max {max_angle}°)
-- Mean angle: {mean_angle}° ± {std_angle}°
-- Peak flexion at: frame {peak_flex_frame} ({peak_flex_time}s)
-- Mean frame-to-frame change (smoothness): {smoothness}°/frame
-{flow_section}
-ANGLE SERIES (degrees, first 30 frames shown):
-{series_str}
+        Note: Angle values are predicted by a computer vision model and may contain minor frame-to-frame variation that does not reflect true movement jitter. Focus your assessment on overall trends, ROM, and aggregate statistics rather than individual frame fluctuations.
 
-Respond with exactly two sections using these headers:
+        {patient_section}
+        SESSION STATS:
+        - Duration: {duration_sec}s ({len(frames)} frames at {fps} fps)
+        - Range of Motion (ROM): {rom}°  (min {min_angle}° → max {max_angle}°)
+        - Mean angle: {mean_angle}° ± {std_angle}°
+        - Peak flexion at: frame {peak_flex_frame} ({peak_flex_time}s)
+        - Mean frame-to-frame change (smoothness): {smoothness}°/frame
+        {flow_section}
+        ANGLE SERIES (degrees, first 30 frames shown):
+        {series_str}
 
-CLINICAL INSIGHT:
-Write 3–5 sentences for a physiotherapist covering:
-1. ROM assessment (adequate/limited compared to normal ~135° full flexion)
-2. Movement quality / smoothness
-3. Zone load distribution and what it may indicate
-4. Any notable asymmetry or compensatory patterns
-5. One practical recommendation
-Where relevant, factor in the patient's age, sex, BMI, and any clinical notes when contextualizing findings.
+        Respond with exactly two sections using these headers:
 
-SUMMARY:
-Write 1–2 sentences in plain language summarizing the key finding and the single most important action item. Avoid jargon — this may be shown to the patient directly.
+        CLINICAL INSIGHT:
+        Write 3–5 sentences for a physiotherapist covering:
+        1. ROM assessment (adequate/limited compared to normal ~135° full flexion)
+        2. Movement quality / smoothness
+        3. Zone load distribution and what it may indicate
+        4. Any notable asymmetry or compensatory patterns
+        5. One practical recommendation
+        Where relevant, factor in the patient's age, sex, BMI, and any clinical notes when contextualizing findings.
 
-Be factual, professional, and avoid speculation beyond what the data supports."""
+        SUMMARY:
+        Write 1–2 sentences in plain language summarizing the key finding and the single most important action item. Avoid jargon — this may be shown to the patient directly.
+
+        Be factual, professional, and avoid speculation beyond what the data supports."""
 
 
 def _parse_response(raw: str) -> tuple[str, str]:
