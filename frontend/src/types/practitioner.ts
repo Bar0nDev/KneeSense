@@ -1,5 +1,5 @@
 export interface PractitionerProfile {
-  id: number;
+  id: string;
   user_id: number;
   clinic_name: string | null;
   specialization: string | null;

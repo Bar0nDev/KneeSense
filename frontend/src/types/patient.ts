@@ -1,7 +1,7 @@
 export interface PatientProfile {
-  id: number;
-  user_id: number | null;
-  practitioner_id: number | null;
+  id: string;
+  user_id: string | null;
+  practitioner_id: string | null;
   name: string;
   birthday: string | null; // YYYY-MM-DD
   sex: string | null;
