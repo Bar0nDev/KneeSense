@@ -45,7 +45,7 @@ def get_all_practitioners():
 # GET PRACTITIONER BY ID
 # =========================
 
-@practitioner_bp.route("/practitioners/<int:practitioner_id>", methods=["GET"])
+@practitioner_bp.route("/practitioners/<string:practitioner_id>", methods=["GET"])
 def get_practitioner(practitioner_id):
     """
     Get a practitioner by ID
@@ -55,7 +55,7 @@ def get_practitioner(practitioner_id):
     parameters:
       - name: practitioner_id
         in: path
-        type: integer
+        type: string
         required: true
     responses:
         200:
@@ -154,7 +154,7 @@ def create_practitioner():
 # UPDATE PRACTITIONER
 # =========================
 
-@practitioner_bp.route("/practitioners/<int:practitioner_id>", methods=["PUT"])
+@practitioner_bp.route("/practitioners/<string:practitioner_id>", methods=["PUT"])
 def update_practitioner(practitioner_id):
     """
     Update a practitioner profile
@@ -164,7 +164,7 @@ def update_practitioner(practitioner_id):
     parameters:
       - name: practitioner_id
         in: path
-        type: integer
+        type: string
         required: true
       - in: body
         name: body
@@ -190,11 +190,15 @@ def update_practitioner(practitioner_id):
                 $ref: '#/definitions/Error'
     """
     data = request.json
-    practitioner = db.session.get(Practitioner, practitioner_id)
+    # practitioner = db.session.get(Practitioner, practitioner_id)
     doc_ref = fs_db.collection("practitioners").document(str(practitioner_id))
     
-    if not practitioner or not doc_ref.get().exists:
-        return jsonify({"error": "Practitioner not found"}), 404
+    try:
+        doc = doc_ref.get()
+        if not doc.exists:
+            return jsonify({"error": "Practitioner not found"}), 404
+    except Exception as e:
+        return jsonify({"error": f"Cloud check failed: {str(e)}"}), 500
 
     allowed_fields = ["clinic_name", "specialization"]
     update_fields = {k: v for k, v in data.items() if k in allowed_fields}
@@ -202,25 +206,30 @@ def update_practitioner(practitioner_id):
     if not update_fields:
         return jsonify({"message": "No changes detected"}), 200
 
+    # cloud-first
     try:
-        for key, value in update_fields.items():
-            setattr(practitioner, key, value)
-        
-        db.session.commit()
         doc_ref.set(update_fields, merge=True)
-        
     except Exception as e:
-        db.session.rollback()
-        print(f"Update failed: {e}")
-        return jsonify({"error": "Update failed", "details": str(e)}), 500
+        return jsonify({"error": f"Cloud update failed: {str(e)}"}), 500
+    
+    # sql fallback
+    practitioner = db.session.get(Practitioner, practitioner_id)
+    if practitioner:
+        try:
+            for key, value in update_fields.items():
+                setattr(practitioner, key, value)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"Local update failed (cloud already updated): {e}")
 
-    return jsonify({"message": "Practitioner updated", "practitioner": _serialize_practitioner(practitioner)})
+        return jsonify({"message": "Practitioner updated", "practitioner": _serialize_practitioner(practitioner)})
 
 # =========================
 # DELETE PRACTITIONER
 # =========================
 
-@practitioner_bp.route("/practitioners/<int:practitioner_id>", methods=["DELETE"])
+@practitioner_bp.route("/practitioners/<string:practitioner_id>", methods=["DELETE"])
 def delete_practitioner(practitioner_id):
     """
     Delete a practitioner profile
@@ -230,7 +239,7 @@ def delete_practitioner(practitioner_id):
     parameters:
       - name: practitioner_id
         in: path
-        type: integer
+        type: string
         required: true
     responses:
       200:
@@ -252,7 +261,7 @@ def delete_practitioner(practitioner_id):
 # GET PATIENTS FOR PRACTITIONER
 # =========================
 
-@practitioner_bp.route("/practitioners/<int:practitioner_id>/patients", methods=["GET"])
+@practitioner_bp.route("/practitioners/<string:practitioner_id>/patients", methods=["GET"])
 def get_practitioner_patients(practitioner_id):
     """
     Get all patients for a specific practitioner
@@ -262,7 +271,7 @@ def get_practitioner_patients(practitioner_id):
     parameters:
       - name: practitioner_id
         in: path
-        type: integer
+        type: string
         required: true
     responses:
         200:

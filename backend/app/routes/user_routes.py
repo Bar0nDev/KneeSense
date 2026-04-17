@@ -1,5 +1,4 @@
 from datetime import UTC, datetime
-
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.database.firebase import firestore_repo as fsdb
@@ -60,7 +59,6 @@ def register_user():
           $ref: '#/definitions/Error'
     """
     data = request.json
-    print(f"DEBUG: Received data from frontend: {data}")
     name = data.get("name")
     username = data.get("username")
     email = data.get("email")
