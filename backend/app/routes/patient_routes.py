@@ -234,7 +234,7 @@ def create_patient():
 # UPDATE PATIENT
 # =========================
 
-@patient_bp.route("/patients/<int:patient_id>", methods=["PUT"])
+@patient_bp.route("/patients/<string:patient_id>", methods=["PUT"])
 def update_patient(patient_id):
     """
     Update a patient record
@@ -283,39 +283,83 @@ def update_patient(patient_id):
                 $ref: '#/definitions/Error'
     """
     data = request.json
-    patient = db.session.get(Patient, patient_id)
+    # patient = db.session.get(Patient, patient_id)
     doc_ref = fs_db.collection("patients").document(str(patient_id))
 
-    if not patient:
-        return jsonify({"error": "Patient not found"}), 404
-    
+    try:
+        doc = doc_ref.get()
+        if not doc.exists:
+            return jsonify({"error": "Patient not found"}), 404
+    except Exception as e:
+        return jsonify({"error": f"Cloud check failed: {str(e)}"}), 500
+
+    patient = db.session.get(Patient, patient_id)
+
     allowed_fields = ["name", "sex", "height_cm", "weight_kg", "notes", "practitioner_id", "is_active"]
     update_fields = {k: v for k, v in data.items() if k in allowed_fields}
 
     if "birthday" in data and data["birthday"]:
         try:
-            patient.birthday = date.fromisoformat(data["birthday"])
-            update_fields["birthday"] = data["birthday"] 
+            parsed_birthday = date.fromisoformat(data["birthday"])
+            update_fields["birthday"] = data["birthday"]
         except ValueError:
             return jsonify({"error": "birthday must be YYYY-MM-DD"}), 400
 
     if not update_fields and "birthday" not in data:
         return jsonify({"message": "No changes detected"}), 200
-
-    try:
-        for key, value in update_fields.items():
-            if key != "birthday":
-                setattr(patient, key, value)
-        
-        db.session.commit()
-        doc_ref.set(update_fields, merge=True)
-
-    except Exception as e:
-        db.session.rollback()
-        print(f"Update failed: {e}")
-        return jsonify({"error": "Update failed", "details": str(e)}), 500
     
-    return jsonify({"message": "Patient updated", "patient": _serialize_patient(patient)})
+    # cloud-first
+    try:
+        doc_ref.set(update_fields, merge=True)
+    except Exception as e:
+        return jsonify({"error": f"Cloud update failed: {str(e)}"}), 500
+    
+    # sql fallback
+    if patient:
+        try:
+            for key, value in update_fields.items():
+                if key == "birthday":
+                    patient.birthday = parsed_birthday
+                else:
+                    setattr(patient, key, value)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"Local update failed (cloud already updated): {e}")
+
+    updated = doc_ref.get().to_dict()
+    return jsonify({"message": "Patient updated", "patient": {"id": patient_id, **updated}})
+
+    # if not patient:
+    #     return jsonify({"error": "Patient not found"}), 404
+    
+    # allowed_fields = ["name", "sex", "height_cm", "weight_kg", "notes", "practitioner_id", "is_active"]
+    # update_fields = {k: v for k, v in data.items() if k in allowed_fields}
+
+    # if "birthday" in data and data["birthday"]:
+    #     try:
+    #         patient.birthday = date.fromisoformat(data["birthday"])
+    #         update_fields["birthday"] = data["birthday"] 
+    #     except ValueError:
+    #         return jsonify({"error": "birthday must be YYYY-MM-DD"}), 400
+
+    # if not update_fields and "birthday" not in data:
+    #     return jsonify({"message": "No changes detected"}), 200
+
+    # try:
+    #     for key, value in update_fields.items():
+    #         if key != "birthday":
+    #             setattr(patient, key, value)
+        
+    #     db.session.commit()
+    #     doc_ref.set(update_fields, merge=True)
+
+    # except Exception as e:
+    #     db.session.rollback()
+    #     print(f"Update failed: {e}")
+    #     return jsonify({"error": "Update failed", "details": str(e)}), 500
+    
+    # return jsonify({"message": "Patient updated", "patient": _serialize_patient(patient)})
 
 
 # =========================

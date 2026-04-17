@@ -69,7 +69,19 @@ def create_fsdb_patient(user_id, practitioner_id, name, birthday, sex, height_cm
     })
     return doc_ref.id
 
-
+def fsdb_patient(patient):
+    fs_db.collection("patients").document(str(patient.id)).set({
+        "user_id": patient.user_id,
+        "practitioner_id": patient.practitioner_id,
+        "name": patient.name,
+        "birthday": patient.birthday.isoformat() if patient.birthday else None,
+        "sex": patient.sex,
+        "height_cm": patient.height_cm,
+        "weight_kg": patient.weight_kg,
+        "notes": patient.notes,
+        "is_active": patient.is_active,
+        "created_at": patient.created_at
+    })
 
 # =========================
 # SESSIONS & AI ANALYSIS

@@ -60,17 +60,12 @@ def register_user():
           $ref: '#/definitions/Error'
     """
     data = request.json
-
+    print(f"DEBUG: Received data from frontend: {data}")
     name = data.get("name")
     username = data.get("username")
     email = data.get("email")
     password = data.get("password")
     role = data.get("role", "practitioner")
-    birthday = data.get("birthday")
-    sex = data.get("sex")
-    height_cm = data.get("height_cm"),
-    weight_kg = data.get("weight_kg"),
-    notes = data.get("notes")
 
     error = check_existing_user_data(username, email)
     if error:
@@ -131,17 +126,17 @@ def register_user():
 
         except Exception as e:
             print(f"Practitioner profile creation failed: {e}")
-            
+
     elif role == "patient":
         try:
             patient_id = fsdb.create_fsdb_patient(
                 user_id=user_id,
                 practitioner_id=None,
                 name=name,
-                birthday=birthday,
-                sex=sex,
-                height_cm=height_cm,
-                weight_kg=weight_kg,
+                birthday=None,
+                sex=None,
+                height_cm=None,
+                weight_kg=None,
                 notes=None,
                 is_active=True,
                 created_at=created_at,
@@ -155,7 +150,7 @@ def register_user():
             )
             db.session.add(patient)
             db.session.commit()
-
+            
         except Exception as e:
             print(f"Patient profile creation failed: {e}")
 
