@@ -539,7 +539,7 @@ def generate_insight(session_id):
         fps = session.fps or 30
         result = generate_and_store_insight(session_id, fps=fps)
         i_text = result.get("insight_text")
-        i_summary = result.get("insight_summary")
+        i_summary = result.get("summary_text")
         i_model = result.get("model_used")
 
         fsdb.mark_insight_complete(
