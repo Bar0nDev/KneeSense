@@ -640,8 +640,11 @@ def add_llm_insight(session_id):
           type: object
           required:
             - insight_text
+            - summary_text
           properties:
             insight_text:
+              type: string
+            summary_text:
               type: string
             model:
               type: string
@@ -688,7 +691,8 @@ def add_llm_insight(session_id):
     insight = LLMInsight(
         session_id=session_id,
         insight_text=data["insight_text"],
-        model_used=model_used
+        model_used=model_used,
+        summary_text=data["summary_text"]
     )
     db.session.add(insight)
 
@@ -698,7 +702,8 @@ def add_llm_insight(session_id):
         fsdb.mark_insight_complete(
             session_id=session_id,
             insight_text=data["insight_text"],
-            model_used=model_used
+            model_used=model_used,
+            summary_text=data["summary_text"]
         )
 
         return jsonify({"message": "Insight saved"})
