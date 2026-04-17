@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 import os
 from flask import Blueprint, json, request, jsonify, current_app, send_from_directory
 from werkzeug.utils import secure_filename
@@ -38,12 +39,12 @@ def create_session():
 
       - name: patient_id
         in: formData
-        type: integer
+        type: string
         required: true
 
       - name: practitioner_id
         in: formData
-        type: integer
+        type: string
         required: false
         description: Practitioner ID (omit for self-registered / practitioner-free sessions)
 
@@ -60,7 +61,7 @@ def create_session():
             message:
               type: string
             session_id:
-              type: integer
+              type: string
 
       400:
         description: Invalid input
@@ -70,13 +71,13 @@ def create_session():
     patient_id = request.form.get("patient_id")
     practitioner_id = request.form.get("practitioner_id")  # optional — self-registered patients have no practitioner
     notes = request.form.get("notes")
+    created_at = datetime.now(UTC)
 
     if not patient_id:
         return jsonify({"error": "patient_id is required"}), 400
 
     video_path = None
-    cloud_url = None
-
+    # cloud_url = None
     if "video" in request.files:
         file = request.files["video"]
         if file.filename == "":
@@ -92,9 +93,22 @@ def create_session():
         file.save(video_path)
 
     try:
+        session_id = fsdb.create_fsdb_session_and_get_id(
+            patient_id=patient_id,
+            practitioner_id=practitioner_id or None,
+            video_path=video_path,
+            fps=30,
+            notes=notes,
+            created_at=created_at,
+        )
+    except Exception as e:
+        return jsonify({"error": "Failed to create session in cloud", "details": str(e)}), 500
+
+
+    try:
       session = Session(
-          patient_id=int(patient_id),
-          practitioner_id=int(practitioner_id) if practitioner_id else None,
+          patient_id=patient_id,
+          practitioner_id=practitioner_id if practitioner_id else None,
           video_path=video_path,
           notes=notes,
       )
@@ -116,7 +130,7 @@ def create_session():
 # GET SESSIONS FOR PATIENT
 # =========================
 
-@session_bp.route("/patients/<int:patient_id>/sessions", methods=["GET"])
+@session_bp.route("/patients/<string:patient_id>/sessions", methods=["GET"])
 def get_patient_sessions(patient_id):
     """
     Get all sessions for a patient
@@ -126,7 +140,7 @@ def get_patient_sessions(patient_id):
     parameters:
       - name: patient_id
         in: path
-        type: integer
+        type: string
         required: true
 
     responses:

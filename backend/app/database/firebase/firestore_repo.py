@@ -87,6 +87,21 @@ def fsdb_patient(patient):
 # SESSIONS & AI ANALYSIS
 # =========================
 
+def create_fsdb_session_and_get_id(patient_id, practitioner_id, video_path, fps, notes, created_at) -> str:
+    _, doc_ref = fs_db.collection("sessions").add({
+        "patient_id": patient_id,
+        "practitioner_id": practitioner_id,
+        "video_path": video_path,
+        "fps": fps or 30,
+        "notes": notes,
+        "created_at": created_at,
+        "status": "pending",
+        "has_analysis": False,
+        "has_insight": False,
+        "prediction_count": 0,
+    })
+    return doc_ref.id
+
 def fsdb_session(session):
     fs_db.collection("sessions").document(str(session.id)).set({
         "patient_id": session.patient_id,

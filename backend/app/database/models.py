@@ -135,17 +135,17 @@ class Patient(db.Model):
 class Session(db.Model):
     __tablename__ = "sessions"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)
 
     patient_id = db.Column(
-        db.Integer,
+        db.String(64),
         db.ForeignKey("patients.id"),
         nullable=False
     )
 
     # Nullable — patient may not have a practitioner yet when uploading
     practitioner_id = db.Column(
-        db.Integer,
+        db.String(64),
         db.ForeignKey("practitioners.id"),
         nullable=True
     )
@@ -283,10 +283,10 @@ class TemplateExercise(db.Model):
 class FramePrediction(db.Model):
     __tablename__ = "frame_predictions"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)
 
     session_id = db.Column(
-        db.Integer,
+        db.String(64),
         db.ForeignKey("sessions.id"),
         nullable=False
     )
@@ -308,10 +308,10 @@ class FramePrediction(db.Model):
 class LLMInsight(db.Model):
     __tablename__ = "llm_insights"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)
 
     session_id = db.Column(
-        db.Integer,
+        db.String(64),
         db.ForeignKey("sessions.id"),
         nullable=False
     )
@@ -333,10 +333,10 @@ class LLMInsight(db.Model):
 class OpticalFlowResult(db.Model):
     __tablename__ = "optical_flow_results"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)
 
     session_id = db.Column(
-        db.Integer,
+        db.String(64),
         db.ForeignKey("sessions.id"),
         nullable=False,
         index=True
