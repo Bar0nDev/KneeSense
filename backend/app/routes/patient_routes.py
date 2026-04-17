@@ -330,44 +330,12 @@ def update_patient(patient_id):
     updated = doc_ref.get().to_dict()
     return jsonify({"message": "Patient updated", "patient": {"id": patient_id, **updated}})
 
-    # if not patient:
-    #     return jsonify({"error": "Patient not found"}), 404
-    
-    # allowed_fields = ["name", "sex", "height_cm", "weight_kg", "notes", "practitioner_id", "is_active"]
-    # update_fields = {k: v for k, v in data.items() if k in allowed_fields}
-
-    # if "birthday" in data and data["birthday"]:
-    #     try:
-    #         patient.birthday = date.fromisoformat(data["birthday"])
-    #         update_fields["birthday"] = data["birthday"] 
-    #     except ValueError:
-    #         return jsonify({"error": "birthday must be YYYY-MM-DD"}), 400
-
-    # if not update_fields and "birthday" not in data:
-    #     return jsonify({"message": "No changes detected"}), 200
-
-    # try:
-    #     for key, value in update_fields.items():
-    #         if key != "birthday":
-    #             setattr(patient, key, value)
-        
-    #     db.session.commit()
-    #     doc_ref.set(update_fields, merge=True)
-
-    # except Exception as e:
-    #     db.session.rollback()
-    #     print(f"Update failed: {e}")
-    #     return jsonify({"error": "Update failed", "details": str(e)}), 500
-    
-    # return jsonify({"message": "Patient updated", "patient": _serialize_patient(patient)})
-
-
 # =========================
 # ASSIGN PRACTITIONER TO PATIENT
 # Convenience endpoint for the "claim/assign" flow
 # =========================
 
-@patient_bp.route("/patients/<int:patient_id>/assign", methods=["PUT"])
+@patient_bp.route("/patients/<string:patient_id>/assign", methods=["PUT"])
 def assign_practitioner(patient_id):
     """
     Assign a practitioner to a patient
@@ -438,7 +406,7 @@ def assign_practitioner(patient_id):
 # SOFT DELETE
 # =========================
 
-@patient_bp.route("/patients/<int:patient_id>", methods=["DELETE"])
+@patient_bp.route("/patients/<string:patient_id>", methods=["DELETE"])
 def delete_patient(patient_id):
     """
     Soft-delete a patient (sets is_active=False)
@@ -484,7 +452,7 @@ def delete_patient(patient_id):
 # HARD DELETE
 # =========================
 
-@patient_bp.route("/patients/<int:patient_id>/purge", methods=["DELETE"])
+@patient_bp.route("/patients/<string:patient_id>/purge", methods=["DELETE"])
 def purge_patient(patient_id):
     """
     Permanently delete a patient and all associated records
