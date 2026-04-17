@@ -17,7 +17,7 @@ import cv2
 import numpy as np
 import torch
 from PIL import Image
-from scipy.signal import butter, filtfilt
+from scipy.signal import butter, filtfilt, savgol_filter
 import torchvision.transforms as transforms
 
 from app.database.db import db
@@ -77,7 +77,6 @@ _TRANSFORM = transforms.Compose([
         std=[0.229, 0.224, 0.225]
     )
 ])
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # STEP 1 — load + geometric preprocessing
@@ -307,6 +306,13 @@ def _window_to_tensor(window: list[np.ndarray]) -> torch.Tensor:
 # ──────────────────────────────────────────────────────────────────────────────
 # PUBLIC — called by session_routes.py
 # ──────────────────────────────────────────────────────────────────────────────
+def _smooth_predictions(angles: list[float], window: int = 11, poly: int = 3) -> list[float]:
+    n = len(angles)
+    if n < poly + 2:
+        return angles
+    w = min(window, n if n % 2 == 1 else n - 1)
+    p = min(poly, w - 1)
+    return savgol_filter(angles, window_length=w, polyorder=p).tolist()
 
 def run_inference_and_store(
     session_id: int,
@@ -339,22 +345,28 @@ def run_inference_and_store(
     flow_orm_rows = _compute_optical_flow(session_id, frames)
 
     # 5. Sliding window inference
-    model         = get_model()
-    total         = len(frames)
-    pred_orm_rows = []
+    model = get_model()
+    total = len(frames)
+    raw_angles = []
+    frame_indices = []
 
     for center in range(HALF, total - HALF):
-        window    = frames[center - HALF : center + HALF + 1]
-        tensor    = _window_to_tensor(window)
-        angle_deg = model.predict(tensor)
+        window = frames[center - HALF : center + HALF + 1]
+        tensor = _window_to_tensor(window)
+        raw_angles.append(model.predict(tensor))
+        frame_indices.append(center)
 
-        pred_orm_rows.append(
-            FramePrediction(
-                session_id=session_id,
-                frame_index=center,
-                predicted_angle=round(angle_deg, 2),
-            )
+    # 5b. Post-hoc smoothing
+    smoothed_angles = _smooth_predictions(raw_angles)
+
+    pred_orm_rows = [
+        FramePrediction(
+            session_id=session_id,
+            frame_index=fi,
+            predicted_angle=round(angle, 2),
         )
+        for fi, angle in zip(frame_indices, smoothed_angles)
+    ]
 
     # 6. Bulk insert both
     db.session.bulk_save_objects(pred_orm_rows)
