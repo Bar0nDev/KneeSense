@@ -106,6 +106,7 @@ def create_session():
           return jsonify({"message": "Session created", "session_id": session.id})
       except Exception as e:
           print(f"Failed to create session {session.id}: {e}")
+          return jsonify({"message": "Session created (Firestore sync failed)", "session_id": session.id})
       
     except Exception as e:
       db.session.rollback()

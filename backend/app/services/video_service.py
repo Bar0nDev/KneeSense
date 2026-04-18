@@ -70,7 +70,7 @@ FARNEBACK_PARAMS = dict(
 
 # Preprocessing transform
 _TRANSFORM = transforms.Compose([
-    transforms.Resize((224, 224)),
+    transforms.Resize((112, 112)),
     transforms.ToTensor(),
     transforms.Normalize(
         mean=[0.485, 0.456, 0.406],
@@ -308,7 +308,7 @@ def _window_to_tensor(window: list[np.ndarray]) -> torch.Tensor:
 # ──────────────────────────────────────────────────────────────────────────────
 def _smooth_predictions(angles: list[float], window: int = 11, poly: int = 3) -> list[float]:
     n = len(angles)
-    if n < poly + 2:
+    if n < poly + 2 or n < window:
         return angles
     w = min(window, n if n % 2 == 1 else n - 1)
     p = min(poly, w - 1)
