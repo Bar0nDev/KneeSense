@@ -70,7 +70,7 @@ FARNEBACK_PARAMS = dict(
 
 # Preprocessing transform
 _TRANSFORM = transforms.Compose([
-    transforms.Resize((112, 112)),
+    transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(
         mean=[0.485, 0.456, 0.406],
