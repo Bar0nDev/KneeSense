@@ -14,6 +14,16 @@ def get_model():
         _model_instance = KneeAngleModel(Config.MODEL_PATH)
     return _model_instance
 
+def calibrate_angle(pred: float) -> float:
+    LOW_PIVOT = 120.0
+    RAW_MAX   = 155.0
+    TRUE_MAX  = 175.0
+
+    if pred <= LOW_PIVOT:
+        return pred
+    
+    t = (pred - LOW_PIVOT) / (RAW_MAX - LOW_PIVOT)
+    return LOW_PIVOT + t * (TRUE_MAX - LOW_PIVOT)
 
 class TemporalCNNRegressor(nn.Module):
     def __init__(self, seq_len: int = SEQUENCE_LENGTH):
@@ -61,14 +71,21 @@ class KneeAngleModel:
         )
         self.model.eval()
 
+    # def predict(self, input_tensor: torch.Tensor) -> float:
+    #     """
+    #     Args:
+    #         input_tensor: (1, SEQUENCE_LENGTH, 3, H, W) — preprocessed & normalized
+    #     Returns:
+    #         Predicted knee angle in degrees
+    #     """
+    #     input_tensor = input_tensor.to(self.device)
+    #     with torch.no_grad():
+    #         output = self.model(input_tensor)
+    #     return float(output.item() * 180.0)
+
     def predict(self, input_tensor: torch.Tensor) -> float:
-        """
-        Args:
-            input_tensor: (1, SEQUENCE_LENGTH, 3, H, W) — preprocessed & normalized
-        Returns:
-            Predicted knee angle in degrees
-        """
         input_tensor = input_tensor.to(self.device)
         with torch.no_grad():
             output = self.model(input_tensor)
-        return float(output.item() * 180.0)
+        raw = float(output.item() * 180.0)
+        return calibrate_angle(raw)
