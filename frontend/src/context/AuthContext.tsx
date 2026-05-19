@@ -42,8 +42,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const built = await buildUserProfile(sessionData);
           setSession(sessionData);
           if (built) setUserProfile(built);
-        } catch {
-          await signOut(auth);
+        } catch (err: any) {
+          // 404 means registration is still in progress — don't sign out
+          if (err?.response?.status !== 404) {
+            await signOut(auth);
+          }
           setSession(null);
         }
       } else {

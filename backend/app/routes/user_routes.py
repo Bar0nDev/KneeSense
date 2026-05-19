@@ -1,21 +1,18 @@
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify, g
-from werkzeug.security import generate_password_hash
-from app.database.firebase import firestore_repo as fsdb
-from app.database.db import db
-from app.database.models import User, Practitioner, Patient
-from app.middleware.auth import require_auth
+from google.cloud.firestore_v1 import FieldFilter
+from app.database.firebase.firebase_db import get_fs_db
 
 user_bp = Blueprint("users", __name__)
-fs_db = fsdb.get_fs_db()
+fs_db = get_fs_db()
+
 
 # =========================
-# GET CURRENT USER (Firebase Auth)
+# GET CURRENT USER
 # =========================
 @user_bp.route("/users/me", methods=["GET"])
 def get_me():
     uid = g.uid
-
     doc = fs_db.collection("user").document(uid).get()
     if not doc.exists:
         return jsonify({"error": "User not found"}), 404
@@ -38,7 +35,6 @@ def register_user():
     data = request.json
     uid = g.uid
     email = g.email
-
     name = data.get("name")
     role = data.get("role", "practitioner")
 
@@ -94,10 +90,8 @@ def register_user():
 
 
 # =========================
-# LOGIN
+# LOGIN — disabled
 # =========================
-# Disabled — authentication is now handled by Firebase Auth
-# Use POST /users/register to create a profile, GET /users/me to retrieve it
 @user_bp.route("/users/login", methods=["POST"])
 def login():
     return jsonify({"error": "This endpoint is disabled. Use Firebase Auth."}), 410
@@ -108,33 +102,13 @@ def login():
 # =========================
 @user_bp.route("/users", methods=["GET"])
 def get_all_users():
-    """
-    Get all users
-    ---
-    tags:
-      - Users
-    responses:
-      200:
-        description: List of users
-        schema:
-          type: array
-          items:
-            $ref: '#/definitions/User'
-    """
-    try:
-        docs = fs_db.collection("user").stream()
-        users_list = []
-        for doc in docs:
-            user_data = doc.to_dict()
-            user_data['id'] = doc.id 
-            users_list.append(user_data)
-            
-        return jsonify(users_list), 200
-
-    except Exception as e:
-        print(f"Error fetching from Cloud: {e}")
-        users = User.query.all()
-        return jsonify([_serialize_user(u) for u in users])
+    docs = fs_db.collection("user").stream()
+    users = []
+    for doc in docs:
+        d = doc.to_dict()
+        d["id"] = doc.id
+        users.append(d)
+    return jsonify(users), 200
 
 
 # =========================
@@ -142,137 +116,40 @@ def get_all_users():
 # =========================
 @user_bp.route("/users/<user_id>", methods=["GET"])
 def get_user(user_id):
-    """
-    Get a user by ID
-    ---
-    tags:
-      - Users
-    parameters:
-      - name: user_id
-        in: path
-        type: integer
-        required: true
+    doc = fs_db.collection("user").document(user_id).get()
+    if not doc.exists:
+        return jsonify({"error": "User not found"}), 404
+    d = doc.to_dict()
+    d["id"] = doc.id
+    return jsonify(d), 200
 
-    responses:
-      200:
-        description: User object
-        schema:
-          $ref: '#/definitions/User'
-
-      404:
-        description: User not found
-        schema:
-          $ref: '#/definitions/Error'
-    """
-    try:
-        doc_ref = fs_db.collection("user").document(str(user_id))
-        doc = doc_ref.get()
-
-        if doc.exists:
-            user_data = doc.to_dict()
-            user_data['id'] = doc.id
-            return jsonify(user_data), 200
-            
-    except Exception as e:
-        print(f"Cloud fetch failed, checking local: {e}")
-
-    user = db.session.get(User, user_id)
-    if not user:
-        return jsonify({"error": "User not found."}), 404
-        
-    return jsonify(_serialize_user(user))
 
 # =========================
 # UPDATE USER
 # =========================
 @user_bp.route("/users/<user_id>", methods=["PUT"])
 def update_user(user_id):
-    """
-    Update a user
-    ---
-    tags:
-      - Users
-    parameters:
-      - name: user_id
-        in: path
-        type: integer
-        required: true
-
-      - in: body
-        name: body
-        schema:
-          type: object
-          properties:
-            name:
-              type: string
-            email:
-              type: string
-            password:
-              type: string
-            is_active:
-              type: boolean
-
-    responses:
-      200:
-        description: User updated
-        schema:
-          type: object
-          properties:
-            message:
-              type: string
-            user:
-              $ref: '#/definitions/User'
-
-      404:
-        description: User not found
-        schema:
-          $ref: '#/definitions/Error'
-    """
-    data = request.json
-    update_fields = {}
-
-    user = db.session.get(User, user_id)
-    doc = fs_db.collection("user").document(str(user_id)).get()
-    if not doc.exists:
+    doc_ref = fs_db.collection("user").document(user_id)
+    if not doc_ref.get().exists:
         return jsonify({"error": "User not found"}), 404
 
-    if "name" in data:
-        update_fields["name"] = data["name"]
-        if user:
-            user.name = data["name"]
+    data = request.json
+    allowed = ["name", "is_active"]
+    update_fields = {k: v for k, v in data.items() if k in allowed}
 
     if "email" in data:
-        new_email = data["email"]
-
-        existing = (fs_db.collection("user").where("email", "==", new_email).limit(1).get())
-        if existing and existing[0].id != str(user_id):
+        existing = fs_db.collection("user").where(filter=FieldFilter("email", "==", data["email"])).limit(1).get()
+        if existing and existing[0].id != user_id:
             return jsonify({"error": "Email already in use"}), 400
-        if user:
-            user.email = new_email
-        update_fields["email"] = new_email
+        update_fields["email"] = data["email"]
 
-    if "password" in data and user:
-        user.password_hash = generate_password_hash(data["password"])
-    
-    if "is_active" in data:
-        update_fields["is_active"] = data["is_active"]
-        if user:
-            user.is_active = data["is_active"]
+    if not update_fields:
+        return jsonify({"message": "No changes detected"}), 200
 
-    if user:
-        db.session.commit()
-
-    try:
-        if update_fields:
-            fs_db.collection("user").document(str(user_id)).set(update_fields, merge=True)
-    except Exception as e:
-        print(f"Cloud Update Failed: {e}")
-        return jsonify({"error": "Firestore update failed"}), 500
-    if user:
-        return jsonify({"message": "User updated", "updated_fields": update_fields, "user": _serialize_user(user)})
-    
-    updated_doc = fs_db.collection("user").document(str(user_id)).get()
-    return jsonify({"message": "User updated", "updated_fields": update_fields, "user": {"id": user_id, **updated_doc.to_dict()}})
+    doc_ref.set(update_fields, merge=True)
+    updated = doc_ref.get().to_dict()
+    updated["id"] = user_id
+    return jsonify({"message": "User updated", "user": updated}), 200
 
 
 # =========================
@@ -280,59 +157,8 @@ def update_user(user_id):
 # =========================
 @user_bp.route("/users/<user_id>", methods=["DELETE"])
 def delete_user(user_id):
-    """
-    Delete a user
-    ---
-    tags:
-      - Users
-    parameters:
-      - name: user_id
-        in: path
-        type: integer
-        required: true
-
-    responses:
-      200:
-        description: User deleted
-        schema:
-          type: object
-          properties:
-            message:
-              type: string
-
-      404:
-        description: User not found
-        schema:
-          $ref: '#/definitions/Error'
-    """
-    cloud_deleted = False
-    try:
-        cloud_deleted = fsdb.delete_fsdb_doc("user", user_id)
-    except Exception:
-        pass
-    
-    user = db.session.get(User, user_id)
-    local_deleted = False
-
-    if not cloud_deleted and not local_deleted:
+    doc_ref = fs_db.collection("user").document(user_id)
+    if not doc_ref.get().exists:
         return jsonify({"error": "User not found"}), 404
-
-    db.session.delete(user)
-    db.session.commit()
-    local_deleted = True
-    return jsonify({"message": "User deleted"})
-
-
-# =========================
-# HELPER
-# =========================
-def _serialize_user(u: User) -> dict:
-    return {
-        "id": u.id,
-        "name": u.name,
-        "username": u.username,
-        "email": u.email,
-        "role": u.role,
-        "is_active": u.is_active,
-        "created_at": u.created_at.isoformat(),
-    }
+    doc_ref.delete()
+    return jsonify({"message": "User deleted"}), 200
