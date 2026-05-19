@@ -13,7 +13,6 @@ fs_db = fsdb.get_fs_db()
 # GET CURRENT USER (Firebase Auth)
 # =========================
 @user_bp.route("/users/me", methods=["GET"])
-@require_auth
 def get_me():
     uid = g.uid
 
@@ -35,7 +34,6 @@ def get_me():
 # REGISTER
 # =========================
 @user_bp.route("/users/register", methods=["POST"])
-@require_auth
 def register_user():
     data = request.json
     uid = g.uid
