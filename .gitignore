@@ -50,3 +50,6 @@ __pycache__/
 *.py[cod]
 
 *.db
+
+*.json
+*.webm
