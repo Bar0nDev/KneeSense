@@ -20,12 +20,12 @@ SESSION PARADIGM — SEATED EXTENSION:
 """
 
 import os
+import json
 from datetime import date
 import anthropic
 import numpy as np
 
-from app.database.db import db
-from app.database.models import FramePrediction, LLMInsight, OpticalFlowResult, Session, Patient
+from app.database.firebase.firebase_db import get_fs_db
 
 MODEL = "claude-haiku-4-5-20251001"
 
@@ -75,32 +75,42 @@ def _get_client():
     return _client
 
 
-def _get_patient_context(session_id: int) -> dict:
+def _get_patient_context(session_id: str) -> dict:
     """
-    Fetches patient demographics for a session.
+    Fetches patient demographics for a session from Firestore.
     Returns a dict with age, sex, height_cm, weight_kg (all nullable).
     """
-    session = db.session.get(Session, session_id)
-    if not session or not session.patient_id:
+    fs_db = get_fs_db()
+
+    session_doc = fs_db.collection("sessions").document(session_id).get()
+    if not session_doc.exists:
         return {}
 
-    patient = db.session.get(Patient, session.patient_id)
-    if not patient:
+    patient_id = session_doc.to_dict().get("patient_id")
+    if not patient_id:
         return {}
 
+    patient_doc = fs_db.collection("patients").document(str(patient_id)).get()
+    if not patient_doc.exists:
+        return {}
+
+    patient = patient_doc.to_dict()
     age = None
-    if patient.birthday:
-        today = date.today()
-        age = today.year - patient.birthday.year - (
-            (today.month, today.day) < (patient.birthday.month, patient.birthday.day)
-        )
+    birthday = patient.get("birthday")
+    if birthday:
+        try:
+            bday = date.fromisoformat(str(birthday))
+            today = date.today()
+            age = today.year - bday.year - ((today.month, today.day) < (bday.month, bday.day))
+        except (ValueError, TypeError):
+            pass
 
     return {
         "age":       age,
-        "sex":       patient.sex,
-        "height_cm": patient.height_cm,
-        "weight_kg": patient.weight_kg,
-        "notes":     patient.notes,
+        "sex":       patient.get("sex"),
+        "height_cm": patient.get("height_cm"),
+        "weight_kg": patient.get("weight_kg"),
+        "notes":     patient.get("notes"),
     }
 
 
@@ -319,44 +329,24 @@ def _parse_response(raw: str) -> tuple[str, str]:
     return insight_text, summary_text
 
 
-def generate_and_store_insight(session_id: int, fps: int = 30) -> dict:
+def generate_and_store_insight(session_id: str, json_path: str, fps: int = 30) -> dict:
     """
-    Pulls FramePrediction + OpticalFlowResult rows for session_id,
-    fetches patient demographics, generates a Claude clinical insight
-    and plain-language TL;DR summary, stores both in LLMInsight, and
-    returns the result dict.
+    Reads predictions and flow data from the session JSON file,
+    fetches patient demographics from Firestore, generates a Claude
+    clinical insight and TL;DR summary, and returns the result dict.
+    Saving to Firestore is handled by the caller via mark_insight_complete.
     """
-    predictions = (
-        FramePrediction.query
-        .filter_by(session_id=session_id)
-        .order_by(FramePrediction.frame_index)
-        .all()
-    )
+    if not os.path.exists(json_path):
+        raise ValueError(f"No analysis JSON found for session {session_id}. Run /analyze first.")
 
-    if not predictions:
+    with open(json_path, "r") as f:
+        data = json.load(f)
+
+    pred_list = data.get("predictions", [])
+    flow_list = data.get("flow_results", [])
+
+    if not pred_list:
         raise ValueError(f"No predictions found for session {session_id}. Run /analyze first.")
-
-    flow_rows = (
-        OpticalFlowResult.query
-        .filter_by(session_id=session_id)
-        .order_by(OpticalFlowResult.frame_index)
-        .all()
-    )
-
-    pred_list = [
-        {"frame_index": p.frame_index, "predicted_angle": p.predicted_angle}
-        for p in predictions
-    ]
-
-    flow_list = [
-        {
-            "frame_index":   r.frame_index,
-            "zone1_percent": r.zone1_percent,
-            "zone2_percent": r.zone2_percent,
-            "zone3_percent": r.zone3_percent,
-        }
-        for r in flow_rows
-    ]
 
     patient_ctx = _get_patient_context(session_id)
     prompt = _build_prompt(pred_list, flow_list, fps, patient_ctx)
@@ -369,15 +359,6 @@ def generate_and_store_insight(session_id: int, fps: int = 30) -> dict:
 
     raw = response.content[0].text.strip()
     insight_text, summary_text = _parse_response(raw)
-
-    insight = LLMInsight(
-        session_id=session_id,
-        insight_text=insight_text,
-        summary_text=summary_text,
-        model_used=MODEL,
-    )
-    db.session.add(insight)
-    db.session.commit()
 
     return {
         "session_id":   session_id,

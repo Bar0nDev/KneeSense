@@ -75,26 +75,18 @@ export function useRecordingSession() {
       return;
     }
 
-    if (!practitionerId) {
-      setErrorMessage("No practitioner assigned to your account. Please contact your clinic.");
-      setPageState("error");
-      return;
-    }
-
     setPageState("processing");
 
     try {
       // Step 1 — Upload video and create session
       setProcessingMessage("Uploading your recording...");
 
-      // const devVideoResponse = await fetch("/video/knee-vid.mp4");
-      // const devBlob = await devVideoResponse.blob();
-
       const formData = new FormData();
       formData.append("video", recordedBlob, "recording.webm");
-      // formData.append("video", devBlob, "recording.mp4");
       formData.append("patient_id", String(patientProfileId));
-      formData.append("practitioner_id", String(practitionerId));
+      if (practitionerId) {
+        formData.append("practitioner_id", String(practitionerId));
+      }
       const { session_id } = await sessionService.uploadSession(formData);
 
       // Step 2 — Run AI inference on the video frames

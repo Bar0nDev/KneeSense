@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify, g
 from flasgger import Swagger
 from flask_cors import CORS
 from app.config import Config
-from app.database.db import db
 from app.database.firebase.firebase_db import get_fs_db
 from firebase_admin import auth as firebase_auth
 from app.middleware.auth import PUBLIC_ROUTES
@@ -20,7 +19,7 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     CORS(app)
-    db.init_app(app)
+
 
     swagger_template = {
         "swagger": "2.0",
@@ -177,10 +176,5 @@ def create_app():
     app.register_blueprint(exercise_bp, url_prefix="/api")
     app.register_blueprint(template_bp, url_prefix="/api")
     app.register_blueprint(upload_bp, url_prefix="/api")
-
-    @app.cli.command("init-db")
-    def init_db():
-        db.create_all()
-        print("Database initialized.")
 
     return app
