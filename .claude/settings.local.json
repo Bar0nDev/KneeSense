@@ -9,7 +9,8 @@
       "Bash(mv list/_tmp.tsx list/PatientList.tsx)",
       "Bash(mv list/patientDetail.tsx list/_tmp.tsx)",
       "Bash(mv list/_tmp.tsx list/PatientDetail.tsx)",
-      "Bash(mv buttons/linkbutton.tsx buttons/_tmp.tsx)"
+      "Bash(mv buttons/linkbutton.tsx buttons/_tmp.tsx)",
+      "Bash(git rm *)"
     ]
   }
 }

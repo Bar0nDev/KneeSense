@@ -2,7 +2,7 @@
 app/services/insight_service.py
 
 Generates a clinical insight + short TL;DR summary from a session's frame
-predictions and optical flow using DeepSeek, then stores both in LLMInsight.
+predictions and optical flow using Claude, then stores both in LLMInsight.
 
 Patient context (height, weight, age, sex) is fetched directly from the DB
 via session_id → Session.patient_id → Patient.
@@ -21,14 +21,13 @@ SESSION PARADIGM — SEATED EXTENSION:
 
 import os
 from datetime import date
-from openai import OpenAI
+import anthropic
 import numpy as np
 
 from app.database.db import db
 from app.database.models import FramePrediction, LLMInsight, OpticalFlowResult, Session, Patient
 
-# MODEL = "gpt-4o"
-MODEL = "deepseek-chat"
+MODEL = "claude-haiku-4-5-20251001"
 
 _client = None
 
@@ -69,13 +68,10 @@ ROM_HIGH_PCT = 95
 def _get_client():
     global _client
     if _client is None:
-        api_key = os.getenv("DEEPSEEK_API_KEY")
+        api_key = os.getenv("CLAUDE_API_KEY")
         if not api_key:
-            raise RuntimeError("DEEPSEEK_API_KEY not set in environment")
-        _client = OpenAI(
-            api_key=api_key,
-            base_url="https://api.deepseek.com"
-        )
+            raise RuntimeError("CLAUDE_API_KEY not set in environment")
+        _client = anthropic.Anthropic(api_key=api_key)
     return _client
 
 
@@ -295,7 +291,7 @@ def _build_prompt(
         SUMMARY:
         Write 1–2 sentences in plain language summarizing the key finding and the single most important action item. Avoid jargon — this may be shown to the patient directly.
 
-        Be factual, professional, and avoid speculation beyond what the data supports."""
+        Be factual, professional, and avoid speculation beyond what the data supports. DO NOT USE MARKUP LANGUAGE AND ONLY OUTPUT PLAIN TEXT"""
 
 
 def _parse_response(raw: str) -> tuple[str, str]:
@@ -326,7 +322,7 @@ def _parse_response(raw: str) -> tuple[str, str]:
 def generate_and_store_insight(session_id: int, fps: int = 30) -> dict:
     """
     Pulls FramePrediction + OpticalFlowResult rows for session_id,
-    fetches patient demographics, generates a DeepSeek clinical insight
+    fetches patient demographics, generates a Claude clinical insight
     and plain-language TL;DR summary, stores both in LLMInsight, and
     returns the result dict.
     """
@@ -365,13 +361,13 @@ def generate_and_store_insight(session_id: int, fps: int = 30) -> dict:
     patient_ctx = _get_patient_context(session_id)
     prompt = _build_prompt(pred_list, flow_list, fps, patient_ctx)
 
-    response = _get_client().chat.completions.create(
+    response = _get_client().messages.create(
         model=MODEL,
-        max_tokens=700,  # bumped slightly for richer stats block
+        max_tokens=700,
         messages=[{"role": "user", "content": prompt}]
     )
 
-    raw = response.choices[0].message.content.strip()
+    raw = response.content[0].text.strip()
     insight_text, summary_text = _parse_response(raw)
 
     insight = LLMInsight(

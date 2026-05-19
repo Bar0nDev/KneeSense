@@ -63,10 +63,10 @@ export function useProgress(selectedSessionId?: number | null) {
       },
     ],
     benchmarkData: [
-      { label: "Knee Angle", you: activeSession?.avg_angle  ?? 1, benchmark: 1 },
-      { label: "Central",    you: activeSession?.zone2_avg  ?? 1, benchmark: 1 },
-      { label: "Medial",     you: activeSession?.zone1_avg  ?? 1, benchmark: 1 },
-      { label: "Lateral",    you: activeSession?.zone3_avg  ?? 1, benchmark: 1 },
+      { label: "Knee Angle", you: activeSession?.avg_angle  ?? 1, benchmark: 131 },
+      { label: "Central",    you: activeSession?.zone2_avg  ?? 1, benchmark: 27 },
+      { label: "Medial",     you: activeSession?.zone1_avg  ?? 1, benchmark: 23 },
+      { label: "Lateral",    you: activeSession?.zone3_avg  ?? 1, benchmark: 22 },
     ],
     smoothnessData: [
       { t: 0, value: 0.10 }, { t: 1, value: 0.46 }, { t: 2, value: 0.74 },
