@@ -45,7 +45,7 @@ def get_all_practitioners():
 # GET PRACTITIONER BY ID
 # =========================
 
-@practitioner_bp.route("/practitioners/<int:practitioner_id>", methods=["GET"])
+@practitioner_bp.route("/practitioners/<practitioner_id>", methods=["GET"])
 def get_practitioner(practitioner_id):
     """
     Get a practitioner by ID
@@ -154,7 +154,7 @@ def create_practitioner():
 # UPDATE PRACTITIONER
 # =========================
 
-@practitioner_bp.route("/practitioners/<int:practitioner_id>", methods=["PUT"])
+@practitioner_bp.route("/practitioners/<practitioner_id>", methods=["PUT"])
 def update_practitioner(practitioner_id):
     """
     Update a practitioner profile
@@ -220,7 +220,7 @@ def update_practitioner(practitioner_id):
 # DELETE PRACTITIONER
 # =========================
 
-@practitioner_bp.route("/practitioners/<int:practitioner_id>", methods=["DELETE"])
+@practitioner_bp.route("/practitioners/<practitioner_id>", methods=["DELETE"])
 def delete_practitioner(practitioner_id):
     """
     Delete a practitioner profile
@@ -252,7 +252,7 @@ def delete_practitioner(practitioner_id):
 # GET PATIENTS FOR PRACTITIONER
 # =========================
 
-@practitioner_bp.route("/practitioners/<int:practitioner_id>/patients", methods=["GET"])
+@practitioner_bp.route("/practitioners/<practitioner_id>/patients", methods=["GET"])
 def get_practitioner_patients(practitioner_id):
     """
     Get all patients for a specific practitioner

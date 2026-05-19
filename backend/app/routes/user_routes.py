@@ -1,213 +1,108 @@
-from flask import Blueprint, request, jsonify
-from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timezone
+from flask import Blueprint, request, jsonify, g
+from werkzeug.security import generate_password_hash
 from app.database.firebase import firestore_repo as fsdb
 from app.database.db import db
 from app.database.models import User, Practitioner, Patient
+from app.middleware.auth import require_auth
 
 user_bp = Blueprint("users", __name__)
 fs_db = fsdb.get_fs_db()
 
 # =========================
+# GET CURRENT USER (Firebase Auth)
+# =========================
+@user_bp.route("/users/me", methods=["GET"])
+@require_auth
+def get_me():
+    uid = g.uid
+
+    doc = fs_db.collection("user").document(uid).get()
+    if not doc.exists:
+        return jsonify({"error": "User not found"}), 404
+
+    user_data = doc.to_dict()
+    return jsonify({
+        "user_id": uid,
+        "username": user_data.get("name", ""),
+        "email": user_data.get("email", ""),
+        "role": user_data.get("role", "practitioner"),
+        "profile_id": user_data.get("profile_id"),
+    }), 200
+
+
+# =========================
 # REGISTER
 # =========================
 @user_bp.route("/users/register", methods=["POST"])
+@require_auth
 def register_user():
-    """
-    Register a new User
-    ---
-    tags:
-      - Authentication
-    parameters:
-      - in: body
-        name: body
-        required: true
-        schema:
-          type: object
-          required:
-            - name
-            - username
-            - password
-          properties:
-            name:
-              type: string
-              example: Jane Doe
-            username:
-              type: string
-            email:
-              type: string
-            password:
-              type: string
-            role:
-              type: string
-              enum: [practitioner, patient, manager, admin]
-
-    responses:
-      201:
-        description: User created successfully
-        schema:
-          type: object
-          properties:
-            message:
-              type: string
-            user_id:
-              type: integer
-
-      400:
-        description: Validation error
-        schema:
-          $ref: '#/definitions/Error'
-    """
     data = request.json
+    uid = g.uid
+    email = g.email
 
     name = data.get("name")
-    username = data.get("username")
-    email = data.get("email")
-    password = data.get("password")
     role = data.get("role", "practitioner")
 
-    if not name or not username or not password:
-        return jsonify({"error": "name, username, and password are required"}), 400
+    if not name:
+        return jsonify({"error": "name is required"}), 400
 
-    if User.query.filter_by(username=username).first():
-        return jsonify({"error": "Username already exists"}), 400
+    if fs_db.collection("user").document(uid).get().exists:
+        return jsonify({"error": "User already registered"}), 400
 
-    if email and User.query.filter_by(email=email).first():
-        return jsonify({"error": "Email already in use"}), 400
+    fs_db.collection("user").document(uid).set({
+        "name": name,
+        "email": email,
+        "role": role,
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc),
+    })
 
-    user = User(
-        name=name,
-        username=username,
-        email=email,
-        password_hash=generate_password_hash(password),
-        role=role,
-    )
-    db.session.add(user)
-    db.session.commit()
-
+    profile_id = None
     try:
-        fsdb.create_fsdb_user(user)
-
         if role == "practitioner":
-            practitioner = Practitioner(user_id=user.id)
-            db.session.add(practitioner)
-            db.session.commit()
-            fsdb.fsdb_practitioner(practitioner)
+            prac_ref = fs_db.collection("practitioners").document()
+            prac_ref.set({
+                "user_id": uid,
+                "clinic_name": None,
+                "specialization": None,
+                "created_at": datetime.now(timezone.utc),
+            })
+            profile_id = prac_ref.id
 
         elif role == "patient":
-            patient = Patient(user_id=user.id, name=user.name)
-            db.session.add(patient)
-            db.session.commit()
-            fsdb.fsdb_patient(patient)
+            patient_ref = fs_db.collection("patients").document()
+            patient_ref.set({
+                "user_id": uid,
+                "name": name,
+                "practitioner_id": None,
+                "birthday": None,
+                "sex": None,
+                "height_cm": None,
+                "weight_kg": None,
+                "notes": None,
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc),
+            })
+            profile_id = patient_ref.id
+
+        if profile_id:
+            fs_db.collection("user").document(uid).update({"profile_id": profile_id})
 
     except Exception as e:
-        print(f"Cloud Sync Failed: {e}")
+        print(f"Profile creation failed: {e}")
 
-    return jsonify({"message": "User created", "user_id": user.id}), 201
+    return jsonify({"message": "User created", "user_id": uid}), 201
 
 
 # =========================
 # LOGIN
 # =========================
+# Disabled — authentication is now handled by Firebase Auth
+# Use POST /users/register to create a profile, GET /users/me to retrieve it
 @user_bp.route("/users/login", methods=["POST"])
 def login():
-    """
-    User Login
-    ---
-    tags:
-      - Authentication
-    parameters:
-      - in: body
-        name: body
-        required: true
-        schema:
-          type: object
-          required:
-            - username
-            - password
-          properties:
-            username:
-              type: string
-            password:
-              type: string
-
-    responses:
-      200:
-        description: Login successful
-        schema:
-          type: object
-          properties:
-            message:
-              type: string
-            user_id:
-              type: integer
-            username:
-              type: string
-            role:
-              type: string
-            profile_id:
-              type: integer
-              nullable: true
-
-      401:
-        description: Invalid credentials
-        schema:
-          $ref: '#/definitions/Error'
-    """
-    data = request.json
-    username = data.get("username")
-    password = data.get("password")
-
-    user = User.query.filter_by(username=username).first()
-    if not user:
-        try:
-            users_ref = fs_db.collection("user")
-            query = users_ref.where("username", "==", username).limit(1).stream()
-            
-            fsdb_user_doc = None
-            for doc in query:
-                fsdb_user_doc = doc
-                break
-
-            if fsdb_user_doc:
-                user_data = fsdb_user_doc.to_dict()
-                if check_password_hash(user_data.get("password_hash", ""), password):
-                    #sync from cloud to local
-                    user = User(
-                        id=int(fsdb_user_doc.id),
-                        name=user_data.get("name"),
-                        username=user_data.get("username"),
-                        email=user_data.get("email"),
-                        password_hash=user_data.get("password_hash"),
-                        role=user_data.get("role", "practitioner")
-                    )
-                    db.session.add(user)
-                    db.session.commit()
-                    print(f"User {username} recovered from Cloud to Local DB.") 
-                else:
-                    return jsonify({"error": "Invalid credentials"}), 401
-            else:
-                return jsonify({"error": "User not found"}), 401
-
-        except Exception as e:
-            print(f"Cloud Login Check Failed: {e}")
-            return jsonify({"error": "Authentication service error"}), 500
-    
-    elif not check_password_hash(user.password_hash, password):
-        return jsonify({"error": "Invalid credentials"}), 401
-
-    profile_id = None
-    if user.role == "practitioner" and user.practitioner_profile:
-        profile_id = user.practitioner_profile.id
-    elif user.role == "patient" and user.patient_profile:
-        profile_id = user.patient_profile.id
-
-    return jsonify({
-        "message": "Login successful",
-        "user_id": user.id,
-        "username": user.username,
-        "role": user.role,
-        "profile_id": profile_id,
-    })
+    return jsonify({"error": "This endpoint is disabled. Use Firebase Auth."}), 410
 
 
 # =========================
@@ -247,7 +142,7 @@ def get_all_users():
 # =========================
 # GET USER BY ID
 # =========================
-@user_bp.route("/users/<int:user_id>", methods=["GET"])
+@user_bp.route("/users/<user_id>", methods=["GET"])
 def get_user(user_id):
     """
     Get a user by ID
@@ -292,7 +187,7 @@ def get_user(user_id):
 # =========================
 # UPDATE USER
 # =========================
-@user_bp.route("/users/<int:user_id>", methods=["PUT"])
+@user_bp.route("/users/<user_id>", methods=["PUT"])
 def update_user(user_id):
     """
     Update a user
@@ -385,7 +280,7 @@ def update_user(user_id):
 # =========================
 # DELETE USER
 # =========================
-@user_bp.route("/users/<int:user_id>", methods=["DELETE"])
+@user_bp.route("/users/<user_id>", methods=["DELETE"])
 def delete_user(user_id):
     """
     Delete a user

@@ -60,7 +60,7 @@ def get_all_patients():
 # GET PATIENT BY ID
 # =========================
 
-@patient_bp.route("/patients/<int:patient_id>", methods=["GET"])
+@patient_bp.route("/patients/<patient_id>", methods=["GET"])
 def get_patient(patient_id):
     """
     Get a patient by ID
@@ -104,7 +104,7 @@ def get_patient(patient_id):
 # Used by a logged-in patient to fetch their own profile
 # =========================
 
-@patient_bp.route("/users/<int:user_id>/patient", methods=["GET"])
+@patient_bp.route("/users/<user_id>/patient", methods=["GET"])
 def get_patient_by_user(user_id):
     """
     Get a patient profile by their User ID
@@ -234,7 +234,7 @@ def create_patient():
 # UPDATE PATIENT
 # =========================
 
-@patient_bp.route("/patients/<int:patient_id>", methods=["PUT"])
+@patient_bp.route("/patients/<patient_id>", methods=["PUT"])
 def update_patient(patient_id):
     """
     Update a patient record
@@ -323,7 +323,7 @@ def update_patient(patient_id):
 # Convenience endpoint for the "claim/assign" flow
 # =========================
 
-@patient_bp.route("/patients/<int:patient_id>/assign", methods=["PUT"])
+@patient_bp.route("/patients/<patient_id>/assign", methods=["PUT"])
 def assign_practitioner(patient_id):
     """
     Assign a practitioner to a patient
@@ -394,7 +394,7 @@ def assign_practitioner(patient_id):
 # SOFT DELETE
 # =========================
 
-@patient_bp.route("/patients/<int:patient_id>", methods=["DELETE"])
+@patient_bp.route("/patients/<patient_id>", methods=["DELETE"])
 def delete_patient(patient_id):
     """
     Soft-delete a patient (sets is_active=False)
@@ -440,7 +440,7 @@ def delete_patient(patient_id):
 # HARD DELETE
 # =========================
 
-@patient_bp.route("/patients/<int:patient_id>/purge", methods=["DELETE"])
+@patient_bp.route("/patients/<patient_id>/purge", methods=["DELETE"])
 def purge_patient(patient_id):
     """
     Permanently delete a patient and all associated records
