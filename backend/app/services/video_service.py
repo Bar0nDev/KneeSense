@@ -360,17 +360,4 @@ def run_inference_and_store(
         {"frame_index": fi, "predicted_angle": round(angle, 2)}
         for fi, angle in zip(frame_indices, smoothed_angles)
     ]
-    flow_results = [
-        {
-            "frame_index":   r.frame_index,
-            "zone1_score":   r.zone1_score,
-            "zone2_score":   r.zone2_score,
-            "zone3_score":   r.zone3_score,
-            "zone1_percent": r.zone1_percent,
-            "zone2_percent": r.zone2_percent,
-            "zone3_percent": r.zone3_percent,
-        }
-        for r in flow_orm_rows
-    ]
-
-    return predictions, flow_results
+    return predictions, flow_orm_rows

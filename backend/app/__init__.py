@@ -155,6 +155,8 @@ def create_app():
             return None
         if request.path.startswith("/apidocs") or request.path.startswith("/apispec"):
             return None
+        if request.path.startswith("/api/data/videos/"):
+            return None
 
         auth_header = request.headers.get("Authorization", "")
         if not auth_header.startswith("Bearer "):

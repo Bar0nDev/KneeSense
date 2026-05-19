@@ -23,13 +23,13 @@ function formatDate(iso: string): string {
   }
 }
 
-export function formatSessionLabel(id: number | string, created_at: string): string {
-  return `${formatDate(created_at)} - Session ID: #${Number(id)}`;
+export function formatSessionLabel(id: string, created_at: string): string {
+  return `${formatDate(created_at)} (#${id.slice(-6)})`;
 }
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
-export function useProgress(selectedSessionId?: number | null) {
+export function useProgress(selectedSessionId?: string | null) {
   const { latestSession, activeSession, allSessions, predictions, insight, earliestDate, isLoading, errors } =
     useSessionData(selectedSessionId);
 

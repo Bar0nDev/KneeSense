@@ -13,7 +13,7 @@ export interface Prediction {
 }
 
 export interface SessionRecord {
-  id: number;
+  id: string;
   created_at: string;
   notes?: string;
   status?: string;
@@ -30,7 +30,7 @@ export interface SessionRecord {
 }
 
 export interface Insight {
-  session_id: number;
+  session_id: string;
   insight_text: string;
   summary_text?: string;
   model: string;
@@ -40,18 +40,18 @@ export interface Insight {
 // ─── Query Keys ──────────────────────────────────────────────────────────────
 
 export const sessionKeys = {
-  all: (patientId: number) => ["sessions", patientId] as const,
-  predictions: (sessionId: number) => ["predictions", sessionId] as const,
-  insight: (sessionId: number) => ["insight", sessionId] as const,
+  all: (patientId: string) => ["sessions", patientId] as const,
+  predictions: (sessionId: string) => ["predictions", sessionId] as const,
+  insight: (sessionId: string) => ["insight", sessionId] as const,
 };
 
 // ─── Main Hook ───────────────────────────────────────────────────────────────
 
-export function useSessionData(selectedSessionId?: number | null) {
+export function useSessionData(selectedSessionId?: string | null) {
   const { userProfile } = useUser();
   const queryClient = useQueryClient();
 
-  const patientId: number | null = useMemo(() => {
+  const patientId: string | null = useMemo(() => {
     if (!userProfile || userProfile.role !== "patient") return null;
     const p = userProfile.profile as any;
     return p?.id ?? p?.patient_id ?? null;
@@ -68,10 +68,8 @@ export function useSessionData(selectedSessionId?: number | null) {
       const sessions: SessionRecord[] = await sessionService.getPatientSessions(patientId!);
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
       return [...sessions]
-        // id is the DB primary key — auto-incremented, so highest id = most recent session.
-        // Sorting by id avoids any reliance on created_at being accurate or unique.
-        // Number() handles the Firestore path where doc.id comes back as a string.
-        .sort((a, b) => Number(b.id) - Number(a.id))
+        .filter((s) => s.status === "completed")
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .map((s) => {
           const filename = s.video_path?.split(/[\\/]/).pop();
           const video_url = filename ? `${apiBase}/data/videos/${filename}` : undefined;
@@ -93,7 +91,7 @@ export function useSessionData(selectedSessionId?: number | null) {
   // Number() normalises Firestore string IDs so the find works regardless of API path.
   const activeSession = useMemo(() => {
     if (selectedSessionId != null && allSessions) {
-      return allSessions.find((s) => Number(s.id) === selectedSessionId) ?? latestSession;
+      return allSessions.find((s) => s.id === selectedSessionId) ?? latestSession;
     }
     return latestSession;
   }, [selectedSessionId, allSessions, latestSession]);
