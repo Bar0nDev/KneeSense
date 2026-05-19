@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { auth } from '@/lib/firebase';
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
@@ -8,14 +9,21 @@ const apiClient = axios.create({
   timeout: 10000,
 });
 
+// Attach Firebase ID token to every request
+apiClient.interceptors.request.use(async (config) => {
+  const user = auth.currentUser;
+  if (user) {
+    const token = await user.getIdToken();
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    const isLoginRequest = error.config?.url?.includes('/users/login');
-    if (error.response?.status === 401 && !isLoginRequest) {
-      console.error('Session expired. Logging out...');
+    if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
         window.location.href = '/login';
       }
     }
