@@ -33,3 +33,6 @@ class Config:
 
     #LLM-Insights settings
     DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+
+    # Google Cloud Storage
+    GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "kneesense")

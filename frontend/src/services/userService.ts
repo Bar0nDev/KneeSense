@@ -7,8 +7,9 @@ export const userService = {
     return data; // { user_id, username, email, role, profile_id }
   },
 
-  async register(payload: any) {
-    const { data } = await apiClient.post('/users/register', payload);
+  async register(payload: any, token?: string) {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const { data } = await apiClient.post('/users/register', payload, { headers });
     return data;
   },
 

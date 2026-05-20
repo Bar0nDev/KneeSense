@@ -59,7 +59,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           localStorage.setItem("userProfile", JSON.stringify(built));
         }
       } catch (err: any) {
-        setError("Failed to load user profile.");
+        localStorage.removeItem("session");
+        localStorage.removeItem("userProfile");
         setUserProfileState(null);
       } finally {
         setIsLoading(false);

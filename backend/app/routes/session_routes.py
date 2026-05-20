@@ -1,6 +1,9 @@
+import io
 import os
+import tempfile
 from datetime import datetime, timezone
-from flask import Blueprint, json, request, jsonify, current_app, send_from_directory
+from flask import Blueprint, json, request, jsonify, current_app, send_file
+from google.cloud import storage as gcs
 from werkzeug.utils import secure_filename
 from google.cloud.firestore_v1 import FieldFilter
 from app.database.firebase.firebase_db import get_fs_db
@@ -30,6 +33,8 @@ def create_session():
     if not patient_id:
         return jsonify({"error": "patient_id is required"}), 400
 
+    ref = fs_db.collection("sessions").document()
+
     video_path = None
     if "video" in request.files:
         file = request.files["video"]
@@ -38,13 +43,11 @@ def create_session():
         if not allowed_file(file.filename):
             return jsonify({"error": "File type not allowed"}), 400
 
-        videos_dir = os.path.join(current_app.config["DATA_DIR"], "videos")
-        os.makedirs(videos_dir, exist_ok=True)
-        filename = secure_filename(file.filename)
-        video_path = os.path.join(videos_dir, filename)
-        file.save(video_path)
-
-    ref = fs_db.collection("sessions").document()
+        ext = secure_filename(file.filename).rsplit(".", 1)[-1]
+        blob_name = f"videos/{ref.id}.{ext}"
+        bucket = gcs.Client().bucket(current_app.config["GCS_BUCKET_NAME"])
+        bucket.blob(blob_name).upload_from_file(file, content_type=f"video/{ext}")
+        video_path = blob_name
     ref.set({
         "patient_id": patient_id,
         "practitioner_id": practitioner_id,
@@ -96,12 +99,18 @@ def analyze_session(session_id):
     if session_data.get("has_analysis"):
         return jsonify({"error": "Session already analyzed"}), 409
 
-    video_path = session_data.get("video_path")
-    if not video_path or not os.path.exists(video_path):
+    video_gcs_path = session_data.get("video_path")
+    if not video_gcs_path:
         return jsonify({"error": "No video found for this session"}), 400
 
+    ext = video_gcs_path.rsplit(".", 1)[-1]
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix=f".{ext}")
+    os.close(tmp_fd)
+    bucket = gcs.Client().bucket(current_app.config["GCS_BUCKET_NAME"])
+    bucket.blob(video_gcs_path).download_to_filename(tmp_path)
+
     try:
-        predictions, flow_results = run_inference_and_store(session_id, video_path)
+        predictions, flow_results = run_inference_and_store(session_id, tmp_path)
 
         angles = [p["predicted_angle"] for p in predictions if p.get("predicted_angle") is not None]
         avg_angle = sum(angles) / len(angles) if angles else None
@@ -154,6 +163,9 @@ def analyze_session(session_id):
         return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": f"Inference failed: {str(e)}"}), 500
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
 
 
 # =========================
@@ -306,11 +318,15 @@ def add_llm_insight(session_id):
 
 
 # =========================
-# SERVE VIDEO FILE (local, temporary — will move to GCS)
+# SERVE VIDEO FILE (from GCS)
 # =========================
 @session_bp.route("/data/videos/<path:filename>", methods=["GET"])
 def serve_video(filename):
-    videos_dir = os.path.abspath(
-        os.path.join(current_app.root_path, "..", current_app.config["DATA_DIR"], "videos")
+    blob_name = f"videos/{filename}"
+    bucket = gcs.Client().bucket(current_app.config["GCS_BUCKET_NAME"])
+    blob = bucket.blob(blob_name)
+    ext = filename.rsplit(".", 1)[-1]
+    return send_file(
+        io.BytesIO(blob.download_as_bytes()),
+        mimetype=f"video/{ext}",
     )
-    return send_from_directory(videos_dir, filename)

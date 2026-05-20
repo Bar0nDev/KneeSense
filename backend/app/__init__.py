@@ -164,7 +164,7 @@ def create_app():
 
         token = auth_header.split("Bearer ")[1]
         try:
-            decoded = firebase_auth.verify_id_token(token)
+            decoded = firebase_auth.verify_id_token(token, clock_skew_seconds=60)
             g.uid = decoded["uid"]
             g.email = decoded.get("email", "")
         except Exception:

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { AuthResponse, UserRole } from "@/types/user";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -29,6 +29,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<AuthResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const isRegistering = useRef(false);
   const { setUserProfile, clearUserProfile } = useUser();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -37,6 +38,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        // Skip rehydration while register() is in progress — it will set session itself
+        if (isRegistering.current) {
+          setIsLoading(false);
+          return;
+        }
         try {
           const sessionData = await userService.getProfile();
           const built = await buildUserProfile(sessionData);
@@ -75,15 +81,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Throws on failure — callers handle errors locally
   const register = async (formData: any, role: "patient" | "practitioner") => {
+    isRegistering.current = true;
+    try {
     // Create Firebase Auth user first
-    await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+    const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+    // Get token directly from the credential — auth.currentUser may not be set yet in the SDK
+    const freshToken = await userCredential.user.getIdToken();
 
-    // Register profile in backend (token is attached automatically by apiClient)
+    // Register profile in backend — pass the fresh token explicitly to avoid the auth.currentUser race
     await userService.register({
       name: formData.name,
       email: formData.email,
       role,
-    });
+    }, freshToken);
 
     const sessionData = await userService.getProfile();
     if (!sessionData.profile_id) throw new Error("No profile_id returned after registration.");
@@ -110,6 +120,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setSession(sessionData);
     if (built) setUserProfile(built);
     router.push(role === "patient" ? "/dashboard" : "/analytics");
+    } finally {
+      isRegistering.current = false;
+    }
   };
 
   const logout = async () => {
@@ -118,6 +131,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     clearUserProfile();
     queryClient.clear();
     localStorage.removeItem("kneesense-query-cache");
+    localStorage.removeItem("session");
     router.push("/");
   };
 
