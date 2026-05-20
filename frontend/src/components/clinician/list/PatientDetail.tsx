@@ -52,7 +52,7 @@ export default function PatientDetail({ patient, onAssigned }: Props) {
 
   const { data: sessions } = useQuery<SessionRecord[]>({
     queryKey: ["sessions", patientId],
-    queryFn: () => sessionService.getPatientSessions(patientId),
+    queryFn: () => sessionService.getPatientSessions(String(patientId)),
     enabled: !!patientId,
   });
 
