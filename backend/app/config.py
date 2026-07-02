@@ -25,12 +25,6 @@ class Config:
     # CORS settings
     ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
 
-    # Database settings
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL",
-        "sqlite:///kneesense.db"
-    )
-
     # Firebase settings
     FIREBASE_KEY_PATH = os.getenv(
         "FIREBASE_KEY_PATH",
@@ -40,4 +34,5 @@ class Config:
     #LLM-Insights settings
     DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Google Cloud Storage
+    GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "kneesense")

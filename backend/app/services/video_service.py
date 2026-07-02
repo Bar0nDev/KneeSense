@@ -10,7 +10,7 @@ Flow:
   4. Apply EMA temporal smoothing (alpha=0.20, the best-performing setting)
   5. Compute dense Farneback optical flow → zone scores (stored every 10th frame)
   6. Slide a 9-frame window, preprocess each window into a tensor, run model
-  7. Bulk insert FramePrediction + OpticalFlowResult rows
+  7. Return FramePrediction + OpticalFlowResult dicts
 """
 
 import cv2
@@ -20,8 +20,6 @@ from PIL import Image
 from scipy.signal import butter, filtfilt, savgol_filter
 import torchvision.transforms as transforms
 
-from app.database.db import db
-from app.database.models import FramePrediction, OpticalFlowResult
 from app.ml.knee_model import get_model
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -235,14 +233,14 @@ def _apply_ema(frames_bgr: list[np.ndarray]) -> list[np.ndarray]:
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _compute_optical_flow(
-    session_id: int,
+    session_id: str,
     frames_bgr: list[np.ndarray]
-) -> list[OpticalFlowResult]:
+) -> list[dict]:
     """
     Runs dense Farneback optical flow across the full frame sequence.
     Flow is computed every frame (required for accuracy) but only stored
     every FLOW_STORE_EVERY_NTH frames to keep DB rows manageable.
-    Returns a list of ORM objects ready for bulk insert.
+    Returns a list of dicts.
     """
     H, W = frames_bgr[0].shape[:2]
     zone_width = W // ZONE_COUNT
@@ -272,16 +270,15 @@ def _compute_optical_flow(
 
         # Compute every frame, store every 10th
         if idx % FLOW_STORE_EVERY_NTH == 0:
-            rows.append(OpticalFlowResult(
-                session_id=session_id,
-                frame_index=idx,
-                zone1_score=zone_scores[0],
-                zone2_score=zone_scores[1],
-                zone3_score=zone_scores[2],
-                zone1_percent=zone_percents[0],
-                zone2_percent=zone_percents[1],
-                zone3_percent=zone_percents[2],
-            ))
+            rows.append({
+                "frame_index":   idx,
+                "zone1_score":   zone_scores[0],
+                "zone2_score":   zone_scores[1],
+                "zone3_score":   zone_scores[2],
+                "zone1_percent": zone_percents[0],
+                "zone2_percent": zone_percents[1],
+                "zone3_percent": zone_percents[2],
+            })
 
         prev_gray = curr_gray
 
@@ -359,35 +356,8 @@ def run_inference_and_store(
     # 5b. Post-hoc smoothing
     smoothed_angles = _smooth_predictions(raw_angles)
 
-    pred_orm_rows = [
-        FramePrediction(
-            session_id=session_id,
-            frame_index=fi,
-            predicted_angle=round(angle, 2),
-        )
+    predictions = [
+        {"frame_index": fi, "predicted_angle": round(angle, 2)}
         for fi, angle in zip(frame_indices, smoothed_angles)
     ]
-
-    # 6. Bulk insert both
-    db.session.bulk_save_objects(pred_orm_rows)
-    db.session.bulk_save_objects(flow_orm_rows)
-    db.session.commit()
-
-    predictions = [
-        {"frame_index": p.frame_index, "predicted_angle": p.predicted_angle}
-        for p in pred_orm_rows
-    ]
-    flow_results = [
-        {
-            "frame_index":   r.frame_index,
-            "zone1_score":   r.zone1_score,
-            "zone2_score":   r.zone2_score,
-            "zone3_score":   r.zone3_score,
-            "zone1_percent": r.zone1_percent,
-            "zone2_percent": r.zone2_percent,
-            "zone3_percent": r.zone3_percent,
-        }
-        for r in flow_orm_rows
-    ]
-
-    return predictions, flow_results
+    return predictions, flow_orm_rows

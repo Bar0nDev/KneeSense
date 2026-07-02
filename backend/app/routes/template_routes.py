@@ -1,46 +1,34 @@
 from flask import Blueprint, request, jsonify
-from datetime import datetime, UTC
-from app.database.db import db
-from app.database.models import Template, TemplateExercise, Exercise
-from app.database.firebase import firestore_repo as fsdb
+from datetime import datetime, timezone
+from google.cloud.firestore_v1 import FieldFilter
+from app.database.firebase.firebase_db import get_fs_db
 
 template_bp = Blueprint("templates", __name__)
-
-
-def _serialize(t: Template) -> dict:
-    return {
-        "id": t.id,
-        "practitioner_id": t.practitioner_id,
-        "name": t.name,
-        "sub_label": t.sub_label,
-        "is_favorite": t.is_favorite,
-        "created_at": t.created_at.isoformat() if t.created_at else None,
-        "exercises": [
-            {
-                "id": te.id,
-                "exercise_id": te.exercise_id,
-                "position": te.position,
-                "sets_override": te.sets_override,
-                "reps_override": te.reps_override,
-                "name": te.exercise_ref.name if te.exercise_ref else None,
-                "media_url": te.exercise_ref.media_url if te.exercise_ref else None,
-                "default_sets": te.exercise_ref.default_sets if te.exercise_ref else None,
-                "default_reps": te.exercise_ref.default_reps if te.exercise_ref else None,
-            }
-            for te in t.exercises
-        ],
-    }
+fs_db = get_fs_db()
 
 
 # GET /templates?practitioner_id=<id>
 @template_bp.route("/templates", methods=["GET"])
 def get_templates():
-    practitioner_id = request.args.get("practitioner_id", type=int)
-    query = Template.query
-    if practitioner_id:
-        query = query.filter_by(practitioner_id=practitioner_id)
-    templates = query.order_by(Template.name).all()
-    return jsonify([_serialize(t) for t in templates]), 200
+    practitioner_id = request.args.get("practitioner_id")
+    try:
+        ref = fs_db.collection("templates")
+        if practitioner_id:
+            docs = ref.where(filter=FieldFilter("practitioner_id", "==", practitioner_id)).stream()
+        else:
+            docs = ref.stream()
+
+        templates = []
+        for doc in docs:
+            d = doc.to_dict()
+            d["id"] = doc.id
+            templates.append(d)
+
+        templates.sort(key=lambda t: t.get("name", ""))
+        return jsonify(templates), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # POST /templates
@@ -50,86 +38,68 @@ def create_template():
     if not data.get("name") or not data.get("practitioner_id"):
         return jsonify({"error": "name and practitioner_id are required"}), 400
 
-    template = Template(
-        practitioner_id=data["practitioner_id"],
-        name=data["name"],
-        sub_label=data.get("sub_label", ""),
-        is_favorite=data.get("is_favorite", False),
-        created_at=datetime.now(UTC),
-    )
-    db.session.add(template)
-    db.session.flush()  # get template.id before committing
+    exercises = [
+        {
+            "exercise_id": ex["exercise_id"],
+            "position": i,
+            "sets_override": ex.get("sets_override"),
+            "reps_override": ex.get("reps_override"),
+        }
+        for i, ex in enumerate(data.get("exercises", []))
+    ]
 
-    for i, ex in enumerate(data.get("exercises", [])):
-        te = TemplateExercise(
-            template_id=template.id,
-            exercise_id=ex["exercise_id"],
-            position=i,
-            sets_override=ex.get("sets_override"),
-            reps_override=ex.get("reps_override"),
-        )
-        db.session.add(te)
+    doc = {
+        "practitioner_id": data["practitioner_id"],
+        "name": data["name"],
+        "sub_label": data.get("sub_label", ""),
+        "is_favorite": data.get("is_favorite", False),
+        "exercises": exercises,
+        "created_at": datetime.now(timezone.utc),
+    }
 
-    db.session.commit()
-    db.session.refresh(template)
-
-    try:
-        fsdb.fsdb_template(template, template.exercises)
-    except Exception as e:
-        print(f"Firestore sync error: {e}")
-
-    return jsonify({"message": "Template created", "template": _serialize(template)}), 201
+    ref = fs_db.collection("templates").document()
+    ref.set(doc)
+    doc["id"] = ref.id
+    return jsonify({"message": "Template created", "template": doc}), 201
 
 
 # PUT /templates/<id>
-@template_bp.route("/templates/<int:template_id>", methods=["PUT"])
+@template_bp.route("/templates/<template_id>", methods=["PUT"])
 def update_template(template_id):
-    template = db.session.get(Template, template_id)
-    if not template:
+    doc_ref = fs_db.collection("templates").document(template_id)
+    if not doc_ref.get().exists:
         return jsonify({"error": "Template not found"}), 404
 
     data = request.json
+    update_fields = {}
+
     for field in ["name", "sub_label", "is_favorite"]:
         if field in data:
-            setattr(template, field, data[field])
+            update_fields[field] = data[field]
 
     if "exercises" in data:
-        # Replace all exercises
-        TemplateExercise.query.filter_by(template_id=template_id).delete()
-        for i, ex in enumerate(data["exercises"]):
-            te = TemplateExercise(
-                template_id=template_id,
-                exercise_id=ex["exercise_id"],
-                position=i,
-                sets_override=ex.get("sets_override"),
-                reps_override=ex.get("reps_override"),
-            )
-            db.session.add(te)
+        update_fields["exercises"] = [
+            {
+                "exercise_id": ex["exercise_id"],
+                "position": i,
+                "sets_override": ex.get("sets_override"),
+                "reps_override": ex.get("reps_override"),
+            }
+            for i, ex in enumerate(data["exercises"])
+        ]
 
-    db.session.commit()
-    db.session.refresh(template)
-
-    try:
-        fsdb.fsdb_template(template, template.exercises)
-    except Exception as e:
-        print(f"Firestore sync error: {e}")
-
-    return jsonify({"message": "Template updated", "template": _serialize(template)}), 200
+    doc_ref.set(update_fields, merge=True)
+    updated = doc_ref.get().to_dict()
+    updated["id"] = template_id
+    return jsonify({"message": "Template updated", "template": updated}), 200
 
 
 # DELETE /templates/<id>
-@template_bp.route("/templates/<int:template_id>", methods=["DELETE"])
+@template_bp.route("/templates/<template_id>", methods=["DELETE"])
 def delete_template(template_id):
-    template = db.session.get(Template, template_id)
-    if not template:
+    doc_ref = fs_db.collection("templates").document(template_id)
+    if not doc_ref.get().exists:
         return jsonify({"error": "Template not found"}), 404
 
-    db.session.delete(template)
-    db.session.commit()
-
-    try:
-        fsdb.delete_fsdb_template(template_id)
-    except Exception as e:
-        print(f"Firestore sync error: {e}")
-
+    doc_ref.delete()
     return jsonify({"message": "Template deleted"}), 200

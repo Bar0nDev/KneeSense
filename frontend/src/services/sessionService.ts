@@ -10,33 +10,33 @@ export const sessionService = {
     return data;
   },
 
-  getPatientSessions: async (patientId: number) => {
+  getPatientSessions: async (patientId: string) => {
     const { data } = await apiClient.get(`/patients/${patientId}/sessions`);
-    return data; 
+    return data;
   },
 
-  getPredictions: async (sessionId: number) => {
+  getPredictions: async (sessionId: string) => {
     const { data } = await apiClient.get(`/sessions/${sessionId}/predictions`);
-    return data; 
+    return data;
   },
 
-  analyzeSession: async (sessionId: number) => {
+  analyzeSession: async (sessionId: string) => {
     const { data } = await apiClient.post(`/sessions/${sessionId}/analyze`, {}, {
       timeout: 300000, // 5 minutes
     });
     return data;
   },
 
-  generateInsight: async (sessionId: number) => {
+  generateInsight: async (sessionId: string) => {
     const { data } = await apiClient.post(`/sessions/${sessionId}/generate-insight`, {}, {
       timeout: 120000, // 2 minutes
     });
     return data;
   },
 
-  getInsight: async (sessionId: number) => {
+  getInsight: async (sessionId: string) => {
     const { data } = await apiClient.get(`/sessions/${sessionId}/insight`);
-    return data; 
+    return data;
   },
 
   getAnalysisFile: async (filename: string) => {

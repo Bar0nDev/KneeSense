@@ -1,20 +1,27 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { AuthResponse, UserRole } from "@/types/user";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { userService } from "@/services/userService";
 import { useUser, buildUserProfile } from "@/context/UserContext";
+import { auth } from "@/lib/firebase";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from "firebase/auth";
 
 interface AuthContextType {
   session: AuthResponse | null;
   isRehydrating: boolean;
   isAuthenticated: boolean;
   hasRole: (role: UserRole | UserRole[]) => boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   register: (formData: any, role: "patient" | "practitioner") => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,28 +29,39 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<AuthResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const isRegistering = useRef(false);
   const { setUserProfile, clearUserProfile } = useUser();
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // Rehydrate session on page refresh
+  // Rehydrate session on page refresh via Firebase auth state
   useEffect(() => {
-    const saved = localStorage.getItem("session");
-    if (saved) {
-      setSession(JSON.parse(saved));
-    }
-    setIsLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Skip rehydration while register() is in progress — it will set session itself
+        if (isRegistering.current) {
+          setIsLoading(false);
+          return;
+        }
+        try {
+          const sessionData = await userService.getProfile();
+          const built = await buildUserProfile(sessionData);
+          setSession(sessionData);
+          if (built) setUserProfile(built);
+        } catch (err: any) {
+          // 404 means registration is still in progress — don't sign out
+          if (err?.response?.status !== 404) {
+            await signOut(auth);
+          }
+          setSession(null);
+        }
+      } else {
+        setSession(null);
+      }
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
-
-  const saveSession = (data: AuthResponse) => {
-    setSession(data);
-    localStorage.setItem("session", JSON.stringify(data));
-  };
-
-  const clearSession = () => {
-    setSession(null);
-    localStorage.removeItem("session");
-  };
 
   const hasRole = (role: UserRole | UserRole[]): boolean => {
     if (!session) return false;
@@ -52,30 +70,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Throws on failure — callers handle errors and loading state locally
-  const login = async (username: string, password: string) => {
-    const sessionData = await userService.login(username, password);
+  const login = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
+    const sessionData = await userService.getProfile();
     const built = await buildUserProfile(sessionData);
-
-    // Only persist session after full profile is ready — prevents half-auth state
-    saveSession(sessionData);
+    setSession(sessionData);
     if (built) setUserProfile(built);
-
     router.push(sessionData.role === "practitioner" ? "/analytics" : "/dashboard");
   };
 
   // Throws on failure — callers handle errors locally
   const register = async (formData: any, role: "patient" | "practitioner") => {
+    isRegistering.current = true;
+    try {
+    // Create Firebase Auth user first
+    const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+    // Get token directly from the credential — auth.currentUser may not be set yet in the SDK
+    const freshToken = await userCredential.user.getIdToken();
+
+    // Register profile in backend — pass the fresh token explicitly to avoid the auth.currentUser race
     await userService.register({
       name: formData.name,
-      username: formData.username,
       email: formData.email,
-      password: formData.password,
       role,
-    });
+    }, freshToken);
 
-    const sessionData = await userService.login(formData.username, formData.password);
-
-    if (!sessionData.profile_id) throw new Error("No profile_id returned after login.");
+    const sessionData = await userService.getProfile();
+    if (!sessionData.profile_id) throw new Error("No profile_id returned after registration.");
 
     if (role === "patient") {
       await userService.updatePatientProfile(sessionData.profile_id, {
@@ -96,19 +117,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     const built = await buildUserProfile(sessionData);
-
-    // Only persist session after full profile is ready
-    saveSession(sessionData);
+    setSession(sessionData);
     if (built) setUserProfile(built);
-
     router.push(role === "patient" ? "/dashboard" : "/analytics");
+    } finally {
+      isRegistering.current = false;
+    }
   };
 
-  const logout = () => {
-    clearSession();
+  const logout = async () => {
+    await signOut(auth);
+    setSession(null);
     clearUserProfile();
     queryClient.clear();
     localStorage.removeItem("kneesense-query-cache");
+    localStorage.removeItem("session");
     router.push("/");
   };
 

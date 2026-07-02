@@ -17,7 +17,7 @@ import { useProgress, formatSessionLabel } from "@/hooks/useProgress";
 
 export default function ProgressPage() {
   const router = useRouter();
-  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
   const { metrics, sessionData, insights, pageMeta, isLoading, errors, latestSession, allSessions } =
     useProgress(selectedSessionId);
@@ -81,12 +81,12 @@ export default function ProgressPage() {
               <select
                 value={selectedSessionId ?? ""}
                 onChange={(e) =>
-                  setSelectedSessionId(e.target.value === "" ? null : Number(e.target.value))
+                  setSelectedSessionId(e.target.value === "" ? null : e.target.value)
                 }
                 className="text-sm font-medium text-[#455858] bg-white border border-gray-200 px-3 py-0.5 rounded-full shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#12606A]/30 transition-shadow"
               >
                 {allSessions.map((s) => (
-                  <option key={s.id} value={Number(s.id)}>
+                  <option key={s.id} value={s.id}>
                     {formatSessionLabel(s.id, s.created_at)}
                   </option>
                 ))}

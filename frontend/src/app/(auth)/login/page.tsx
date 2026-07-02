@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +22,7 @@ export default function LoginPage() {
     setError(null);
     setIsLoading(true);
     try {
-      await login(username, password);
+      await login(email, password);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || "Login failed.");
     } finally {
@@ -58,11 +58,11 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <Field
-              label="Username"
-              type="text"
-              placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              label="Email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               error={error ? "" : undefined}
             />
 

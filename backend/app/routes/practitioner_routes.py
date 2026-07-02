@@ -1,312 +1,102 @@
 from flask import Blueprint, request, jsonify
-from app.database.firebase import firestore_repo as fsdb
-from app.database.db import db
-from app.database.models import Practitioner, Patient
+from datetime import datetime, timezone
+from google.cloud.firestore_v1 import FieldFilter
+from app.database.firebase.firebase_db import get_fs_db
 
 practitioner_bp = Blueprint("practitioners", __name__)
-fs_db = fsdb.get_fs_db()
+fs_db = get_fs_db()
 
-# =========================
-# GET ALL PRACTITIONERS
-# =========================
 
+# GET /practitioners
 @practitioner_bp.route("/practitioners", methods=["GET"])
 def get_all_practitioners():
-    """
-    Get all practitioners
-    ---
-    tags:
-      - Practitioners
-    responses:
-        200:
-            description: List of practitioners
-            schema:
-                type: array
-                items:
-                    $ref: '#/definitions/Practitioner'
-    """
-    try:
-        docs = fs_db.collection("practitioners").stream()
-        practitioners_list = []
-        for doc in docs:
-            practitioner_data = doc.to_dict()
-            practitioner_data['id'] = doc.id 
-            practitioners_list.append(practitioner_data)
-
-        return jsonify(practitioners_list), 200
-
-    except Exception as e:
-        print(f"Error fetching from Cloud: {e}")
-        practitioners = Practitioner.query.all()
-        return jsonify([_serialize_practitioner(p) for p in practitioners])
+    docs = fs_db.collection("practitioners").stream()
+    practitioners = []
+    for doc in docs:
+        d = doc.to_dict()
+        d["id"] = doc.id
+        practitioners.append(d)
+    return jsonify(practitioners), 200
 
 
-# =========================
-# GET PRACTITIONER BY ID
-# =========================
-
-@practitioner_bp.route("/practitioners/<int:practitioner_id>", methods=["GET"])
+# GET /practitioners/<id>
+@practitioner_bp.route("/practitioners/<practitioner_id>", methods=["GET"])
 def get_practitioner(practitioner_id):
-    """
-    Get a practitioner by ID
-    ---
-    tags:
-      - Practitioners
-    parameters:
-      - name: practitioner_id
-        in: path
-        type: integer
-        required: true
-    responses:
-        200:
-            description: Practitioner object
-            schema:
-                $ref: '#/definitions/Practitioner'
-
-        404:
-            description: Not found
-            schema:
-                $ref: '#/definitions/Error'
-    """
-    try:
-        doc_ref = fs_db.collection("practitioners").document(str(practitioner_id))
-        doc = doc_ref.get()
-
-        if doc.exists:
-            practitioner_data = doc.to_dict()
-            practitioner_data['id'] = doc.id
-            return jsonify(practitioner_data), 200
-            
-    except Exception as e:
-        print(f"Cloud fetch failed, checking local: {e}")
-        
-    practitioner = db.session.get(Practitioner, practitioner_id)
-    if not practitioner:
+    doc = fs_db.collection("practitioners").document(practitioner_id).get()
+    if not doc.exists:
         return jsonify({"error": "Practitioner not found"}), 404
-    return jsonify(_serialize_practitioner(practitioner))
+    d = doc.to_dict()
+    d["id"] = doc.id
+    return jsonify(d), 200
 
 
-# =========================
-# CREATE PRACTITIONER (TBD)*
-# =========================
-
+# POST /practitioners
 @practitioner_bp.route("/practitioners", methods=["POST"])
 def create_practitioner():
-    """
-    Create a practitioner profile manually
-    ---
-    tags:
-      - Practitioners
-    parameters:
-      - in: body
-        name: body
-        required: true
-        schema:
-          properties:
-            user_id:
-              type: integer
-            clinic_name:
-              type: string
-            specialization:
-              type: string
-    responses:
-        201:
-            description: Practitioner created
-            schema:
-                type: object
-                properties:
-                    message:
-                        type: string
-                    practitioner_id:
-                        type: integer
-
-        400:
-            schema:
-                $ref: '#/definitions/Error'
-    """
     data = request.json
-    
     user_id = data.get("user_id")
     if not user_id:
         return jsonify({"error": "user_id is required"}), 400
 
-    if Practitioner.query.filter_by(user_id=user_id).first():
+    existing = fs_db.collection("practitioners").where(filter=FieldFilter("user_id", "==", user_id)).limit(1).get()
+    if existing:
         return jsonify({"error": "Practitioner profile already exists for this user"}), 400
 
-    practitioner = Practitioner(
-        user_id=user_id,
-        clinic_name=data.get("clinic_name"),
-        specialization=data.get("specialization"),
-    )
-    try:
-        db.session.add(practitioner)
-        db.session.commit()
-        fsdb.fsdb_practitioner(practitioner)
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": "Failed to create profile", "details": str(e)}), 500
-
-    return jsonify({"message": "Practitioner created", "practitioner_id": practitioner.id}), 201
+    doc = {
+        "user_id": user_id,
+        "clinic_name": data.get("clinic_name"),
+        "specialization": data.get("specialization"),
+        "created_at": datetime.now(timezone.utc),
+    }
+    ref = fs_db.collection("practitioners").document()
+    ref.set(doc)
+    return jsonify({"message": "Practitioner created", "practitioner_id": ref.id}), 201
 
 
-# =========================
-# UPDATE PRACTITIONER
-# =========================
-
-@practitioner_bp.route("/practitioners/<int:practitioner_id>", methods=["PUT"])
+# PUT /practitioners/<id>
+@practitioner_bp.route("/practitioners/<practitioner_id>", methods=["PUT"])
 def update_practitioner(practitioner_id):
-    """
-    Update a practitioner profile
-    ---
-    tags:
-      - Practitioners
-    parameters:
-      - name: practitioner_id
-        in: path
-        type: integer
-        required: true
-      - in: body
-        name: body
-        schema:
-          properties:
-            clinic_name:
-              type: string
-            specialization:
-              type: string
-    responses:
-        200:
-            description: Practitioner updated
-            schema:
-                type: object
-                properties:
-                    message:
-                        type: string
-                    practitioner:
-                        $ref: '#/definitions/Practitioner'
-
-        404:
-            schema:
-                $ref: '#/definitions/Error'
-    """
-    data = request.json
-    practitioner = db.session.get(Practitioner, practitioner_id)
-    doc_ref = fs_db.collection("practitioners").document(str(practitioner_id))
-    
-    if not practitioner or not doc_ref.get().exists:
+    doc_ref = fs_db.collection("practitioners").document(practitioner_id)
+    if not doc_ref.get().exists:
         return jsonify({"error": "Practitioner not found"}), 404
 
-    allowed_fields = ["clinic_name", "specialization"]
-    update_fields = {k: v for k, v in data.items() if k in allowed_fields}
+    data = request.json
+    allowed = ["clinic_name", "specialization"]
+    update_fields = {k: v for k, v in data.items() if k in allowed}
 
     if not update_fields:
         return jsonify({"message": "No changes detected"}), 200
 
-    try:
-        for key, value in update_fields.items():
-            setattr(practitioner, key, value)
-        
-        db.session.commit()
-        doc_ref.set(update_fields, merge=True)
-        
-    except Exception as e:
-        db.session.rollback()
-        print(f"Update failed: {e}")
-        return jsonify({"error": "Update failed", "details": str(e)}), 500
+    doc_ref.set(update_fields, merge=True)
+    updated = doc_ref.get().to_dict()
+    updated["id"] = practitioner_id
+    return jsonify({"message": "Practitioner updated", "practitioner": updated}), 200
 
-    return jsonify({"message": "Practitioner updated", "practitioner": _serialize_practitioner(practitioner)})
 
-# =========================
-# DELETE PRACTITIONER
-# =========================
-
-@practitioner_bp.route("/practitioners/<int:practitioner_id>", methods=["DELETE"])
+# DELETE /practitioners/<id>
+@practitioner_bp.route("/practitioners/<practitioner_id>", methods=["DELETE"])
 def delete_practitioner(practitioner_id):
-    """
-    Delete a practitioner profile
-    ---
-    tags:
-      - Practitioners
-    parameters:
-      - name: practitioner_id
-        in: path
-        type: integer
-        required: true
-    responses:
-      200:
-        description: Practitioner deleted
-      404:
-        description: Practitioner not found
-    """
-    practitioner = db.session.get(Practitioner, practitioner_id)
-    if not practitioner:
+    doc_ref = fs_db.collection("practitioners").document(practitioner_id)
+    if not doc_ref.get().exists:
         return jsonify({"error": "Practitioner not found"}), 404
-
-    fsdb.delete_fsdb_doc("practitioners", practitioner_id)
-    db.session.delete(practitioner)
-    db.session.commit()
-    return jsonify({"message": "Practitioner deleted"})
+    doc_ref.delete()
+    return jsonify({"message": "Practitioner deleted"}), 200
 
 
-# =========================
-# GET PATIENTS FOR PRACTITIONER
-# =========================
-
-@practitioner_bp.route("/practitioners/<int:practitioner_id>/patients", methods=["GET"])
+# GET /practitioners/<id>/patients
+@practitioner_bp.route("/practitioners/<practitioner_id>/patients", methods=["GET"])
 def get_practitioner_patients(practitioner_id):
-    """
-    Get all patients for a specific practitioner
-    ---
-    tags:
-      - Practitioners
-    parameters:
-      - name: practitioner_id
-        in: path
-        type: integer
-        required: true
-    responses:
-        200:
-            description: List of patients
-            schema:
-                type: array
-                items:
-                    $ref: '#/definitions/Patient'
-
-        404:
-            schema:
-                $ref: '#/definitions/Error'
-    """
-    practitioner = db.session.get(Practitioner, practitioner_id)
-    if not practitioner:
+    if not fs_db.collection("practitioners").document(practitioner_id).get().exists:
         return jsonify({"error": "Practitioner not found"}), 404
 
-    patients = Patient.query.filter_by(practitioner_id=practitioner_id, is_active=True).all()
-    return jsonify([_serialize_patient(p) for p in patients])
+    docs = fs_db.collection("patients") \
+        .where(filter=FieldFilter("practitioner_id", "==", practitioner_id)) \
+        .where(filter=FieldFilter("is_active", "==", True)) \
+        .stream()
 
-
-# =========================
-# HELPERS
-# =========================
-
-def _serialize_practitioner(p: Practitioner) -> dict:
-    return {
-        "id": p.id,
-        "user_id": p.user_id,
-        "clinic_name": p.clinic_name,
-        "specialization": p.specialization,
-        "created_at": p.created_at.isoformat(),
-    }
-
-
-def _serialize_patient(p: Patient) -> dict:
-    return {
-        "id": p.id,
-        "name": p.name,
-        "birthday": p.birthday.isoformat() if p.birthday else None,
-        "sex": p.sex,
-        "height_cm": p.height_cm,
-        "weight_kg": p.weight_kg,
-        "notes": p.notes,
-        "is_active": p.is_active,
-        "created_at": p.created_at.isoformat(),
-    }
+    patients = []
+    for doc in docs:
+        d = doc.to_dict()
+        d["id"] = doc.id
+        patients.append(d)
+    return jsonify(patients), 200

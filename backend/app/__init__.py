@@ -1,8 +1,10 @@
-from flask import Flask
+from flask import Flask, request, jsonify, g
 from flasgger import Swagger
 from flask_cors import CORS
 from app.config import Config
-from app.database.db import db
+from app.database.firebase.firebase_db import get_fs_db
+from firebase_admin import auth as firebase_auth
+from app.middleware.auth import PUBLIC_ROUTES
 
 from app.routes.session_routes import session_bp
 from app.routes.user_routes import user_bp
@@ -17,7 +19,7 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     CORS(app)
-    db.init_app(app)
+
 
     swagger_template = {
         "swagger": "2.0",
@@ -142,6 +144,32 @@ def create_app():
 
     Swagger(app, template=swagger_template)
 
+    # Initialize Firebase so firebase_auth is ready before any request
+    get_fs_db()
+
+    @app.before_request
+    def auth_middleware():
+        if request.method == "OPTIONS":
+            return None
+        if request.path in PUBLIC_ROUTES:
+            return None
+        if request.path.startswith("/apidocs") or request.path.startswith("/apispec"):
+            return None
+        if request.path.startswith("/api/data/videos/"):
+            return None
+
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            return jsonify({"error": "Missing or invalid authorization header"}), 401
+
+        token = auth_header.split("Bearer ")[1]
+        try:
+            decoded = firebase_auth.verify_id_token(token, clock_skew_seconds=60)
+            g.uid = decoded["uid"]
+            g.email = decoded.get("email", "")
+        except Exception:
+            return jsonify({"error": "Invalid or expired token"}), 401
+
     app.register_blueprint(session_bp, url_prefix="/api")
     app.register_blueprint(user_bp, url_prefix="/api")
     app.register_blueprint(test_bp, url_prefix="/api")
@@ -150,10 +178,5 @@ def create_app():
     app.register_blueprint(exercise_bp, url_prefix="/api")
     app.register_blueprint(template_bp, url_prefix="/api")
     app.register_blueprint(upload_bp, url_prefix="/api")
-
-    @app.cli.command("init-db")
-    def init_db():
-        db.create_all()
-        print("Database initialized.")
 
     return app

@@ -148,7 +148,7 @@ export default function Templates() {
             reps: te.reps_override ?? te.default_reps ?? 10,
           })),
         } : undefined}
-        practitionerId={practitionerId}
+        practitionerId={practitionerId ?? undefined}
         onClose={() => { setIsAddModalOpen(false); setEditingTemplate(null); }}
         onSave={handleSave}
         onDelete={editingTemplate ? () => handleDelete(editingTemplate.id) : undefined}

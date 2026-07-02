@@ -1,13 +1,15 @@
 import apiClient from '@/lib/apiClient';
 
 export const userService = {
-  async login(username: string, password: string) {
-    const { data } = await apiClient.post('/users/login', { username, password });
-    return data; // { user_id, username, role, profile_id }
+  // Called after Firebase sign-in — backend verifies the token and returns the profile
+  async getProfile() {
+    const { data } = await apiClient.get('/users/me');
+    return data; // { user_id, username, email, role, profile_id }
   },
 
-  async register(payload: any) {
-    const { data } = await apiClient.post('/users/register', payload);
+  async register(payload: any, token?: string) {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const { data } = await apiClient.post('/users/register', payload, { headers });
     return data;
   },
 
