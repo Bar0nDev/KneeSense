@@ -9,7 +9,6 @@ const apiClient = axios.create({
   },
 });
 
-// Attach Firebase ID token to every request (skip if caller already set Authorization)
 apiClient.interceptors.request.use(async (config) => {
   if (!config.headers.Authorization) {
     const user = auth.currentUser;

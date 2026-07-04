@@ -81,7 +81,7 @@ export default function PractitionerForm() {
                 {showPassword ? <FaRegEyeSlash size={16} /> : <FaRegEye size={16} />}
               </button>
             </div>
-            {errors.password && <p className="mt-1 text-[10px] font-medium text-red-500 animate-pulse absolute left-0 -bottom-5">{errors.password}</p>}
+            {errors.password && <p className="mt-1 text-[10px] font-medium text-red-500 animate-pulse">{errors.password}</p>}
           </div>
           <Field 
             label="Confirm Password" 
@@ -102,23 +102,14 @@ export default function PractitionerForm() {
           onChange={(e) => updateField("clinicName", e.target.value)}
         />
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field 
-            label="License Number" 
-            placeholder="PRC-XXXXXXXX" 
-            value={formData.licenseNumber}
-            error={errors.licenseNumber}
-            onChange={(e) => updateField("licenseNumber", e.target.value)}
-          />
-          <SelectField
-            label="Specialty"
-            placeholder="Select specialty"
-            options={["Physiotherapy", "Orthopedics", "Sports Medicine", "Rehabilitation", "Other"]}
-            value={formData.specialty}
-            error={errors.specialty}
-            onChange={(e) => updateField("specialty", e.target.value)}
-          />
-        </div>
+        <SelectField
+          label="Specialty"
+          placeholder="Select specialty"
+          options={["Physiotherapy", "Orthopedics", "Sports Medicine", "Rehabilitation", "Other"]}
+          value={formData.specialty}
+          error={errors.specialty}
+          onChange={(e) => updateField("specialty", e.target.value)}
+        />
 
         <div className="mt-2">
           <HeroButton type="submit" disabled={isLoading}>

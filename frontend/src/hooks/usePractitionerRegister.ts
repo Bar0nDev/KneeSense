@@ -11,7 +11,7 @@ export const usePractitionerRegister = () => {
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", email: "",
     password: "", confirmPassword: "",
-    clinicName: "", licenseNumber: "", specialty: ""
+    clinicName: "", specialty: ""
   });
 
   const validate = () => {
@@ -24,7 +24,6 @@ export const usePractitionerRegister = () => {
     if (formData.password.length < 8) newErrors.password = "Min 8 characters";
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Passwords must match";
     if (!formData.clinicName.trim()) newErrors.clinicName = "Required";
-    if (!formData.licenseNumber.trim()) newErrors.licenseNumber = "Required";
     if (!formData.specialty) newErrors.specialty = "Required";
 
     setErrors(newErrors);

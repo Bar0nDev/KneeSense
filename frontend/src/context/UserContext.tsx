@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState } from "react";
 import { AuthResponse } from "@/types/user";
 import { User } from "@/types/user";
 import { PatientProfile } from "@/types/patient";
@@ -17,8 +17,6 @@ export type UserProfile = AuthResponse & (
 
 interface UserContextType {
   userProfile: UserProfile | null;
-  isLoading: boolean;
-  error: string | null;
   setUserProfile: (data: UserProfile) => void;
   updateProfile: (data: Partial<PatientProfile> | Partial<PractitionerProfile>) => void;
   clearUserProfile: () => void;
@@ -26,74 +24,25 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+// Pure in-memory store for the current user's profile. The single source of truth
+// for rehydration is AuthContext's onAuthStateChanged listener, which fetches the
+// profile on refresh and pushes it here via setUserProfile.
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [userProfile, setUserProfileState] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // On page refresh: try localStorage first, then fall back to API fetch
-  useEffect(() => {
-    const rehydrate = async () => {
-      setError(null);
-
-      // 1. Try localStorage — avoids API calls on every refresh
-      const savedProfile = localStorage.getItem("userProfile");
-      if (savedProfile) {
-        setUserProfileState(JSON.parse(savedProfile));
-        setIsLoading(false);
-        return;
-      }
-
-      // 2. No cached profile — re-fetch from API using saved session
-      const savedSession = localStorage.getItem("session");
-      if (!savedSession) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const session: AuthResponse = JSON.parse(savedSession);
-        const built = await buildUserProfile(session);
-        if (built) {
-          setUserProfileState(built);
-          localStorage.setItem("userProfile", JSON.stringify(built));
-        }
-      } catch (err: any) {
-        localStorage.removeItem("session");
-        localStorage.removeItem("userProfile");
-        setUserProfileState(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    rehydrate();
-  }, []);
-
-  const setUserProfile = (data: UserProfile) => {
-    setUserProfileState(data);
-    localStorage.setItem("userProfile", JSON.stringify(data));
-  };
+  const setUserProfile = (data: UserProfile) => setUserProfileState(data);
 
   const updateProfile = (data: Partial<PatientProfile> | Partial<PractitionerProfile>) => {
     setUserProfileState((prev) => {
       if (!prev) return prev;
-      const updated = {
-        ...prev,
-        profile: { ...prev.profile, ...data } as any,
-      };
-      localStorage.setItem("userProfile", JSON.stringify(updated));
-      return updated;
+      return { ...prev, profile: { ...prev.profile, ...data } as any };
     });
   };
 
-  const clearUserProfile = () => {
-    setUserProfileState(null);
-    localStorage.removeItem("userProfile");
-  };
+  const clearUserProfile = () => setUserProfileState(null);
 
   return (
-    <UserContext.Provider value={{ userProfile, isLoading, error, setUserProfile, updateProfile, clearUserProfile }}>
+    <UserContext.Provider value={{ userProfile, setUserProfile, updateProfile, clearUserProfile }}>
       {children}
     </UserContext.Provider>
   );

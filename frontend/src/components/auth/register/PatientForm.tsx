@@ -79,7 +79,7 @@ export default function PatientForm() {
                 {showPassword ? <FaRegEyeSlash size={16} /> : <FaRegEye size={16} />}
               </button>
             </div>
-            {errors.password && <p className="mt-1 text-[10px] font-medium text-red-500 animate-pulse absolute left-0 -bottom-5">{errors.password}</p>}
+            {errors.password && <p className="mt-1 text-[10px] font-medium text-red-500 animate-pulse">{errors.password}</p>}
           </div>
           <Field 
             label="Confirm Password"
