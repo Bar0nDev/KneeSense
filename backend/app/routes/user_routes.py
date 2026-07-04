@@ -20,7 +20,7 @@ def get_me():
     user_data = doc.to_dict()
     return jsonify({
         "user_id": uid,
-        "username": user_data.get("name", ""),
+        "name": user_data.get("name", ""),
         "email": user_data.get("email", ""),
         "role": user_data.get("role", "practitioner"),
         "profile_id": user_data.get("profile_id"),

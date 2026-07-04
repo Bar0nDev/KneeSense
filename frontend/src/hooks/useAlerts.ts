@@ -3,6 +3,7 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 import { analyticsService, PatientAnalytics } from "@/services/analyticsService";
 import { patientService } from "@/services/patientService";
 import { useUser } from "@/context/UserContext";
@@ -194,12 +195,12 @@ export function useAlerts() {
   const myId = userProfile?.profile_id ?? null;
 
   const { data: allPatients = [], isLoading: analyticsLoading } = useQuery<PatientAnalytics[]>({
-    queryKey: ["clinic-analytics"],
+    queryKey: queryKeys.clinicAnalytics(),
     queryFn: () => analyticsService.getClinicAnalytics(),
   });
 
   const { data: patientList = [], isLoading: patientsLoading } = useQuery({
-    queryKey: ["patients"],
+    queryKey: queryKeys.patients(),
     queryFn: () => patientService.getAllPatients(),
   });
 

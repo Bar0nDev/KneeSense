@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { MdSpaceDashboard } from "react-icons/md";
 import { IoBarChart } from "react-icons/io5";
-import { HiOutlineRefresh, HiOutlineDotsHorizontal, HiMenu, HiX } from "react-icons/hi";
+import { HiOutlineRefresh, HiMenu, HiX } from "react-icons/hi";
 import { FaInbox } from "react-icons/fa6";
 import { FaUserAlt } from "react-icons/fa";
 import { GiKneeCap } from "react-icons/gi";
@@ -96,7 +96,6 @@ export default function PatientSideNav() {
             <p className="text-xs text-[#455858]">{roleLabel}</p>
           </div>
         </div>
-        <HiOutlineDotsHorizontal size={18} className="text-[#455858]" />
       </div>
     </div>
   );

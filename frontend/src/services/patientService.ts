@@ -39,10 +39,30 @@ function mapToPatientListItem(raw: any): PatientListItem {
   };
 }
 
+// Full patient record (detail view) — distinct from the summarised list item.
+export interface FullPatient {
+  id: string;
+  name: string;
+  birthday: string | null;
+  sex: string | null;
+  height_cm: number | null;
+  weight_kg: number | null;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  user_id: number | null;
+  practitioner_id: number | null;
+}
+
 export const patientService = {
   async getAllPatients(): Promise<PatientListItem[]> {
     const { data } = await apiClient.get('/patients');
     return (data as any[]).map(mapToPatientListItem);
+  },
+
+  async getPatient(patientId: string): Promise<FullPatient> {
+    const { data } = await apiClient.get(`/patients/${patientId}`);
+    return data;
   },
 
   async assignPatient(patientId: string, practitionerId: number): Promise<void> {

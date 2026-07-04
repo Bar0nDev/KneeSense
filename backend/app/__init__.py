@@ -37,7 +37,6 @@ def create_app():
                 "properties": {
                     "id": {"type": "integer"},
                     "name": {"type": "string"},
-                    "username": {"type": "string"},
                     "email": {"type": "string"},
                     "role": {"type": "string"},
                     "is_active": {"type": "boolean"},

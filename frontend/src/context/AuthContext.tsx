@@ -12,6 +12,7 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  type User as FirebaseUser,
 } from "firebase/auth";
 
 interface AuthContextType {
@@ -29,7 +30,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<AuthResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const isRegistering = useRef(false);
+  // True while login()/register() run their own fetch + navigation — tells the
+  // onAuthStateChanged listener to stand down so it doesn't fetch the profile twice.
+  const isAuthenticating = useRef(false);
   const { setUserProfile, clearUserProfile } = useUser();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -38,8 +41,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Skip rehydration while register() is in progress — it will set session itself
-        if (isRegistering.current) {
+        // Skip while login()/register() are running — they set the session themselves
+        if (isAuthenticating.current) {
           setIsLoading(false);
           return;
         }
@@ -71,22 +74,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Throws on failure — callers handle errors and loading state locally
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
-    const sessionData = await userService.getProfile();
-    const built = await buildUserProfile(sessionData);
-    setSession(sessionData);
-    if (built) setUserProfile(built);
-    router.push(sessionData.role === "practitioner" ? "/analytics" : "/dashboard");
+    isAuthenticating.current = true;
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      const sessionData = await userService.getProfile();
+      const built = await buildUserProfile(sessionData);
+      setSession(sessionData);
+      if (built) setUserProfile(built);
+      router.push(sessionData.role === "practitioner" ? "/analytics" : "/dashboard");
+    } finally {
+      isAuthenticating.current = false;
+    }
   };
 
   // Throws on failure — callers handle errors locally
   const register = async (formData: any, role: "patient" | "practitioner") => {
-    isRegistering.current = true;
+    isAuthenticating.current = true;
+    let createdUser: FirebaseUser | null = null;
     try {
     // Create Firebase Auth user first
     const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+    createdUser = userCredential.user;
     // Get token directly from the credential — auth.currentUser may not be set yet in the SDK
-    const freshToken = await userCredential.user.getIdToken();
+    const freshToken = await createdUser.getIdToken();
 
     // Register profile in backend — pass the fresh token explicitly to avoid the auth.currentUser race
     await userService.register({
@@ -120,8 +130,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setSession(sessionData);
     if (built) setUserProfile(built);
     router.push(role === "patient" ? "/dashboard" : "/analytics");
+    } catch (err) {
+      // Backend registration failed after the Firebase user was created — delete it
+      // so the email isn't permanently locked (auth/email-already-in-use) on retry.
+      if (createdUser) {
+        try {
+          await createdUser.delete();
+        } catch {
+          // Cleanup is best-effort; surface the original error regardless.
+        }
+      }
+      throw err;
     } finally {
-      isRegistering.current = false;
+      isAuthenticating.current = false;
     }
   };
 
@@ -131,7 +152,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     clearUserProfile();
     queryClient.clear();
     localStorage.removeItem("kneesense-query-cache");
-    localStorage.removeItem("session");
     router.push("/");
   };
 

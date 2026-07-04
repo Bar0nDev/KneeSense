@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@/context/UserContext";
 import { useSessionData } from "@/hooks/useSessionQueries";
 import { userService } from "@/services/userService";
+import { queryKeys } from "@/lib/queryKeys";
 import { PatientProfile } from "@/types/patient";
 
 function formatDate(iso: string): string {
@@ -24,20 +25,18 @@ export function useDashboard() {
   const practitionerId = patientProfile?.practitioner_id ?? null;
 
   const { data: practitionerData, isLoading: practitionerLoading } = useQuery({
-    queryKey: ["practitioner", practitionerId],
-    queryFn: async () => {
-      const profile = await userService.getPractitionerProfile(practitionerId!);
-      const user = await userService.getUser(profile.user_id);
-      return {
-        name: user.name as string,
-        specialization: (profile.specialization ?? "Practitioner") as string,
-        image: null as string | null,
-      };
-    },
+    queryKey: queryKeys.practitioner(practitionerId),
+    queryFn: () => userService.getPractitionerInfo(practitionerId!),
     enabled: !!practitionerId,
   });
 
-  const practitioner = practitionerData ?? { name: "—", specialization: "—", image: null };
+  const practitioner = practitionerData
+    ? {
+        name: practitionerData.name,
+        specialization: practitionerData.specialization ?? "Practitioner",
+        image: null as string | null,
+      }
+    : { name: "—", specialization: "—", image: null };
 
   const patient = {
     name: patientProfile?.name ?? "—",

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 import PrimaryButton from "@/components/clinician/buttons/PrimaryButton";
 import Dropdown from "@/components/ui/Dropdown";
 import { FiSettings } from "react-icons/fi";
@@ -36,7 +37,7 @@ export default function EditProgramModal({ isOpen, onClose, patientId, practitio
   const [isSaving, setIsSaving] = useState(false);
 
   const { data: templates = [] } = useQuery<Template[]>({
-    queryKey: ["templates", practitionerId],
+    queryKey: queryKeys.templates(practitionerId),
     queryFn: () => libraryService.getTemplates(practitionerId!),
     enabled: !!practitionerId && isOpen,
   });

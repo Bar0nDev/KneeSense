@@ -18,9 +18,9 @@ const paddingMap = {
 
 const shadowMap = {
   none: "",
-  sm: "shadow-[0_3px_5px_0_rgb(158,158,158)]",
-  md: "shadow-[0_3px_5px_0_rgb(158,158,158)]",
-  lg: "shadow-[0_3px_5px_0_rgb(158,158,158)]",
+  sm: "shadow-[0_2px_8px_rgba(0,0,0,0.08)]",
+  md: "shadow-[0_2px_8px_rgba(0,0,0,0.08)]",
+  lg: "shadow-[0_4px_16px_rgba(0,0,0,0.10)]",
 };
 
 export default function Card({

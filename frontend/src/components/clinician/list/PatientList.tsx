@@ -1,9 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import SearchBar from "@/components/ui/SearchBar";
 import { patientService, PatientListItem } from "@/services/patientService";
 import { getStatusConfig, complianceColor, isStalled } from "@/lib/patientStatus";
 import { useUser } from "@/context/UserContext";
+import { queryKeys } from "@/lib/queryKeys";
 
 const BRAND = "#12606A";
 
@@ -16,23 +18,22 @@ type Props = {
 };
 
 export default function PatientList({ onSelect, selectedId, refreshKey }: Props) {
-  const [allPatients, setAllPatients] = useState<PatientListItem[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("Current");
-  const [loading, setLoading] = useState(true);
   const { userProfile } = useUser();
 
-  const fetchPatients = () => {
-    setLoading(true);
-    patientService.getAllPatients()
-      .then(setAllPatients)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  };
+  const { data: allPatients = [], isLoading: loading, refetch } = useQuery({
+    queryKey: queryKeys.patients(),
+    queryFn: () => patientService.getAllPatients(),
+  });
 
+  // Parent bumps `refreshKey` to force a refresh (e.g. after assigning a program).
+  // Skip the first run so we don't double-fetch alongside the query's initial load.
+  const firstRun = useRef(true);
   useEffect(() => {
-    fetchPatients();
-  }, [refreshKey]);
+    if (firstRun.current) { firstRun.current = false; return; }
+    refetch();
+  }, [refreshKey, refetch]);
 
   const myId = userProfile?.profile_id ?? null;
   const assigned = allPatients.filter((p) => myId !== null && p.practitioner_id === myId);
@@ -51,7 +52,7 @@ export default function PatientList({ onSelect, selectedId, refreshKey }: Props)
   return (
     <div
       className="h-screen w-80 bg-[#FDFDFD] flex flex-col flex-shrink-0"
-      style={{ boxShadow: "0 3px 5px 0 rgb(158,158,158)", fontFamily: "'DM Sans', sans-serif" }}
+      style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.08)", fontFamily: "'DM Sans', sans-serif" }}
     >
       {/* Search + total */}
       <div style={{ padding: "16px 14px 10px", borderBottom: "1px solid #F3F4F6" }}>
@@ -133,7 +134,7 @@ export default function PatientList({ onSelect, selectedId, refreshKey }: Props)
                       if (!practitionerId) return;
                       try {
                         await patientService.assignPatient(p.id, practitionerId);
-                        fetchPatients();
+                        refetch();
                       } catch (err) {
                         console.error("Failed to assign patient", err);
                       }

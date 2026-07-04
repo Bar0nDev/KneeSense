@@ -48,25 +48,15 @@ export default function PatientForm() {
         </div>
 
 
-        {/* Row 2: Username & Email */}
-        <div className="grid grid-cols-2 gap-3">
-          <Field
-            label="Username"
-            type="text"
-            placeholder="janedoe123"
-            value={formData.username}
-            error={errors.username}
-            onChange={(e) => updateField("username", e.target.value)}
-          />
-          <Field 
-            label="Email" 
-            type="email" 
-            placeholder="jane@example.com" 
-            value={formData.email}
-            error={errors.email}
-            onChange={(e) => updateField("email", e.target.value)}
-          />
-        </div>
+        {/* Row 2: Email */}
+        <Field
+          label="Email"
+          type="email"
+          placeholder="jane@example.com"
+          value={formData.email}
+          error={errors.email}
+          onChange={(e) => updateField("email", e.target.value)}
+        />
 
         {/* Row 3: Passwords */}
         <div className="grid grid-cols-2 gap-3">
@@ -89,7 +79,7 @@ export default function PatientForm() {
                 {showPassword ? <FaRegEyeSlash size={16} /> : <FaRegEye size={16} />}
               </button>
             </div>
-            {errors.password && <p className="mt-1 text-[10px] font-medium text-red-500 animate-pulse absolute left-0 -bottom-5">{errors.password}</p>}
+            {errors.password && <p className="mt-1 text-[10px] font-medium text-red-500 animate-pulse">{errors.password}</p>}
           </div>
           <Field 
             label="Confirm Password"

@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 import { analyticsService, PatientAnalytics } from "@/services/analyticsService";
 import { useUser } from "@/context/UserContext";
 
@@ -157,7 +158,7 @@ export function useClinicAnalytics() {
   const myId = userProfile?.profile_id ?? null;
 
   const { data: allPatients = [], isLoading } = useQuery<PatientAnalytics[]>({
-    queryKey: ["clinic-analytics"],
+    queryKey: queryKeys.clinicAnalytics(),
     queryFn: () => analyticsService.getClinicAnalytics(),
   });
 
