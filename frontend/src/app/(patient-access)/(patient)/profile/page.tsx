@@ -12,6 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useUser } from "@/context/UserContext";
 import { useQuery } from "@tanstack/react-query";
 import { userService } from "@/services/userService";
+import { queryKeys } from "@/lib/queryKeys";
 import { PatientProfile } from "@/types/patient";
 
 type Tab = "personal" | "medical" | "logout";
@@ -29,17 +30,8 @@ export default function ProfilePage() {
   const practitionerId = p?.practitioner_id ?? null;
 
   const { data: practitionerData } = useQuery({
-    queryKey: ["practitioner-profile", practitionerId],
-    queryFn: async () => {
-      const practProfile = await userService.getPractitionerProfile(practitionerId!);
-      const practUser = await userService.getUser(practProfile.user_id);
-      return {
-        name: practUser.name as string,
-        clinic_name: practProfile.clinic_name as string | null,
-        specialization: practProfile.specialization as string | null,
-        
-      };
-    },
+    queryKey: queryKeys.practitioner(practitionerId),
+    queryFn: () => userService.getPractitionerInfo(practitionerId!),
     enabled: !!practitionerId,
   });
   const nameParts = (p?.name ?? "").split(" ");

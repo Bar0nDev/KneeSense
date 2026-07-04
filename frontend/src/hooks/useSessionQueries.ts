@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { useUser } from "@/context/UserContext";
 import { sessionService } from "@/services/sessionService";
+import { queryKeys } from "@/lib/queryKeys";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -37,14 +38,6 @@ export interface Insight {
   created_at: string;
 }
 
-// ─── Query Keys ──────────────────────────────────────────────────────────────
-
-export const sessionKeys = {
-  all: (patientId: string) => ["sessions", patientId] as const,
-  predictions: (sessionId: string) => ["predictions", sessionId] as const,
-  insight: (sessionId: string) => ["insight", sessionId] as const,
-};
-
 // ─── Main Hook ───────────────────────────────────────────────────────────────
 
 export function useSessionData(selectedSessionId?: string | null) {
@@ -63,7 +56,7 @@ export function useSessionData(selectedSessionId?: string | null) {
     isLoading: loadingSessions,
     error: errorSessions,
   } = useQuery({
-    queryKey: sessionKeys.all(patientId!),
+    queryKey: queryKeys.sessions(patientId!),
     queryFn: async () => {
       const sessions: SessionRecord[] = await sessionService.getPatientSessions(patientId!);
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -101,7 +94,7 @@ export function useSessionData(selectedSessionId?: string | null) {
     data: predictions,
     isLoading: loadingPredictions,
   } = useQuery({
-    queryKey: sessionKeys.predictions(activeSession?.id!),
+    queryKey: queryKeys.predictions(activeSession?.id!),
     queryFn: async () => {
       try {
         const result = await sessionService.getPredictions(activeSession!.id);
@@ -124,7 +117,7 @@ export function useSessionData(selectedSessionId?: string | null) {
     data: insight,
     isLoading: loadingInsight,
   } = useQuery({
-    queryKey: sessionKeys.insight(activeSession?.id!),
+    queryKey: queryKeys.insight(activeSession?.id!),
     queryFn: () => sessionService.getInsight(activeSession!.id) as Promise<Insight>,
     enabled: !!activeSession,
     retry: (failureCount, error: any) => error?.response?.status !== 404 && failureCount < 1,
@@ -133,10 +126,10 @@ export function useSessionData(selectedSessionId?: string | null) {
   // ── refresh: invalidate all session-related queries ──
   const refresh = useCallback(() => {
     if (!patientId) return;
-    queryClient.invalidateQueries({ queryKey: ["sessions", patientId], refetchType: "all" });
+    queryClient.invalidateQueries({ queryKey: queryKeys.sessions(patientId), refetchType: "all" });
     if (latestSession) {
-      queryClient.invalidateQueries({ queryKey: ["predictions", latestSession.id], refetchType: "all" });
-      queryClient.invalidateQueries({ queryKey: ["insight", latestSession.id], refetchType: "all" });
+      queryClient.invalidateQueries({ queryKey: queryKeys.predictions(latestSession.id), refetchType: "all" });
+      queryClient.invalidateQueries({ queryKey: queryKeys.insight(latestSession.id), refetchType: "all" });
     }
   }, [queryClient, patientId, latestSession]);
 

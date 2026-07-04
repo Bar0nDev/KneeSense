@@ -12,6 +12,7 @@ import EditProgramModal from "@/components/clinician/modals/EditProgramModal";
 import PatientInfoModal from "@/components/clinician/modals/PatientInfoModal";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 import { patientService, PatientListItem } from "@/services/patientService";
 import { sessionService } from "@/services/sessionService";
 import { SessionRecord } from "@/hooks/useSessionQueries";
@@ -41,19 +42,18 @@ export default function PatientDetail({ patient, onAssigned }: Props) {
   const [isAssigning, setIsAssigning] = useState(false);
   const { userProfile } = useUser();
 
-  const patientId = parseInt(patient.id);
   const practitionerId = userProfile?.profile_id ?? null;
 
   const { data: templates = [] } = useQuery<Template[]>({
-    queryKey: ["templates", practitionerId],
+    queryKey: queryKeys.templates(practitionerId),
     queryFn: () => libraryService.getTemplates(practitionerId!),
     enabled: !!practitionerId,
   });
 
   const { data: sessions } = useQuery<SessionRecord[]>({
-    queryKey: ["sessions", patientId],
-    queryFn: () => sessionService.getPatientSessions(String(patientId)),
-    enabled: !!patientId,
+    queryKey: queryKeys.sessions(patient.id),
+    queryFn: () => sessionService.getPatientSessions(patient.id),
+    enabled: !!patient.id,
   });
 
   const latestSession = sessions

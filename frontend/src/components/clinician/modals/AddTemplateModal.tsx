@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 import PrimaryButton from "@/components/clinician/buttons/PrimaryButton";
 import { libraryService, Exercise } from "@/services/libraryService";
 
@@ -25,7 +26,7 @@ type TemplateExercise = {
 
 export default function AddTemplateModal({ isOpen, onClose, onSave, onDelete, initialData, practitionerId }: AddTemplateModalProps) {
   const { data: availableExercises = [] } = useQuery<Exercise[]>({
-    queryKey: ["exercises", practitionerId],
+    queryKey: queryKeys.exercises(practitionerId),
     queryFn: () => libraryService.getExercises(practitionerId!),
     enabled: isOpen && !!practitionerId,
   });

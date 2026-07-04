@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
 import LibSubheader from "@/components/clinician/headers/LibSubheader";
 import SearchBar from "@/components/ui/SearchBar";
@@ -32,24 +33,24 @@ export default function Templates() {
   ];
 
   const { data: templates = [], isLoading } = useQuery<Template[]>({
-    queryKey: ["templates", practitionerId],
+    queryKey: queryKeys.templates(practitionerId),
     queryFn: () => libraryService.getTemplates(practitionerId!),
     enabled: !!practitionerId,
   });
 
   const createMutation = useMutation({
     mutationFn: (data: any) => libraryService.createTemplate({ ...data, practitioner_id: practitionerId! }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["templates", practitionerId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.templates(practitionerId) }),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => libraryService.updateTemplate(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["templates", practitionerId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.templates(practitionerId) }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => libraryService.deleteTemplate(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["templates", practitionerId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.templates(practitionerId) }),
   });
 
   const handleDelete = (id: number) => {

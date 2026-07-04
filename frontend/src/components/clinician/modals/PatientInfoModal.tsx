@@ -1,27 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import apiClient from "@/lib/apiClient";
+import { patientService } from "@/services/patientService";
+import { queryKeys } from "@/lib/queryKeys";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   patientId: string;
 };
-
-interface FullPatient {
-  id: string;
-  name: string;
-  birthday: string | null;
-  sex: string | null;
-  height_cm: number | null;
-  weight_kg: number | null;
-  notes: string | null;
-  is_active: boolean;
-  created_at: string;
-  user_id: number | null;
-  practitioner_id: number | null;
-}
 
 function Row({ label, value }: { label: string; value: string | number | null | undefined }) {
   return (
@@ -38,12 +25,9 @@ function formatDate(val: string | null | undefined) {
 }
 
 export default function PatientInfoModal({ isOpen, onClose, patientId }: Props) {
-  const { data: patient, isLoading } = useQuery<FullPatient>({
-    queryKey: ["patient-full", patientId],
-    queryFn: async () => {
-      const { data } = await apiClient.get(`/patients/${patientId}`);
-      return data;
-    },
+  const { data: patient, isLoading } = useQuery({
+    queryKey: queryKeys.patient(patientId),
+    queryFn: () => patientService.getPatient(patientId),
     enabled: isOpen && !!patientId,
   });
 
