@@ -4,7 +4,7 @@ export const userService = {
   // Called after Firebase sign-in — backend verifies the token and returns the profile
   async getProfile() {
     const { data } = await apiClient.get('/users/me');
-    return data; // { user_id, username, email, role, profile_id }
+    return data; // { user_id, name, email, role, profile_id }
   },
 
   async register(payload: any, token?: string) {
@@ -16,7 +16,7 @@ export const userService = {
   // Full user info — GET /users/:id
   async getUser(userId: number) {
     const { data } = await apiClient.get(`/users/${userId}`);
-    return data; // { id, name, username, email, role, is_active, created_at }
+    return data; // { id, name, email, role, is_active, created_at }
   },
 
   // Patient profile — GET /users/:user_id/patient

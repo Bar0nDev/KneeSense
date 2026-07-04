@@ -9,7 +9,7 @@ export const usePractitionerRegister = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
-    firstName: "", lastName: "", username: "", email: "",
+    firstName: "", lastName: "", email: "",
     password: "", confirmPassword: "",
     clinicName: "", licenseNumber: "", specialty: ""
   });
@@ -17,12 +17,9 @@ export const usePractitionerRegister = () => {
   const validate = () => {
     const newErrors: Record<string, string> = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
 
     if (!formData.firstName.trim()) newErrors.firstName = "Required";
     if (!formData.lastName.trim()) newErrors.lastName = "Required";
-    if (!formData.username.trim()) newErrors.username = "Required";
-    else if (!usernameRegex.test(formData.username)) newErrors.username = "3-20 chars (a-z, 0-9, _)";
     if (!emailRegex.test(formData.email)) newErrors.email = "Invalid email";
     if (formData.password.length < 8) newErrors.password = "Min 8 characters";
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Passwords must match";
@@ -43,7 +40,6 @@ export const usePractitionerRegister = () => {
     try {
       await register({
         name: `${formData.firstName} ${formData.lastName}`.trim(),
-        username: formData.username,
         email: formData.email,
         password: formData.password,
         clinic_name: formData.clinicName,

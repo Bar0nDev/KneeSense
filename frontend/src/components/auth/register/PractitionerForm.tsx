@@ -50,25 +50,15 @@ export default function PractitionerForm() {
         </div>
 
 
-        {/* Row 2: Username & Email */}
-        <div className="grid grid-cols-2 gap-3">
-          <Field
-            label="Username"
-            type="text"
-            placeholder="janedoe123"
-            value={formData.username}
-            error={errors.username}
-            onChange={(e) => updateField("username", e.target.value)}
-          />
-          <Field 
-            label="Email" 
-            type="email" 
-            placeholder="jane@clinic.com" 
-            value={formData.email}
-            error={errors.email}
-            onChange={(e) => updateField("email", e.target.value)}
-          />
-        </div>
+        {/* Row 2: Email */}
+        <Field
+          label="Email"
+          type="email"
+          placeholder="jane@clinic.com"
+          value={formData.email}
+          error={errors.email}
+          onChange={(e) => updateField("email", e.target.value)}
+        />
 
         {/* Row 3: Passwords */}
         <div className="grid grid-cols-2 gap-3">
