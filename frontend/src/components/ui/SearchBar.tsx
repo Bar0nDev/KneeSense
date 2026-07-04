@@ -75,7 +75,7 @@ export default function SearchBar({
           color: "#12606A",
           outline: "none",
           fontFamily: "'DM Sans', sans-serif",
-          boxShadow: "0 3px 5px 0 rgb(158,158,158)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
           boxSizing: "border-box",
           transition: "all 0.2s ease",
         }}

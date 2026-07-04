@@ -41,7 +41,7 @@ export default function UserCompliance() {
         {tiers.map((item) => {
           const barPct = (item.value / maxValue) * 100;
           return (
-            <div key={item.name} style={{ position: "relative", background: "white", borderRadius: "10px", padding: "8px 12px", boxShadow: "0 3px 5px 0 rgb(158, 158, 158)", overflow: "hidden", display: "flex", alignItems: "center" }}>
+            <div key={item.name} style={{ position: "relative", background: "white", borderRadius: "10px", padding: "8px 12px", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", overflow: "hidden", display: "flex", alignItems: "center" }}>
               <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${barPct}%`, backgroundColor: item.color, opacity: 1, zIndex: 0 }} />
               <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", width: "100%", alignItems: "baseline" }}>
                 <span style={{ fontSize: "12px", fontWeight: 700, color: BRAND }}>{item.name}</span>
@@ -53,7 +53,7 @@ export default function UserCompliance() {
       </div>
 
       {/* Right Card */}
-      <div style={{ background: "white", borderRadius: "16px", padding: "14px 18px", flex: 1, boxShadow: "0 3px 5px 0 rgb(158, 158, 158)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ background: "white", borderRadius: "16px", padding: "14px 18px", flex: 1, boxShadow: "0 2px 8px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "baseline", marginBottom: "8px" }}>
           <span style={{ fontSize: "13px", fontWeight: 800, color: BRAND, textTransform: "uppercase", letterSpacing: "0.03em" }}>
             Patient Compliance

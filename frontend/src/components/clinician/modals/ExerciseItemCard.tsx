@@ -41,7 +41,7 @@ export default function ExerciseItemCard({
       className={`flex flex-col bg-white rounded-2xl p-3 font-['DM_Sans'] transition-all duration-200 border-2 ${
         checked ? "border-[#12606A]" : "border-transparent border-gray-100 text-[#12606A]/20"
       }`}
-      style={checked ? { boxShadow: "0 8px 24px 0 rgba(18, 96, 106, 0.4)" } : { boxShadow: "0 3px 5px 0 rgb(158, 158, 158)" }}
+      style={checked ? { boxShadow: "0 8px 24px 0 rgba(18, 96, 106, 0.4)" } : { boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
     >
       {/* Top Action Row */}
       <div className="flex justify-between items-center mb-3">

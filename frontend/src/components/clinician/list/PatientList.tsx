@@ -52,7 +52,7 @@ export default function PatientList({ onSelect, selectedId, refreshKey }: Props)
   return (
     <div
       className="h-screen w-80 bg-[#FDFDFD] flex flex-col flex-shrink-0"
-      style={{ boxShadow: "0 3px 5px 0 rgb(158,158,158)", fontFamily: "'DM Sans', sans-serif" }}
+      style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.08)", fontFamily: "'DM Sans', sans-serif" }}
     >
       {/* Search + total */}
       <div style={{ padding: "16px 14px 10px", borderBottom: "1px solid #F3F4F6" }}>

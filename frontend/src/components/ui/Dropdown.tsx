@@ -52,7 +52,7 @@ export default function Dropdown({
           background: "#FDFDFD",
           borderRadius: "8px",
           cursor: "pointer",
-          boxShadow: "0 3px 5px 0 rgb(158,158,158)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
           outline: "none",
         }}
       >
@@ -96,7 +96,7 @@ export default function Dropdown({
             background: "#FDFDFD",
             border: "1.5px solid #E5E7EB",
             borderRadius: "8px",
-            boxShadow: "0 3px 5px 0 rgb(158,158,158)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
             zIndex: 100,
             maxHeight: "200px",
             overflowY: "auto",

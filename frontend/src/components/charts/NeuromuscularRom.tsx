@@ -43,7 +43,7 @@ export default function NeuromuscularRom() {
   return (
     <div style={{
       background: "white", borderRadius: "16px", padding: "10px 14px",
-      boxShadow: "0 3px 5px 0 rgb(158,158,158)", fontFamily: "'DM Sans', sans-serif",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.08)", fontFamily: "'DM Sans', sans-serif",
       display: "flex", flexDirection: "column", height: "100%", position: "relative",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
