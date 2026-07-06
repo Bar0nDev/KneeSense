@@ -7,6 +7,7 @@ export const usePractitionerRegister = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", email: "",
@@ -44,6 +45,8 @@ export const usePractitionerRegister = () => {
         clinic_name: formData.clinicName,
         specialization: formData.specialty,
       }, "practitioner");
+      // Registration succeeded; account now awaits admin approval (no auto-login).
+      setSubmitted(true);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || "Registration failed.");
     } finally {
@@ -62,5 +65,5 @@ export const usePractitionerRegister = () => {
     }
   };
 
-  return { formData, updateField, handleFormSubmit, isLoading, error, errors };
+  return { formData, updateField, handleFormSubmit, isLoading, error, errors, submitted };
 };

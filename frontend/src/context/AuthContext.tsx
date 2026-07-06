@@ -49,8 +49,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           const sessionData = await userService.getProfile();
           const built = await buildUserProfile(sessionData);
-          setSession(sessionData);
-          if (built) setUserProfile(built);
+
+          // Approval gate: sign out practitioners who aren't approved (stale
+          // session from before the gate, or approval later revoked/rejected).
+          if (built?.role === "practitioner" && built.profile.status !== "approved") {
+            await signOut(auth);
+            setSession(null);
+          } else {
+            setSession(sessionData);
+            if (built) setUserProfile(built);
+          }
         } catch (err: any) {
           // 404 means registration is still in progress — don't sign out
           if (err?.response?.status !== 404) {
@@ -79,6 +87,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await signInWithEmailAndPassword(auth, email, password);
       const sessionData = await userService.getProfile();
       const built = await buildUserProfile(sessionData);
+
+      // Approval gate: practitioners can't sign in until an admin approves them.
+      if (built?.role === "practitioner" && built.profile.status !== "approved") {
+        await signOut(auth);
+        throw new Error(
+          built.profile.status === "rejected"
+            ? "Your practitioner account was not approved. Please contact support."
+            : "Your practitioner account is pending admin approval."
+        );
+      }
+
       setSession(sessionData);
       if (built) setUserProfile(built);
       router.push(sessionData.role === "practitioner" ? "/analytics" : "/dashboard");
@@ -126,10 +145,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
     }
 
-    const built = await buildUserProfile(sessionData);
-    setSession(sessionData);
-    if (built) setUserProfile(built);
-    router.push(role === "patient" ? "/dashboard" : "/analytics");
+    if (role === "patient") {
+      const built = await buildUserProfile(sessionData);
+      setSession(sessionData);
+      if (built) setUserProfile(built);
+      router.push("/dashboard");
+    } else {
+      // Practitioners register as "pending" and must be approved by an admin
+      // before they can sign in — don't grant a session here.
+      await signOut(auth);
+    }
     } catch (err) {
       // Backend registration failed after the Firebase user was created — delete it
       // so the email isn't permanently locked (auth/email-already-in-use) on retry.

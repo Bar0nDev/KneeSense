@@ -5,18 +5,42 @@ import { useState } from "react";
 import { Field, SelectField } from "../../ui/FormFields";
 import HeroButton from "@/components/ui/HeroButton";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
+import { FaRegCircleCheck } from "react-icons/fa6";
 import { usePractitionerRegister } from "@/hooks/usePractitionerRegister";
 
 export default function PractitionerForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const { 
-    formData, 
-    updateField, 
-    handleFormSubmit, 
-    isLoading, 
-    error: apiError, 
-    errors 
+  const {
+    formData,
+    updateField,
+    handleFormSubmit,
+    isLoading,
+    error: apiError,
+    errors,
+    submitted,
   } = usePractitionerRegister();
+
+  if (submitted) {
+    return (
+      <div className="flex flex-col items-center text-center py-6">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#12606A]/10">
+          <FaRegCircleCheck size={28} className="text-[#12606A]" />
+        </div>
+        <h2 className="mb-2 text-2xl font-bold text-gray-900">Registration submitted</h2>
+        <p className="mb-8 max-w-sm text-sm text-[#455858]">
+          Your practitioner account has been created and is now <strong>pending admin
+          approval</strong>. You&apos;ll be able to sign in once an administrator approves your
+          account.
+        </p>
+        <Link
+          href="/login"
+          className="rounded-full bg-[#12606A] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:brightness-95"
+        >
+          Back to Login
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <>
