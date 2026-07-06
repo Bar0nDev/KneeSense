@@ -60,6 +60,7 @@ def register_user():
                 "user_id": uid,
                 "clinic_name": None,
                 "specialization": None,
+                "status": "pending",
                 "created_at": datetime.now(timezone.utc),
             })
             profile_id = prac_ref.id
