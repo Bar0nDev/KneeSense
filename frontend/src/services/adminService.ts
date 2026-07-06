@@ -4,6 +4,8 @@ import {
   AdminPractitionerDetail,
   AdminPatient,
   AdminPatientDetail,
+  AdminPatientUpdate,
+  AdminPractitionerUpdate,
   AdminSession,
 } from '@/types/admin';
 
@@ -27,6 +29,14 @@ export const adminService = {
     await apiClient.put(`/admin/practitioners/${id}/reject`);
   },
 
+  async updatePractitioner(id: string, payload: AdminPractitionerUpdate): Promise<void> {
+    await apiClient.put(`/admin/practitioners/${id}`, payload);
+  },
+
+  async deactivatePractitioner(id: string): Promise<void> {
+    await apiClient.delete(`/admin/practitioners/${id}`);
+  },
+
   // Patients
   async getPatients(): Promise<AdminPatient[]> {
     const { data } = await apiClient.get('/admin/patients');
@@ -36,6 +46,24 @@ export const adminService = {
   async getPatient(id: string): Promise<AdminPatientDetail> {
     const { data } = await apiClient.get(`/admin/patients/${id}`);
     return data;
+  },
+
+  async updatePatient(id: string, payload: AdminPatientUpdate): Promise<void> {
+    await apiClient.put(`/admin/patients/${id}`, payload);
+  },
+
+  // practitionerId = null clears the assignment
+  async assignPatientPractitioner(id: string, practitionerId: string | null): Promise<void> {
+    await apiClient.put(`/admin/patients/${id}/assign`, { practitioner_id: practitionerId });
+  },
+
+  async deactivatePatient(id: string): Promise<void> {
+    await apiClient.delete(`/admin/patients/${id}`);
+  },
+
+  // Users (display name only; email is not editable)
+  async updateUserName(userId: string, name: string): Promise<void> {
+    await apiClient.put(`/admin/users/${userId}`, { name });
   },
 
   // Sessions

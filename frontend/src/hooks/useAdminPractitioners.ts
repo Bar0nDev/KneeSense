@@ -6,6 +6,7 @@ import { adminService } from "@/services/adminService";
 import {
   AdminPractitioner,
   AdminPractitionerDetail,
+  AdminPractitionerUpdate,
   PractitionerStatus,
 } from "@/types/admin";
 
@@ -50,12 +51,46 @@ export function useAdminPractitioners() {
     },
   });
 
+  function invalidate(id: string) {
+    queryClient.invalidateQueries({ queryKey: queryKeys.adminPractitioners() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.adminPractitioner(id) });
+  }
+
+  const update = useMutation({
+    // A practitioner's name lives on the user doc, so it's updated separately
+    // (via name + userId) from the practitioner-profile fields in `payload`.
+    mutationFn: async ({
+      id,
+      payload,
+      name,
+      userId,
+    }: {
+      id: string;
+      payload: AdminPractitionerUpdate;
+      name?: string;
+      userId?: string | null;
+    }) => {
+      const calls: Promise<void>[] = [];
+      if (Object.keys(payload).length) calls.push(adminService.updatePractitioner(id, payload));
+      if (name !== undefined && userId) calls.push(adminService.updateUserName(userId, name));
+      await Promise.all(calls);
+    },
+    onSettled: (_d, _e, vars) => invalidate(vars.id),
+  });
+
+  const deactivate = useMutation({
+    mutationFn: (id: string) => adminService.deactivatePractitioner(id),
+    onSettled: (_d, _e, id) => invalidate(id),
+  });
+
   return {
     practitioners: query.data ?? [],
     isLoading: query.isLoading,
     isError: query.isError,
     approve,
     reject,
+    update,
+    deactivate,
   };
 }
 

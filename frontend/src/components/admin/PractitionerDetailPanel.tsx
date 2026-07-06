@@ -1,14 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import Card from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
 import { PractitionerStatusBadge, ActiveBadge } from "@/components/admin/AdminBadge";
+import EditPractitionerModal from "@/components/admin/EditPractitionerModal";
+import AssignPatientsModal from "@/components/admin/AssignPatientsModal";
 import { useAdminPractitioner, useAdminPractitioners } from "@/hooks/useAdminPractitioners";
 import { formatDate } from "@/lib/adminFormat";
 
 interface Props {
   practitionerId: string;
 }
+
+const actionBtn =
+  "rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer";
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -21,7 +27,16 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 export default function PractitionerDetailPanel({ practitionerId }: Props) {
   const { data, isLoading, isError } = useAdminPractitioner(practitionerId);
-  const { approve, reject } = useAdminPractitioners();
+  const { approve, reject, deactivate, update } = useAdminPractitioners();
+  const [modal, setModal] = useState<"edit" | "assign" | null>(null);
+
+  function handleDeactivate() {
+    if (!data) return;
+    if (!window.confirm(`Deactivate ${data.name ?? "this practitioner"}? They can be reactivated later.`)) {
+      return;
+    }
+    deactivate.mutate(practitionerId);
+  }
 
   if (isLoading) {
     return <p className="text-sm text-gray-400">Loading practitioner…</p>;
@@ -49,7 +64,10 @@ export default function PractitionerDetailPanel({ practitionerId }: Props) {
 
         <div className="flex items-center justify-between">
           <span className="text-xs text-[#455858]">Status</span>
-          <PractitionerStatusBadge status={data.status} />
+          <div className="flex items-center gap-2">
+            {!data.is_active && <ActiveBadge active={false} />}
+            <PractitionerStatusBadge status={data.status} />
+          </div>
         </div>
 
         <div className="border-t border-gray-100 pt-2">
@@ -57,6 +75,39 @@ export default function PractitionerDetailPanel({ practitionerId }: Props) {
           <InfoRow label="Specialization" value={data.specialization ?? "—"} />
           <InfoRow label="Patients" value={String(data.patient_count)} />
           <InfoRow label="Registered" value={formatDate(data.created_at)} />
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setModal("edit")}
+            className={`${actionBtn} border-[#12606A] text-[#12606A] hover:bg-[#12606A]/5`}
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => setModal("assign")}
+            className={`${actionBtn} border-[#12606A] text-[#12606A] hover:bg-[#12606A]/5`}
+          >
+            Assign Patients
+          </button>
+          {data.is_active ? (
+            <button
+              onClick={handleDeactivate}
+              disabled={deactivate.isPending}
+              className={`${actionBtn} border-red-500 text-red-600 hover:bg-red-50`}
+            >
+              Deactivate
+            </button>
+          ) : (
+            <button
+              onClick={() => update.mutate({ id: practitionerId, payload: { is_active: true } })}
+              disabled={update.isPending}
+              className={`${actionBtn} border-emerald-600 text-emerald-700 hover:bg-emerald-50`}
+            >
+              Reactivate
+            </button>
+          )}
         </div>
 
         {data.status === "pending" && (
@@ -101,6 +152,13 @@ export default function PractitionerDetailPanel({ practitionerId }: Props) {
           </ul>
         )}
       </Card>
+
+      {modal === "edit" && (
+        <EditPractitionerModal isOpen onClose={() => setModal(null)} practitioner={data} />
+      )}
+      {modal === "assign" && (
+        <AssignPatientsModal isOpen onClose={() => setModal(null)} practitionerId={data.id} />
+      )}
     </div>
   );
 }

@@ -12,8 +12,26 @@ export interface AdminPractitioner {
   clinic_name: string | null;
   specialization: string | null;
   status: PractitionerStatus;
+  is_active: boolean;
   patient_count: number;
   created_at: string | null;
+}
+
+// Editable fields for the patient / practitioner edit modals.
+export interface AdminPatientUpdate {
+  name?: string;
+  birthday?: string | null;
+  sex?: string | null;
+  height_cm?: number | null;
+  weight_kg?: number | null;
+  notes?: string | null;
+  is_active?: boolean;
+}
+
+export interface AdminPractitionerUpdate {
+  clinic_name?: string | null;
+  specialization?: string | null;
+  is_active?: boolean;
 }
 
 // A patient row as shown inside a practitioner's detail panel.

@@ -1,15 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
 import { ActiveBadge, SessionStatusBadge } from "@/components/admin/AdminBadge";
-import { useAdminPatient } from "@/hooks/useAdminPatients";
+import EditPatientModal from "@/components/admin/EditPatientModal";
+import AssignPractitionerModal from "@/components/admin/AssignPractitionerModal";
+import { useAdminPatient, useAdminPatients } from "@/hooks/useAdminPatients";
 import { formatDate, formatAngle } from "@/lib/adminFormat";
 
 interface Props {
   patientId: string;
 }
+
+const actionBtn =
+  "rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer";
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -22,6 +28,16 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 export default function PatientDetailPanel({ patientId }: Props) {
   const { data, isLoading, isError } = useAdminPatient(patientId);
+  const { deactivate, update } = useAdminPatients();
+  const [modal, setModal] = useState<"edit" | "assign" | null>(null);
+
+  function handleDeactivate() {
+    if (!data) return;
+    if (!window.confirm(`Deactivate ${data.name ?? "this patient"}? They can be reactivated later.`)) {
+      return;
+    }
+    deactivate.mutate(patientId);
+  }
 
   if (isLoading) {
     return <p className="text-sm text-gray-400">Loading patient…</p>;
@@ -53,6 +69,39 @@ export default function PatientDetailPanel({ patientId }: Props) {
         <div className="flex items-center justify-between">
           <span className="text-xs text-[#455858]">Status</span>
           <ActiveBadge active={data.is_active} />
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setModal("edit")}
+            className={`${actionBtn} border-[#12606A] text-[#12606A] hover:bg-[#12606A]/5`}
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => setModal("assign")}
+            className={`${actionBtn} border-[#12606A] text-[#12606A] hover:bg-[#12606A]/5`}
+          >
+            Assign Practitioner
+          </button>
+          {data.is_active ? (
+            <button
+              onClick={handleDeactivate}
+              disabled={deactivate.isPending}
+              className={`${actionBtn} border-red-500 text-red-600 hover:bg-red-50`}
+            >
+              Deactivate
+            </button>
+          ) : (
+            <button
+              onClick={() => update.mutate({ id: patientId, payload: { is_active: true } })}
+              disabled={update.isPending}
+              className={`${actionBtn} border-emerald-600 text-emerald-700 hover:bg-emerald-50`}
+            >
+              Reactivate
+            </button>
+          )}
         </div>
 
         <div className="border-t border-gray-100 pt-2">
@@ -98,6 +147,18 @@ export default function PatientDetailPanel({ patientId }: Props) {
           </ul>
         )}
       </Card>
+
+      {modal === "edit" && (
+        <EditPatientModal isOpen onClose={() => setModal(null)} patient={data} />
+      )}
+      {modal === "assign" && (
+        <AssignPractitionerModal
+          isOpen
+          onClose={() => setModal(null)}
+          patientId={data.id}
+          currentPractitionerId={data.practitioner_id}
+        />
+      )}
     </div>
   );
 }

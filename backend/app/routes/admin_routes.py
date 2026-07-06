@@ -73,6 +73,7 @@ def list_practitioners():
             "specialization": d.get("specialization"),
             # Older docs created before the status field default to "pending".
             "status": d.get("status") or "pending",
+            "is_active": d.get("is_active", True),
             "patient_count": patient_counts.get(doc.id, 0),
             "created_at": _iso(d.get("created_at")),
         })
@@ -112,6 +113,7 @@ def get_practitioner_detail(practitioner_id):
         "clinic_name": d.get("clinic_name"),
         "specialization": d.get("specialization"),
         "status": d.get("status") or "pending",
+        "is_active": d.get("is_active", True),
         "patient_count": len(patients),
         "created_at": _iso(d.get("created_at")),
         "patients": patients,
@@ -134,6 +136,36 @@ def reject_practitioner(practitioner_id):
     if not fsdb.set_practitioner_status(practitioner_id, "rejected"):
         return jsonify({"error": "Practitioner not found"}), 404
     return jsonify({"message": "Practitioner rejected", "status": "rejected"}), 200
+
+
+# PUT /admin/practitioners/<id> — edit practitioner profile fields
+@admin_bp.route("/practitioners/<practitioner_id>", methods=["PUT"])
+@require_admin
+def update_practitioner(practitioner_id):
+    doc_ref = fs_db.collection("practitioners").document(practitioner_id)
+    if not doc_ref.get().exists:
+        return jsonify({"error": "Practitioner not found"}), 404
+
+    data = request.json or {}
+    allowed = ["clinic_name", "specialization", "is_active"]
+    update_fields = {k: v for k, v in data.items() if k in allowed}
+
+    if not update_fields:
+        return jsonify({"message": "No changes detected"}), 200
+
+    doc_ref.set(update_fields, merge=True)
+    return jsonify({"message": "Practitioner updated"}), 200
+
+
+# DELETE /admin/practitioners/<id> — soft delete (deactivate)
+@admin_bp.route("/practitioners/<practitioner_id>", methods=["DELETE"])
+@require_admin
+def deactivate_practitioner(practitioner_id):
+    doc_ref = fs_db.collection("practitioners").document(practitioner_id)
+    if not doc_ref.get().exists:
+        return jsonify({"error": "Practitioner not found"}), 404
+    doc_ref.set({"is_active": False}, merge=True)
+    return jsonify({"message": "Practitioner deactivated"}), 200
 
 
 # =========================
@@ -215,6 +247,75 @@ def get_patient_detail(patient_id):
         "created_at": _iso(d.get("created_at")),
         "sessions": sessions,
     }), 200
+
+
+# PUT /admin/patients/<id> — edit patient fields
+@admin_bp.route("/patients/<patient_id>", methods=["PUT"])
+@require_admin
+def update_patient(patient_id):
+    doc_ref = fs_db.collection("patients").document(patient_id)
+    if not doc_ref.get().exists:
+        return jsonify({"error": "Patient not found"}), 404
+
+    data = request.json or {}
+    allowed = ["name", "birthday", "sex", "height_cm", "weight_kg", "notes", "is_active"]
+    update_fields = {k: v for k, v in data.items() if k in allowed}
+
+    if not update_fields:
+        return jsonify({"message": "No changes detected"}), 200
+
+    doc_ref.set(update_fields, merge=True)
+    return jsonify({"message": "Patient updated"}), 200
+
+
+# PUT /admin/patients/<id>/assign — assign or clear the patient's practitioner
+@admin_bp.route("/patients/<patient_id>/assign", methods=["PUT"])
+@require_admin
+def assign_patient_practitioner(patient_id):
+    doc_ref = fs_db.collection("patients").document(patient_id)
+    if not doc_ref.get().exists:
+        return jsonify({"error": "Patient not found"}), 404
+
+    data = request.json or {}
+    practitioner_id = data.get("practitioner_id")  # may be None to unassign
+
+    if practitioner_id and not fs_db.collection("practitioners").document(practitioner_id).get().exists:
+        return jsonify({"error": "Practitioner does not exist"}), 404
+
+    doc_ref.set({"practitioner_id": practitioner_id}, merge=True)
+    return jsonify({"message": "Patient assignment updated", "practitioner_id": practitioner_id}), 200
+
+
+# DELETE /admin/patients/<id> — soft delete (deactivate)
+@admin_bp.route("/patients/<patient_id>", methods=["DELETE"])
+@require_admin
+def deactivate_patient(patient_id):
+    doc_ref = fs_db.collection("patients").document(patient_id)
+    if not doc_ref.get().exists:
+        return jsonify({"error": "Patient not found"}), 404
+    doc_ref.set({"is_active": False}, merge=True)
+    return jsonify({"message": "Patient deactivated"}), 200
+
+
+# =========================
+# USERS (name only)
+# =========================
+
+# PUT /admin/users/<user_id> — edit the user's display name only.
+# Email is the Firebase Auth login identity and is intentionally NOT writable here.
+@admin_bp.route("/users/<user_id>", methods=["PUT"])
+@require_admin
+def update_user_name(user_id):
+    doc_ref = fs_db.collection("user").document(user_id)
+    if not doc_ref.get().exists:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.json or {}
+    if "name" not in data:
+        return jsonify({"message": "No changes detected"}), 200
+
+    doc_ref.set({"name": data["name"]}, merge=True)
+    return jsonify({"message": "User updated"}), 200
 
 
 # =========================
