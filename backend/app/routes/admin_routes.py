@@ -279,8 +279,13 @@ def assign_patient_practitioner(patient_id):
     data = request.json or {}
     practitioner_id = data.get("practitioner_id")  # may be None to unassign
 
-    if practitioner_id and not fs_db.collection("practitioners").document(practitioner_id).get().exists:
-        return jsonify({"error": "Practitioner does not exist"}), 404
+    if practitioner_id:
+        prac = fs_db.collection("practitioners").document(practitioner_id).get()
+        if not prac.exists:
+            return jsonify({"error": "Practitioner does not exist"}), 404
+        # Only approved practitioners can take on patients.
+        if (prac.to_dict().get("status") or "pending") != "approved":
+            return jsonify({"error": "Only approved practitioners can be assigned patients"}), 400
 
     doc_ref.set({"practitioner_id": practitioner_id}, merge=True)
     return jsonify({"message": "Patient assignment updated", "practitioner_id": practitioner_id}), 200

@@ -29,9 +29,11 @@ export default function AssignPractitionerModal({
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
+    // Only approved practitioners can be assigned to patients.
+    const eligible = practitioners.filter((p) => p.status === "approved");
     const q = search.trim().toLowerCase();
-    if (!q) return practitioners;
-    return practitioners.filter(
+    if (!q) return eligible;
+    return eligible.filter(
       (p) =>
         (p.name ?? "").toLowerCase().includes(q) ||
         (p.clinic_name ?? "").toLowerCase().includes(q),

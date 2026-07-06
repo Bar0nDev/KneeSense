@@ -87,6 +87,12 @@ export default function PractitionerDetailPanel({ practitionerId }: Props) {
           </button>
           <button
             onClick={() => setModal("assign")}
+            disabled={data.status !== "approved"}
+            title={
+              data.status !== "approved"
+                ? "Only approved practitioners can be assigned patients"
+                : undefined
+            }
             className={`${actionBtn} border-[#12606A] text-[#12606A] hover:bg-[#12606A]/5`}
           >
             Assign Patients
