@@ -48,13 +48,13 @@ export default function AdminSideNav() {
   const sideNavContent = (
     <div className="flex flex-col h-full px-4">
       {/* Logo */}
-      <div className="mb-11 flex items-center gap-0.5 text-[#12606A]">
+      <div className="mb-11 flex items-center gap-0.5 text-white">
         <GiKneeCap size={29} />
         <div className="leading-none">
           <h1 className="text-2xl font-semibold tracking-tight">
-            <span className="text-[#30C3B1]">Knee</span>Sense
+            <span className="text-[#7FE9D9]">Knee</span>Sense
           </h1>
-          <p className="mt-0 text-[10px] font-semibold uppercase tracking-widest text-[#455858]">
+          <p className="mt-0 text-[10px] font-semibold uppercase tracking-widest text-white/60">
             Admin Portal
           </p>
         </div>
@@ -64,7 +64,7 @@ export default function AdminSideNav() {
       <nav className="flex-1 space-y-6">
         {navSections.map((section) => (
           <div key={section.section}>
-            <p className="text-xs font-semibold text-[#455858] uppercase tracking-widest mb-2">
+            <p className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-2">
               {section.section}
             </p>
             <ul className="space-y-1">
@@ -109,7 +109,7 @@ export default function AdminSideNav() {
 
       {/* Mobile Drawer */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 z-40 flex flex-col w-64 h-full bg-white py-6 overflow-y-auto transform transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed top-0 left-0 z-40 flex flex-col w-64 h-full bg-gradient-to-b from-[#12606A] to-[#399195] py-6 overflow-y-auto transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -117,7 +117,7 @@ export default function AdminSideNav() {
       </aside>
 
       {/* Desktop Sidenav — always visible */}
-      <aside className="hidden lg:flex flex-col w-64 h-screen sticky top-0 py-6 overflow-y-auto">
+      <aside className="hidden lg:flex flex-col w-64 h-screen sticky top-0 py-6 overflow-y-auto bg-gradient-to-b from-[#12606A] to-[#399195]">
         {sideNavContent}
       </aside>
     </>

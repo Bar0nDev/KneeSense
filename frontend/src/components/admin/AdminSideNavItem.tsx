@@ -24,16 +24,16 @@ export default function AdminSideNavItem({
     <Link
       href={href}
       onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-2 rounded-sm text-sm font-medium transition-colors duration-150 ${
+      className={`flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-150 ${
         isActive
-          ? "bg-[#C8E6E6] text-[#12606A] border-l-4 border-[#12606A]"
-          : "text-[#4A5565] hover:bg-[#C8E6E6]/40 hover:text-[#455858]"
+          ? "bg-white/30 text-white"
+          : "text-white/70 hover:bg-white/10 hover:text-white"
       }`}
     >
       <Icon
         size={18}
         className={`transition-colors duration-150 ${
-          isActive ? "text-[#12606A]" : "text-[#99A1AF]"
+          isActive ? "text-[#7FE9D9]" : "text-white/60"
         }`}
       />
       <span>{label}</span>

@@ -1,18 +1,33 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Card from "@/components/ui/Card";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { ActiveBadge } from "@/components/admin/AdminBadge";
+import FilterTabs from "@/components/admin/FilterTabs";
 import PatientDetailPanel from "@/components/admin/PatientDetailPanel";
 import { useAdminPatients } from "@/hooks/useAdminPatients";
 import { formatDate } from "@/lib/adminFormat";
 
+const ASSIGNMENT_FILTERS = [
+  { key: "all", label: "All" },
+  { key: "assigned", label: "Assigned" },
+  { key: "unassigned", label: "Unassigned" },
+];
+
 export default function AdminPatientsPage() {
-  const { patients, isLoading } = useAdminPatients();
+  const { patients: allPatients, isLoading } = useAdminPatients();
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectId = searchParams.get("select");
+  const [assignmentFilter, setAssignmentFilter] = useState("all");
+
+  const patients = useMemo(() => {
+    if (assignmentFilter === "assigned") return allPatients.filter((p) => p.practitioner_id);
+    if (assignmentFilter === "unassigned") return allPatients.filter((p) => !p.practitioner_id);
+    return allPatients;
+  }, [allPatients, assignmentFilter]);
 
   function select(id: string) {
     router.push(`/admin/patients?select=${id}`);
@@ -26,7 +41,12 @@ export default function AdminPatientsPage() {
       </div>
 
       <div className="flex flex-col xl:flex-row gap-6 items-start">
-        <div className="flex-1 min-w-0 w-full">
+        <div className="flex-1 min-w-0 w-full flex flex-col gap-4">
+          <FilterTabs
+            options={ASSIGNMENT_FILTERS}
+            value={assignmentFilter}
+            onChange={setAssignmentFilter}
+          />
           <Card padding="none" className="overflow-hidden">
             {isLoading ? (
               <div className="p-10">

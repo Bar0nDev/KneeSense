@@ -1,24 +1,42 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FiCheckCircle, FiXCircle } from "react-icons/fi";
 import Card from "@/components/ui/Card";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { SessionStatusBadge } from "@/components/admin/AdminBadge";
+import FilterTabs from "@/components/admin/FilterTabs";
 import SessionDetailPanel from "@/components/admin/SessionDetailPanel";
 import { useAdminSessions } from "@/hooks/useAdminSessions";
 import { formatDate, formatAngle } from "@/lib/adminFormat";
+
+const STATUS_FILTERS = [
+  { key: "all", label: "All" },
+  { key: "completed", label: "Completed" },
+  { key: "pending", label: "Pending" },
+  { key: "failed", label: "Failed" },
+];
 
 export default function AdminSessionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const patientId = searchParams.get("patient_id") ?? undefined;
   const selectId = searchParams.get("select");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  const { sessions, isLoading } = useAdminSessions(patientId);
+  const { sessions: allSessions, isLoading } = useAdminSessions(patientId);
+
+  const sessions = useMemo(
+    () =>
+      statusFilter === "all"
+        ? allSessions
+        : allSessions.filter((s) => s.status === statusFilter),
+    [allSessions, statusFilter],
+  );
 
   // When filtering by patient, surface their name from the first matching row.
-  const filterPatientName = patientId ? sessions[0]?.patient_name ?? null : null;
+  const filterPatientName = patientId ? allSessions[0]?.patient_name ?? null : null;
 
   function select(id: string) {
     const base = patientId ? `/admin/sessions?patient_id=${patientId}` : "/admin/sessions";
@@ -39,7 +57,8 @@ export default function AdminSessionsPage() {
       </div>
 
       <div className="flex flex-col xl:flex-row gap-6 items-start">
-        <div className="flex-1 min-w-0 w-full">
+        <div className="flex-1 min-w-0 w-full flex flex-col gap-4">
+          <FilterTabs options={STATUS_FILTERS} value={statusFilter} onChange={setStatusFilter} />
           <Card padding="none" className="overflow-hidden">
             {isLoading ? (
               <div className="p-10">

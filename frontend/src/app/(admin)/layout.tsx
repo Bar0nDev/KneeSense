@@ -10,13 +10,11 @@ export default function AdminLayout({
 }) {
   return (
     <ProtectedRoute allowedRole="admin">
-      <div className="min-h-screen flex justify-center bg-[#F1F5F8]">
-        <div className="flex w-full max-w-screen-2xl min-h-screen">
-          <AdminSideNav />
-          <main className="flex-1 p-6 border border-1 border-gray-200 overflow-y-auto">
-            {children}
-          </main>
-        </div>
+      <div className="min-h-screen flex bg-[#F1F5F8]">
+        <AdminSideNav />
+        <main className="flex-1 min-w-0 p-6 overflow-y-auto">
+          {children}
+        </main>
       </div>
     </ProtectedRoute>
   );

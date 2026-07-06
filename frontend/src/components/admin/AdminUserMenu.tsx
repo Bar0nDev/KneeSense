@@ -45,18 +45,18 @@ export default function AdminUserMenu({ name }: AdminUserMenuProps) {
       )}
 
       {/* User row */}
-      <div className="flex items-center justify-between p-3 rounded-lg hover:bg-[#C8E6E6]/40 transition-colors duration-150">
+      <div className="flex items-center justify-between p-3 rounded-lg hover:bg-white/10 transition-colors duration-150">
         <div className="flex items-center gap-3 min-w-0">
           <Avatar name={name} size={36} className="text-sm font-semibold" />
           <div className="leading-tight min-w-0">
-            <p className="text-sm font-semibold truncate">{name}</p>
-            <p className="text-xs text-[#455858]">Admin</p>
+            <p className="text-sm font-semibold text-white truncate">{name}</p>
+            <p className="text-xs text-white/60">Admin</p>
           </div>
         </div>
         <button
           onClick={() => setIsOpen((o) => !o)}
           aria-label="Account options"
-          className="p-1.5 rounded-md text-[#455858] hover:bg-[#C8E6E6]/60 transition-colors cursor-pointer shrink-0"
+          className="p-1.5 rounded-md text-white/70 hover:bg-white/15 hover:text-white transition-colors cursor-pointer shrink-0"
         >
           <HiDotsVertical size={18} />
         </button>
