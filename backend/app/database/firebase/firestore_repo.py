@@ -34,8 +34,20 @@ def fsdb_practitioner(practitioner):
         "user_id": practitioner.user_id,
         "clinic_name": practitioner.clinic_name,
         "specialization": practitioner.specialization,
+        # Approval status: "pending" | "approved" | "rejected". New practitioners
+        # start as "pending" until an admin approves them.
+        "status": getattr(practitioner, "status", None) or "pending",
         "created_at": practitioner.created_at
     })
+
+
+def set_practitioner_status(practitioner_id, status):
+    """Set a practitioner's approval status. Returns True if the doc existed."""
+    doc_ref = fs_db.collection("practitioners").document(str(practitioner_id))
+    if not doc_ref.get().exists:
+        return False
+    doc_ref.set({"status": status}, merge=True)
+    return True
 
 
 def fsdb_patient(patient):

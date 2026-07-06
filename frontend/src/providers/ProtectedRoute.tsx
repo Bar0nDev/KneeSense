@@ -12,6 +12,15 @@ interface ProtectedRouteProps {
   publicOnly?: boolean;
 }
 
+// The home route for each role — where to send a user who lands somewhere they
+// don't belong (wrong-role redirect, or an authenticated user hitting a
+// public-only page).
+function dashboardPathForRole(role: UserRole): string {
+  if (role === "practitioner") return "/analytics";
+  if (role === "admin") return "/admin/dashboard";
+  return "/dashboard";
+}
+
 export default function ProtectedRoute({ children, allowedRole, publicOnly }: ProtectedRouteProps) {
   const { session, isAuthenticated, hasRole, isRehydrating: isLoading } = useAuth();
   const router = useRouter();
@@ -21,7 +30,7 @@ export default function ProtectedRoute({ children, allowedRole, publicOnly }: Pr
 
     // Public only page (login/register) — redirect logged in users to their dashboard
     if (publicOnly && isAuthenticated) {
-      router.push(session!.role === "practitioner" ? "/analytics" : "/dashboard");
+      router.push(dashboardPathForRole(session!.role));
       return;
     }
 
@@ -33,7 +42,7 @@ export default function ProtectedRoute({ children, allowedRole, publicOnly }: Pr
 
     // Role mismatch — redirect to their correct dashboard
     if (!publicOnly && allowedRole && !hasRole(allowedRole)) {
-      router.push(session!.role === "practitioner" ? "/analytics" : "/dashboard");
+      router.push(dashboardPathForRole(session!.role));
     }
   }, [isAuthenticated, isLoading, router, allowedRole, publicOnly]);
 
