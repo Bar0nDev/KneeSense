@@ -1,5 +1,3 @@
-// Small formatting helpers shared across the admin portal.
-
 export function formatDate(value: string | null | undefined): string {
   if (!value) return "—";
   const d = new Date(value);
