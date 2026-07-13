@@ -19,7 +19,7 @@ from app.routes.admin_routes import admin_bp
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-    CORS(app)
+    CORS(app, origins=["https://kneesense.vercel.app"], supports_credentials=True)
 
 
     swagger_template = {
