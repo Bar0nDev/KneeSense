@@ -1,6 +1,7 @@
 // hooks/useProgress.ts
 import { useMemo } from "react";
 import { useSessionData } from "@/hooks/useSessionQueries";
+import { useVideoUrl } from "@/hooks/useVideoUrl";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -33,6 +34,9 @@ export function useProgress(selectedSessionId?: string | null) {
   const { latestSession, activeSession, allSessions, predictions, insight, earliestDate, isLoading, errors } =
     useSessionData(selectedSessionId);
 
+  // Signed GCS URL for the active session's video (bypasses the ngrok tunnel).
+  const { videoUrl } = useVideoUrl(activeSession?.id);
+
   const insightStatus = useMemo<InsightStatus>(() => "stable", []);
 
   const metrics = useMemo(() => [
@@ -44,7 +48,7 @@ export function useProgress(selectedSessionId?: string | null) {
   const sessionData = useMemo(() => ({
     date: activeSession ? formatDate(activeSession.created_at) : "—",
     video: {
-      videoSrc: activeSession?.video_url,
+      videoSrc: videoUrl,
       avgAngle: activeSession?.avg_angle != null ? `${Math.round(activeSession.avg_angle)}°` : "—",
       medialPct: activeSession?.zone1_avg != null ? `${activeSession.zone1_avg.toFixed(2)}%` : "—",
       centralPct: activeSession?.zone2_avg != null ? `${activeSession.zone2_avg.toFixed(2)}%` : "—",
@@ -74,7 +78,7 @@ export function useProgress(selectedSessionId?: string | null) {
       { t: 6, value: 0.42 }, { t: 7, value: 0.46 }, { t: 8, value: 0.77 },
       { t: 9, value: 0.25 },
     ],
-  }), [activeSession]);
+  }), [activeSession, videoUrl]);
 
   const insights = useMemo(() => ({
     status: insightStatus,

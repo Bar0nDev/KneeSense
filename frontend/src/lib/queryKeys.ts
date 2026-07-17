@@ -24,6 +24,7 @@ export const queryKeys = {
   sessions: (patientId: string) => ["sessions", patientId] as const,
   predictions: (sessionId: string) => ["predictions", sessionId] as const,
   insight: (sessionId: string) => ["insight", sessionId] as const,
+  videoUrl: (sessionId: string) => ["video-url", sessionId] as const,
 
   // Admin portal
   adminPractitioners: () => ["admin", "practitioners"] as const,

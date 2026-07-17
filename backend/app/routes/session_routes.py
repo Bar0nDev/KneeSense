@@ -1,7 +1,7 @@
 import io
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from flask import Blueprint, json, request, jsonify, current_app, send_file
 from google.cloud import storage as gcs
 from werkzeug.utils import secure_filename
@@ -315,6 +315,32 @@ def add_llm_insight(session_id):
     )
 
     return jsonify({"message": "Insight saved"}), 200
+
+
+# =========================
+# GET SIGNED VIDEO URL FOR SESSION
+# =========================
+@session_bp.route("/sessions/<session_id>/video-url", methods=["GET"])
+def get_video_url(session_id):
+    # Returns a short-lived signed URL that points directly at GCS. The browser's
+    # <video> element loads from storage.googleapis.com, bypassing the ngrok
+    # tunnel entirely — the tunnel's browser-warning interstitial was replacing
+    # the video bytes with an HTML page, breaking playback in production.
+    doc = fs_db.collection("sessions").document(session_id).get()
+    if not doc.exists:
+        return jsonify({"error": "Session not found"}), 404
+
+    video_path = doc.to_dict().get("video_path")
+    if not video_path:
+        return jsonify({"error": "No video for this session"}), 404
+
+    bucket = gcs.Client().bucket(current_app.config["GCS_BUCKET_NAME"])
+    url = bucket.blob(video_path).generate_signed_url(
+        version="v4",
+        expiration=timedelta(hours=1),
+        method="GET",
+    )
+    return jsonify({"url": url}), 200
 
 
 # =========================
