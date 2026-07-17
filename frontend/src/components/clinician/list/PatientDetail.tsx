@@ -16,6 +16,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { patientService, PatientListItem } from "@/services/patientService";
 import { sessionService } from "@/services/sessionService";
 import { SessionRecord } from "@/hooks/useSessionQueries";
+import { useVideoUrl } from "@/hooks/useVideoUrl";
 import { getStatusConfig } from "@/lib/patientStatus";
 import { useUser } from "@/context/UserContext";
 import { getAgeGroup } from "@/lib/ageGroups";
@@ -60,9 +61,8 @@ export default function PatientDetail({ patient, onAssigned }: Props) {
     ? [...sessions].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] ?? null
     : null;
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-  const videoFilename = latestSession?.video_path?.split(/[\\/]/).pop();
-  const videoSrc = videoFilename ? `${apiBase}/data/videos/${videoFilename}` : undefined;
+  // Signed GCS URL for the latest session's video (bypasses the ngrok tunnel).
+  const { videoUrl: videoSrc } = useVideoUrl(latestSession?.id);
 
   const dominantZoneLabel = latestSession?.dominant_zone
     ? ({ zone1: "Medial", zone2: "Central", zone3: "Lateral" }[latestSession.dominant_zone] ?? latestSession.dominant_zone)

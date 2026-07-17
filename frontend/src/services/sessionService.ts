@@ -39,6 +39,11 @@ export const sessionService = {
     return data;
   },
 
+  getVideoUrl: async (sessionId: string) => {
+    const { data } = await apiClient.get(`/sessions/${sessionId}/video-url`);
+    return data.url as string;
+  },
+
   getAnalysisFile: async (filename: string) => {
     const { data } = await apiClient.get(`/data/analysis/${filename}`, {
       timeout: 30000, // 30 seconds — analysis files can be large
